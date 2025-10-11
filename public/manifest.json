@@ -1,0 +1,21 @@
+{
+  "name": "日本企業初任給ランキング 2025",
+  "short_name": "初任給ランキング",
+  "description": "日本の大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

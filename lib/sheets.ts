@@ -1,0 +1,349 @@
+export type RankingType = "annual" | "monthly" | "base"
+
+export interface CompanyData {
+  rank: number
+  company: string
+  industry: string
+  annualSalary: number // 想定年収
+  baseMonthly: number // 基本給（月）
+  employees: number
+  founded: number
+  description: string
+  url?: string
+  domain?: string
+  logo?: string
+}
+
+export interface ArticleData {
+  id: string
+  title: string
+  excerpt: string
+  content: string
+  category: string
+  publishedAt: string
+  author: string
+  readTime: number
+  image?: string
+}
+
+export interface FeaturedCompanyData {
+  company: string
+  industry: string
+  estimatedAnnualSalary: number
+  reason: string
+  logo: string
+}
+
+export interface IndustryData {
+  industry: string
+  averageAnnualSalary: number
+  companyCount: number
+  description: string
+}
+
+const SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY // NEXT_PUBLIC_を削除
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID // NEXT_PUBLIC_を削除
+
+export async function fetchRankingDataServer(rankingType: RankingType = "annual"): Promise<CompanyData[]> {
+  console.log("[v0] 環境変数チェック:")
+  console.log(
+    "[v0] GOOGLE_SHEETS_API_KEY:",
+    SHEETS_API_KEY ? `設定済み (${SHEETS_API_KEY.substring(0, 10)}...)` : "未設定",
+  )
+  console.log("[v0] SPREADSHEET_ID:", SPREADSHEET_ID ? `設定済み (${SPREADSHEET_ID})` : "未設定")
+  console.log("[v0] 要求されたランキングタイプ:", rankingType)
+
+  if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
+    console.warn("[v0] Google Sheets API設定が見つかりません。サンプルデータを使用します。")
+    return []
+  }
+
+  const getSheetName = (type: RankingType) => {
+    switch (type) {
+      case "annual":
+        return "年俸ランキング"
+      case "monthly":
+        return "月額額面ランキング"
+      case "base":
+        return "基本給ランキング"
+    }
+  }
+
+  try {
+    const sheetName = getSheetName(rankingType)
+    const range = `${sheetName}!A2:K1000` // 取得範囲を1000行目までに固定
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
+
+    console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
+
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // 1時間キャッシュする
+    })
+
+    console.log("[v0] APIレスポンスステータス:", response.status)
+
+    const data = await response.json()
+
+    console.log("[v0] 取得したデータ行数:", data.values?.length || 0)
+
+    if (!data.values) {
+      console.warn("[v0] スプレッドシートにデータが見つかりません。空の配列を返します。")
+      return []
+    }
+
+    const parseNumber = (value: string): number => {
+      if (!value) return 0
+      // ¥記号、カンマ、スペースを削除してから数値に変換
+      const cleaned = value.toString().replace(/[¥,\s]/g, "")
+      return Number.parseInt(cleaned) || 0
+    }
+
+    return data.values.map((row: any[], index: number) => {
+      const baseData = {
+        rank: parseNumber(row[0]) || index + 1,
+        company: row[1] || "",
+        industry: row[2] || "",
+        employees: parseNumber(row[5]),
+        founded: parseNumber(row[6]), // G列
+        description: row[7] || "", // H列
+        url: row[8] || undefined, // I列
+        domain: row[9] || undefined, // J列
+        logo: row[10] || undefined, // K列
+      }
+
+      return {
+        ...baseData,
+        // D列を想定年収、E列を初任給（月額）として固定で解釈する
+        annualSalary: parseNumber(row[3]),
+        baseMonthly: parseNumber(row[4]),
+      }
+    })
+  } catch (error) {
+    console.error("[v0] Google Sheetsからのデータ取得に失敗:", error)
+    return []
+  }
+}
+
+export async function fetchIndustryDataServer(): Promise<IndustryData[]> {
+  if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
+    console.warn("[v0] Google Sheets API設定が見つかりません。業界データは取得できません。")
+    return []
+  }
+
+  try {
+    const range = "業界別データ!A2:D" // ヘッダー行を除く
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
+
+    console.log("[v0] Google Sheets APIリクエスト (業界別):", url.replace(SHEETS_API_KEY, "***"))
+
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // 1時間キャッシュする
+    })
+
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (!data.values) {
+      console.warn("[v0] 「業界別データ」シートにデータが見つかりません。")
+      return []
+    }
+
+    const parseNumber = (value: string): number => {
+      if (!value) return 0
+      const cleaned = value.toString().replace(/[¥,\s]/g, "")
+      return Number.parseInt(cleaned) || 0
+    }
+
+    return data.values.map((row: any[]) => ({
+      industry: row[0] || "",
+      averageAnnualSalary: parseNumber(row[1]),
+      companyCount: parseNumber(row[2]),
+      description: row[3] || "",
+    }))
+  } catch (error) {
+    console.error("[v0] Google Sheetsからの業界データ取得に失敗:", error)
+    return []
+  }
+}
+
+export async function fetchArticleDataServer(): Promise<ArticleData[]> {
+  console.log("[v0] 環境変数チェック:")
+  console.log(
+    "[v0] GOOGLE_SHEETS_API_KEY:",
+    SHEETS_API_KEY ? `設定済み (${SHEETS_API_KEY.substring(0, 10)}...)` : "未設定",
+  )
+  console.log("[v0] SPREADSHEET_ID:", SPREADSHEET_ID ? `設定済み (${SPREADSHEET_ID})` : "未設定")
+
+  if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
+    console.warn("[v0] Google Sheets API設定が見つかりません。サンプルデータを使用します。")
+    return []
+  }
+
+  try {
+    const range = "記事!A2:I" // ヘッダー行を除く
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
+
+    console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
+
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // 1時間キャッシュする
+    })
+
+    console.log("[v0] APIレスポンスステータス:", response.status)
+
+    const data = await response.json()
+
+    console.log("[v0] 取得した記事データ行数:", data.values?.length || 0)
+
+    if (!data.values) {
+      console.warn("[v0] スプレッドシートに記事データが見つかりません。空の配列を返します。")
+      return []
+    }
+
+    return data.values.map((row: any[], index: number) => ({
+      id: row[0] || `article-${index + 1}`,
+      title: row[1] || "",
+      excerpt: row[2] || "",
+      content: row[3] || "",
+      category: row[4] || "その他",
+      publishedAt: row[5] || new Date().toISOString(),
+      author: row[6] || "編集部",
+      readTime: Number.parseInt(row[7]) || 5,
+      image: row[8] || undefined,
+    }))
+  } catch (error) {
+    console.error("[v0] Google Sheetsからの記事データ取得に失敗:", error)
+    return []
+  }
+}
+
+export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompanyData[]> {
+  if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
+    console.warn("[v0] Google Sheets API設定が見つかりません。注目企業データは取得できません。")
+    return []
+  }
+
+  try {
+    const range = "注目企業!A2:E" // ヘッダー行を除く
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
+
+    console.log("[v0] Google Sheets APIリクエスト (注目企業):", url.replace(SHEETS_API_KEY, "***"))
+
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // 1時間キャッシュする
+    })
+
+    console.log("[v0] 注目企業APIレスポンスステータス:", response.status)
+    const responseData = await response.json()
+    console.log(
+      "[v0] 注目企業APIレスポンスデータ:",
+      JSON.stringify(responseData, null, 2),
+    )
+
+    if (!response.ok) {
+      const errorBody = responseData
+      throw new Error(
+        `API responded with status ${response.status}: ${errorBody?.error?.message || "Unknown error"}`,
+      )
+    }
+
+    const data = responseData
+
+    if (!data.values) {
+      console.warn("[v0] 「注目企業」シートにデータが見つかりません。")
+      return []
+    }
+
+    const parseNumber = (value: string): number => {
+      if (!value) return 0
+      const cleaned = value.toString().replace(/[¥,\s]/g, "")
+      return Number.parseInt(cleaned) || 0
+    }
+
+    return data.values.map((row: any[]) => ({
+      company: row[0] || "",
+      industry: row[1] || "",
+      estimatedAnnualSalary: parseNumber(row[2]),
+      reason: row[3] || "",
+      logo: row[4] || "/placeholder.svg",
+    }))
+  } catch (error) {
+    console.error("[v0] Google Sheetsからの注目企業データ取得に失敗:", error)
+    return []
+  }
+}
+
+// サンプルランキングデータ（フォールバック用）
+function getSampleRankingData(): CompanyData[] {
+  return [
+    {
+      rank: 1,
+      company: "三菱商事",
+      industry: "総合商社",
+      annualSalary: 25500000,
+      baseMonthly: 255000,
+      employees: 5725,
+      founded: 1954,
+      description: "日本最大級の総合商社として、エネルギー、金属、機械、化学品、生活産業など幅広い分野で事業を展開。",
+      domain: "mitsubishicorp.com",
+      logo: "/mitsubishi-logo.png",
+      url: "https://www.mitsubishicorp.com/",
+    },
+    {
+      rank: 2,
+      company: "三井物産",
+      industry: "総合商社",
+      annualSalary: 25000000,
+      baseMonthly: 250000,
+      employees: 5587,
+      founded: 1947,
+      description: "金属、エネルギー、機械・インフラ、化学品、鉄鋼製品、生活産業、情報・金融の7事業セグメントで展開。",
+      domain: "mitsui.com",
+      logo: "/mitsui-logo.png",
+      url: "https://www.mitsui.com/jp/ja/index.html",
+    },
+    {
+      rank: 3,
+      company: "伊藤忠商事",
+      industry: "総合商社",
+      annualSalary: 24800000,
+      baseMonthly: 248000,
+      employees: 4285,
+      founded: 1949,
+      description: "繊維、機械、金属、エネルギー・化学品、食料、住生活、情報・金融の各分野で多角的に事業を展開。",
+      domain: "itochu.co.jp",
+      logo: "/itochu-logo.jpg",
+      url: "https://www.itochu.co.jp/ja/index.html",
+    },
+    {
+      rank: 4,
+      company: "住友商事",
+      industry: "総合商社",
+      annualSalary: 24500000,
+      baseMonthly: 245000,
+      employees: 5240,
+      founded: 1919,
+      description: "金属、輸送機・建機、インフラ、メディア・デジタル、生活・不動産、資源・化学品の6事業部門で展開。",
+      domain: "sumitomocorp.com",
+      logo: "/sumitomo-logo.png",
+      url: "https://www.sumitomocorp.com/ja/jp",
+    },
+    {
+      rank: 5,
+      company: "丸紅",
+      industry: "総合商社",
+      annualSalary: 24200000,
+      baseMonthly: 242000,
+      employees: 4389,
+      founded: 1949,
+      description:
+        "ライフスタイル、情報・不動産、フォレストプロダクツ、食料、アグリ事業、電力・インフラ、航空宇宙・船舶、金属、エネルギーの9分野で事業展開。",
+      domain: "marubeni.com",
+      logo: "/marubeni-logo.jpg",
+      url: "https://www.marubeni.com/jp/",
+    },
+  ]
+}
