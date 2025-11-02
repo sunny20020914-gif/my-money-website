@@ -1,78 +1,115 @@
+import { fetchRankingDataServer, fetchCompanyById } from "@/lib/sheets"
+import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { fetchIndustryDataServer } from "@/lib/sheets"
-import { Building2 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
+import { DollarSign, TrendingUp, TrendingDown, Info } from "lucide-react"
+import { Metadata } from "next"
 
-export const metadata = {
-  title: "業界別 初任給・年収分析",
-  description:
-    "日本の主要な業界ごとの平均年収、企業数、特徴を分析。あなたのキャリア選択に役立つデータを提供します。",
+type Props = {
+  params: { id: string }
 }
 
-export default async function IndustryAnalysisPage() {
-  const industryData = await fetchIndustryDataServer()
+// 各企業のメタデータを動的に生成
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const company = await fetchCompanyById(params.id)
+
+  if (!company) {
+    return {
+      title: "企業情報が見つかりません",
+    }
+  }
+
+  return {
+    title: `${company.company}の初任給・年収・採用情報`,
+    description: `${company.company}の初任給、想定年収、事業内容、強み・弱みを解説。就活生向けに企業の詳細情報を提供します。`,
+    openGraph: {
+      title: `${company.company}の初任給・年収・採用情報`,
+      description: `${company.company}の初任給、想定年収、事業内容、強み・弱みを解説。`,
+      images: [company.logo || "/og-image.jpg"],
+    },
+  }
+}
+
+// ビルド時に全企業ページを静的に生成
+export async function generateStaticParams() {
+  const companies = await fetchRankingDataServer("annual")
+  return companies.map((company) => ({
+    id: company.id,
+  }))
+}
+
+export default async function CompanyPage({ params }: Props) {
+  const company = await fetchCompanyById(params.id)
+
+  if (!company) {
+    notFound()
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <main className="py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">
-              業界別 初任給・年収分析
-            </h1>
-            <p className="text-lg text-muted-foreground text-balance max-w-3xl">
-              各業界の平均年収や特徴を比較し、あなたのキャリアパスの参考にしてください。
-            </p>
-          </div>
-
-          {industryData.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {industryData.map((industry) => (
-                <Card
-                  key={industry.industry}
-                  className="hover:shadow-lg transition-shadow"
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <CardTitle className="text-xl">{industry.industry}</CardTitle>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Building2 className="h-4 w-4" />
-                        <span className="text-sm font-medium">
-                          {industry.companyCount}社
-                        </span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4">
-                      <p className="text-sm text-muted-foreground">平均想定年収</p>
-                      <p className="text-3xl font-bold text-primary">
-                        ¥{industry.averageAnnualSalary.toLocaleString()}
-                      </p>
-                    </div>
-                    <CardDescription>{industry.description}</CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
+      <main className="container mx-auto px-4 py-8 md:py-12">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* --- 企業ヘッダー --- */}
+          <section>
+            <div className="flex flex-col sm:flex-row items-start gap-6">
+              <Image
+                src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
+                alt={`${company.company}のロゴ`}
+                width={100}
+                height={100}
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-contain border bg-card flex-shrink-0"
+              />
+              <div className="flex-grow">
+                <h1 className="text-2xl md:text-4xl font-bold">{company.company}</h1>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {company.industry.split("/").map((industry, i) => (
+                    <Badge key={i} variant="secondary">{industry}</Badge>
+                  ))}
+                </div>
+              </div>
             </div>
-          ) : (
+          </section>
+
+          {/* --- 給与情報 --- */}
+          <section>
             <Card>
-              <CardContent className="p-12 text-center">
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  業界データが見つかりません
-                </h3>
-                <p className="text-muted-foreground">現在、表示できる業界データがありません。</p>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl"><DollarSign className="w-5 h-5" />給与情報</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">想定年収</p>
+                    <p className="text-2xl font-bold text-primary">¥{company.annualSalary.toLocaleString()}</p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">初任給（月額）</p>
+                    <p className="text-2xl font-bold">¥{company.baseMonthly.toLocaleString()}</p>
+                  </div>
+                </div>
+                {company.salary_details && <p className="text-sm text-muted-foreground leading-relaxed pt-2">{company.salary_details}</p>}
               </CardContent>
             </Card>
-          )}
+          </section>
+
+          {/* --- 企業概要 --- */}
+          <section className="prose prose-slate dark:prose-invert max-w-none">
+            <h2 className="flex items-center gap-2"><Info className="w-6 h-6" />企業概要</h2>
+            <p>{company.long_description || company.description}</p>
+
+            {company.strength && <>
+              <h3 className="flex items-center gap-2"><TrendingUp className="w-5 h-5" />強み</h3>
+              <p>{company.strength}</p>
+            </>}
+            {company.weakness && <>
+              <h3 className="flex items-center gap-2"><TrendingDown className="w-5 h-5" />弱み</h3>
+              <p>{company.weakness}</p>
+            </>}
+          </section>
         </div>
       </main>
       <Footer />

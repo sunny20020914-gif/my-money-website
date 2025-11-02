@@ -10,7 +10,7 @@ export function Footer() {
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">￥</span>
               </div>
-              <span className="font-bold text-xl text-foreground">初任給ランキング</span>
+              <span className="font-bold text-xl text-foreground">My Money Web</span>
             </div>
             <p className="text-muted-foreground mb-4 max-w-md">
               企業の初任給情報を提供し、就活生のキャリア選択をサポートします。
@@ -69,7 +69,7 @@ export function Footer() {
           <p className="text-xs text-muted-foreground mb-4">
             当サイトに掲載されている会社名、製品名、ロゴマークは、各社の商標または登録商標です。
           </p>
-          <p className="text-muted-foreground">© 2025 初任給ランキング. All Rights Reserved.</p>
+          <p className="text-muted-foreground">© My Money Web. All Rights Reserved.</p>
         </div>
       </div>
     </footer>

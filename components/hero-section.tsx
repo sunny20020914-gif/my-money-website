@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button"
 import { ArrowRightIcon, TrendingUpIcon } from "lucide-react"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export function HeroSection() {
   return (
@@ -16,24 +16,24 @@ export function HeroSection() {
 
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-balance mb-6">
             <span className="block bg-gradient-to-r from-primary from-30% via-primary-foreground to-primary to-70% bg-[length:200%_auto] bg-clip-text text-transparent animate-[animate-gradient_5s_ease_infinite]">
-              初任給ランキング
+              納得のいく企業選びを、お金の視点から
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground text-balance mb-12 max-w-3xl mx-auto leading-relaxed">
-            就活生必見！大手企業から成長企業まで、最新の初任給データを業界別・職種別で徹底比較。
+            就活生必見！大手から成長企業まで、初任給や年収などのリアルな情報を多角的に分析。
             あなたの就活を成功に導く情報がここにあります。
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button asChild size="lg" className="text-lg px-8 py-6">
-              <Link href="/ranking">
-                ランキングを見る
-                <ArrowRightIcon className="ml-2 h-5 w-5" />
+            <Button asChild size="lg" className="text-lg px-8 py-6 bg-primary">
+              <Link href="/articles">
+                就活記事を読む
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6 bg-transparent">
-              <Link href="/articles">就活記事を読む</Link>
+            <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6 bg-transparent border-border">
+              <Link href="/ranking">ランキングを見る</Link>
             </Button>
           </div>
         </div>

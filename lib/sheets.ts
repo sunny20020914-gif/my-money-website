@@ -1,17 +1,21 @@
 export type RankingType = "annual" | "monthly" | "base"
 
 export interface CompanyData {
+  id: string
   rank: number
   company: string
   industry: string
-  annualSalary: number // 想定年収
-  baseMonthly: number // 基本給（月）
-  employees: number
+  annualSalary: number | string // 想定年収
+  baseMonthly: number | string // 基本給（月）
+  monthlySalary?: number // 追加
+  baseSalary?: number // 追加
+  employees: number | string
   founded: number
   description: string
   url?: string
   domain?: string
   logo?: string
+  salaryUrl?: string // 給与関連のURL
 }
 
 export interface ArticleData {
@@ -31,7 +35,15 @@ export interface FeaturedCompanyData {
   industry: string
   estimatedAnnualSalary: number
   reason: string
-  logo: string
+  logo?: string
+  domain?: string
+}
+
+export interface CompanyDetailData {
+  long_description?: string
+  strength?: string
+  weakness?: string
+  salary_details?: string
 }
 
 export interface IndustryData {
@@ -41,8 +53,9 @@ export interface IndustryData {
   description: string
 }
 
-const SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY // NEXT_PUBLIC_を削除
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID // NEXT_PUBLIC_を削除
+const SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID || process.env.NEXT_PUBLIC_SPREADSHEET_ID
+const COMPANIES_SHEET_NAME = "companies"
 
 export async function fetchRankingDataServer(rankingType: RankingType = "annual"): Promise<CompanyData[]> {
   console.log("[v0] 環境変数チェック:")
@@ -71,13 +84,15 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
 
   try {
     const sheetName = getSheetName(rankingType)
-    const range = `${sheetName}!A2:K1000` // 取得範囲を1000行目までに固定
+    const range = `${sheetName}!A2:M1000` // M列(salaryUrl)まで取得
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
 
     console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
 
+    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
     const response = await fetch(url, {
-      next: { revalidate: 3600 }, // 1時間キャッシュする
+      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+      next: process.env.NODE_ENV === 'production' ? { revalidate: 3600 } : undefined,
     })
 
     console.log("[v0] APIレスポンスステータス:", response.status)
@@ -91,36 +106,98 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
       return []
     }
 
+    const parseSalaryValue = (value: string): number | string => {
+      if (typeof value !== 'string' || value.trim() === '') {
+        return 0;
+      }
+
+      // 全角数字を半角に、不要な文字を削除
+      const cleaned = value
+        .toString()
+        .normalize('NFKC') // 全角英数記号を半角に変換
+        .replace(/[¥,円\s]/g, ""); // 不要な文字を削除
+
+      // 文字列が数値として解釈できるかチェック
+      const num = Number(cleaned);
+      // 解釈できなければ（NaNであれば）元の文字列を、解釈できれば数値を返す
+      return isNaN(num) ? value : num;
+    }
+
+    const parseEmployees = (value: string): number | string => {
+      if (value === '?') return '?'
+      return parseNumber(value)
+    }
+
     const parseNumber = (value: string): number => {
-      if (!value) return 0
-      // ¥記号、カンマ、スペースを削除してから数値に変換
-      const cleaned = value.toString().replace(/[¥,\s]/g, "")
-      return Number.parseInt(cleaned) || 0
+      const result = parseSalaryValue(value);
+      return typeof result === 'number' ? result : 0;
     }
 
     return data.values.map((row: any[], index: number) => {
+      const id = row[11] || row[1]?.toLowerCase().replace(/\s/g, '_') || `company-${index}`
       const baseData = {
         rank: parseNumber(row[0]) || index + 1,
         company: row[1] || "",
         industry: row[2] || "",
-        employees: parseNumber(row[5]),
+        employees: parseEmployees(row[5]),
         founded: parseNumber(row[6]), // G列
         description: row[7] || "", // H列
         url: row[8] || undefined, // I列
         domain: row[9] || undefined, // J列
         logo: row[10] || undefined, // K列
+        id: id, // L列
+        salaryUrl: row[12] || undefined, // M列
       }
 
       return {
         ...baseData,
         // D列を想定年収、E列を初任給（月額）として固定で解釈する
-        annualSalary: parseNumber(row[3]),
-        baseMonthly: parseNumber(row[4]),
+        annualSalary: parseSalaryValue(row[3]),
+        baseMonthly: parseSalaryValue(row[4]),
       }
     })
   } catch (error) {
     console.error("[v0] Google Sheetsからのデータ取得に失敗:", error)
     return []
+  }
+}
+
+export async function fetchCompanyById(id: string): Promise<(CompanyData & CompanyDetailData) | null> {
+  try {
+    // まずランキングシートから基本情報を取得
+    const allCompanies = await fetchRankingDataServer("annual");
+    const companyBasicInfo = allCompanies.find(c => c.id === id);
+
+    if (!companyBasicInfo) return null;
+
+    if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
+      return companyBasicInfo; // 詳細情報なしで基本情報のみ返す
+    }
+
+    // 次に企業詳細シートから追加情報を取得
+    const range = `${COMPANIES_SHEET_NAME}!A2:E`; // A列からE列まで取得 (適宜変更)
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
+    const response = await fetch(url, {
+      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+      next: process.env.NODE_ENV === 'production' ? { revalidate: 3600 } : undefined,
+    })
+    const data = await response.json()
+    const companyDetailRow = data.values?.find((row: any[]) => row[0] === id);
+
+    const companyDetailInfo: CompanyDetailData = companyDetailRow ? {
+      long_description: companyDetailRow[1] || '',
+      strength: companyDetailRow[2] || '',
+      weakness: companyDetailRow[3] || '',
+      salary_details: companyDetailRow[4] || '',
+    } : {};
+
+    return { ...companyBasicInfo, ...companyDetailInfo };
+
+  } catch (e) {
+    console.error(`Failed to fetch company data for id: ${id}`, e);
+    // 本番環境ではエラーをスローするか、nullを返すかを選択
+    // ここではnullを返してページが404になるようにする
+    return null;
   }
 }
 
@@ -136,8 +213,10 @@ export async function fetchIndustryDataServer(): Promise<IndustryData[]> {
 
     console.log("[v0] Google Sheets APIリクエスト (業界別):", url.replace(SHEETS_API_KEY, "***"))
 
+    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
     const response = await fetch(url, {
-      next: { revalidate: 3600 }, // 1時間キャッシュする
+      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+      next: process.env.NODE_ENV === 'production' ? { revalidate: 3600 } : undefined,
     })
 
     if (!response.ok) {
@@ -169,6 +248,31 @@ export async function fetchIndustryDataServer(): Promise<IndustryData[]> {
   }
 }
 
+export async function fetchSheetNames(): Promise<string[]> {
+  if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
+    console.warn("[v0] Google Sheets API設定が見つかりません。シート名は取得できません。")
+    return []
+  }
+
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties.title&key=${SHEETS_API_KEY}`
+    console.log("[v0] Google Sheets APIリクエスト (シート名一覧):", url.replace(SHEETS_API_KEY, "***"))
+
+    const response = await fetch(url, {
+      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+      next: process.env.NODE_ENV === 'production' ? { revalidate: 3600 } : undefined,
+    })
+
+    if (!response.ok) throw new Error(`API responded with status ${response.status}`)
+
+    const data = await response.json()
+    return data.sheets.map((sheet: any) => sheet.properties.title)
+  } catch (error) {
+    console.error("[v0] Google Sheetsからのシート名一覧取得に失敗:", error)
+    return []
+  }
+}
+
 export async function fetchArticleDataServer(): Promise<ArticleData[]> {
   console.log("[v0] 環境変数チェック:")
   console.log(
@@ -188,8 +292,10 @@ export async function fetchArticleDataServer(): Promise<ArticleData[]> {
 
     console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
 
+    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
     const response = await fetch(url, {
-      next: { revalidate: 3600 }, // 1時間キャッシュする
+      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+      next: process.env.NODE_ENV === 'production' ? { revalidate: 3600 } : undefined,
     })
 
     console.log("[v0] APIレスポンスステータス:", response.status)
@@ -232,8 +338,10 @@ export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompan
 
     console.log("[v0] Google Sheets APIリクエスト (注目企業):", url.replace(SHEETS_API_KEY, "***"))
 
+    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
     const response = await fetch(url, {
-      next: { revalidate: 3600 }, // 1時間キャッシュする
+      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+      next: process.env.NODE_ENV === 'production' ? { revalidate: 3600 } : undefined,
     })
 
     console.log("[v0] 注目企業APIレスポンスステータス:", response.status)
@@ -268,7 +376,8 @@ export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompan
       industry: row[1] || "",
       estimatedAnnualSalary: parseNumber(row[2]),
       reason: row[3] || "",
-      logo: row[4] || "/placeholder.svg",
+      domain: row[4] || undefined,
+      logo: undefined, // スプレッドシートにロゴURL列がないため
     }))
   } catch (error) {
     console.error("[v0] Google Sheetsからの注目企業データ取得に失敗:", error)
@@ -280,6 +389,7 @@ export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompan
 function getSampleRankingData(): CompanyData[] {
   return [
     {
+      id: "mitsubishi_corp",
       rank: 1,
       company: "三菱商事",
       industry: "総合商社",
@@ -293,6 +403,7 @@ function getSampleRankingData(): CompanyData[] {
       url: "https://www.mitsubishicorp.com/",
     },
     {
+      id: "mitsui_and_co",
       rank: 2,
       company: "三井物産",
       industry: "総合商社",
@@ -306,6 +417,7 @@ function getSampleRankingData(): CompanyData[] {
       url: "https://www.mitsui.com/jp/ja/index.html",
     },
     {
+      id: "itochu",
       rank: 3,
       company: "伊藤忠商事",
       industry: "総合商社",
@@ -319,6 +431,7 @@ function getSampleRankingData(): CompanyData[] {
       url: "https://www.itochu.co.jp/ja/index.html",
     },
     {
+      id: "sumitomo_corp",
       rank: 4,
       company: "住友商事",
       industry: "総合商社",
@@ -332,6 +445,7 @@ function getSampleRankingData(): CompanyData[] {
       url: "https://www.sumitomocorp.com/ja/jp",
     },
     {
+      id: "marubeni",
       rank: 5,
       company: "丸紅",
       industry: "総合商社",

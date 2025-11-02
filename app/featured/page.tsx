@@ -8,7 +8,9 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Eye, Star } from "lucide-react"
+import Image from "next/image"
 import { fetchFeaturedCompaniesDataServer } from "@/lib/sheets"
+import { AdBanner } from "@/components/ad-banner"
 
 export const metadata = {
   title: "注目の非公開企業ランキング | 初任給ランキング 2025",
@@ -32,9 +34,11 @@ export default async function FeaturedPage() {
               初任給非公開の注目企業
             </h1>
             <p className="text-lg text-muted-foreground text-balance max-w-3xl mx-auto">
-              公式な初任給データは非公開ですが、業界水準や企業規模から高額な給与が期待される企業をご紹介します。
+              公式な初任給データは非公開であるものの、高額な給与が期待される企業をご紹介します。金額は独自に推定を行なっているため実態とは異なる場合があります。
             </p>
           </div>
+
+          <AdBanner />
 
           {featuredCompanies.length === 0 ? (
             <div className="text-center py-16">
@@ -48,10 +52,20 @@ export default async function FeaturedPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <img src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")} alt={`${company.company}のロゴ`} className="w-12 h-12 rounded-lg object-cover" />
+                      <Image
+                        src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
+                        alt={`${company.company}のロゴ`}
+                        className="w-12 h-12 rounded-lg object-contain bg-muted"
+                        width={48}
+                        height={48}
+                      />
                       <div>
                         <CardTitle className="text-lg">{company.company}</CardTitle>
-                        <Badge variant="secondary" className="text-sm mt-1">{company.industry}</Badge>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {company.industry.split('/').map((industry, i) => (
+                            <Badge key={i} variant="secondary" className="text-sm">{industry.trim()}</Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <Badge variant="outline" className="text-amber-600 border-amber-200">

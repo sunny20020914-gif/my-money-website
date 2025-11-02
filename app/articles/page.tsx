@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock } from "lucide-react"
 import Link from "next/link"
+import { AdBanner } from "@/components/ad-banner"
 import { fetchArticleDataServer, type ArticleData } from "@/lib/sheets"
 
 export const metadata = {
@@ -25,6 +26,8 @@ export default async function ArticlesPage() {
               就活のプロが教える実践的なアドバイスと最新の就活情報をお届けします。
             </p>
           </div>
+
+          <AdBanner />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((article) => (

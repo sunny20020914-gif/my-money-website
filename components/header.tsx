@@ -28,7 +28,7 @@ export function Header() {
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="relative -top-px text-primary-foreground font-bold text-xl leading-none">￥</span>
               </div>
-              <span className="font-bold text-xl text-foreground tracking-normal">初任給ランキング</span>
+              <span className="font-bold text-xl text-foreground tracking-normal">My Money Web</span>
             </Link>
           </div>
 

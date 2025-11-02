@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card"
 import { fetchIndustryDataServer } from "@/lib/sheets"
 import { Building2 } from "lucide-react"
+import { AdBanner } from "@/components/ad-banner"
 
 export const metadata = {
   title: "業界別 初任給・年収分析",
@@ -32,6 +33,8 @@ export default async function IndustryAnalysisPage() {
               各業界の平均年収や特徴を比較し、あなたのキャリアパスの参考にしてください。
             </p>
           </div>
+
+          <AdBanner />
 
           {industryData.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

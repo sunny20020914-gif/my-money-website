@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server"
-import { fetchRankingDataServer, type RankingType } from "@/lib/sheets"
-
-export const dynamic = "force-dynamic" // キャッシュを無効化
+import { fetchRankingDataServer } from "@/lib/sheets"
+import type { RankingType } from "@/lib/sheets"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const type = searchParams.get("type") as RankingType | null
-
-  // 'type' パラメータが不正な場合は 'annual' をデフォルトとして使用
-  const rankingType: RankingType =
-    type && ["annual", "monthly", "base"].includes(type) ? type : "annual"
+  const type = (searchParams.get("type") as RankingType) || "annual"
 
   try {
-    const data = await fetchRankingDataServer(rankingType)
+    const data = await fetchRankingDataServer(type)
     return NextResponse.json(data)
   } catch (error) {
-    console.error("[API Route Error] /api/ranking:", error)
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 })
+    console.error(`[API] ランキングデータ取得エラー (type: ${type}):`, error)
+    return NextResponse.json(
+      { error: "データの取得に失敗しました" },
+      { status: 500 },
+    )
   }
 }

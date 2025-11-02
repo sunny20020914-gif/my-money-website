@@ -1,12 +1,13 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { AdBanner } from "@/components/ad-banner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Target, Users, TrendingUp, Shield } from "lucide-react"
 
 export const metadata = {
-  title: "サイトについて | 日本企業初任給ランキング 2025",
-  description: "日本企業初任給ランキングサイトの目的、データソース、運営方針について詳しくご紹介します。",
+  title: "サイトについて | My Money Web",
+  description: "My Money Webサイトの目的、データソース、運営方針について詳しくご紹介します。",
 }
 
 export default function AboutPage() {
@@ -18,9 +19,11 @@ export default function AboutPage() {
           <div className="text-center mb-12">
             <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">サイトについて</h1>
             <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
-              日本企業初任給ランキングサイトの目的と取り組みについてご紹介します。
+            My Money Webサイトの目的と取り組みについてご紹介します。
             </p>
           </div>
+
+          <AdBanner />
 
           <div className="space-y-8">
             {/* Mission */}
@@ -105,41 +108,6 @@ export default function AboutPage() {
               </Card>
             </div>
 
-            {/* Data Sources */}
-            <Card>
-              <CardHeader>
-                <CardTitle>データソース</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="text-xs">
-                      公式
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">企業の公式採用サイト・IR情報</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="text-xs">
-                      法定
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">有価証券報告書・決算資料</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="text-xs">
-                      調査
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">業界団体・調査機関のデータ</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="text-xs">
-                      報道
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">信頼できるメディアの報道</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Contact */}
             <Card>
               <CardHeader>
@@ -150,7 +118,12 @@ export default function AboutPage() {
                   サイトに関するご質問、データの修正依頼、掲載企業の追加希望などがございましたら、
                   お気軽にお問い合わせください。
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p>
+                  <a href="https://forms.gle/x3Qt8hA8B6YuuiaN8" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                    https://forms.gle/x3Qt8hA8B6YuuiaN8
+                  </a>
+                </p>
+                <p className="text-sm text-muted-foreground mt-4">
                   ※ 個別の就活相談には対応しておりませんが、 サイトのコンテンツ改善に関するご提案は大歓迎です。
                 </p>
               </CardContent>

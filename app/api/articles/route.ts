@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { fetchArticleDataServer } from "@/lib/sheets"
 
+// このルートはデフォルトで静的に評価されますが、
+// fetchArticleDataServer内のfetchがrevalidateオプションを持つため、
+// ISR (Incremental Static Regeneration) として動作します。
 export async function GET() {
   try {
     const data = await fetchArticleDataServer()

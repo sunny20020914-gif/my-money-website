@@ -1,22 +1,22 @@
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { RankingPreview } from "@/components/ranking-preview"
-// import { FeaturedCompaniesCta } from "@/components/featured-companies-cta"
-// import { ArticlePreview } from "@/components/article-preview"
+import { ArticlePreview } from "@/components/article-preview"
 import { Footer } from "@/components/footer"
-// import { StructuredData } from "@/components/structured-data"
+import { StructuredData } from "@/components/structured-data"
+import { AdBanner } from "@/components/ad-banner"
 
 export default function HomePage() {
   return (
     <>
-      {/* <StructuredData type="website" data={{}} /> */}
+      <StructuredData type="website" data={{}} />
       <div className="min-h-screen bg-background">
         <Header />
         <main>
           <HeroSection />
+          <ArticlePreview />
+          <AdBanner />
           <RankingPreview />
-          {/* <FeaturedCompaniesCta /> */}
-          {/* <ArticlePreview /> */}
         </main>
         <Footer />
       </div>
