@@ -294,13 +294,11 @@ export function RankingPageClient({
       <main className="py-8 md:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
-            <div className="mb-8 max-w-3xl mx-auto text-center md:mx-0 md:text-left">
-              <h1 className="text-2xl md:text-4xl font-bold text-balance mb-4 leading-tight">
-                目指せる年収はここまで上がる！
-                <br className="hidden md:block" />
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl md:text-4xl font-bold text-balance mb-4 leading-tight text-primary">
                 初任給・年収ランキング
               </h1>
-              <p className="text-base md:text-lg text-muted-foreground text-balance max-w-3xl leading-relaxed">
+              <p className="text-base md:text-lg text-muted-foreground text-balance leading-relaxed">
                 トップ企業は新卒で年収1,000万円超えも。このランキングで、あなたの目指せる給与水準と、そのために必要な対策を考えましょう。ランキングの種類を切り替えたり、企業名や業界で検索して、あなたのキャリアプランに役立ててください。
               </p>
             </div>
@@ -331,13 +329,13 @@ export function RankingPageClient({
                     ))}
                   </div>
                   {industryList.length > 0 && (
-                    <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                    <div className="flex flex-wrap gap-1 border-t border-border pt-4">
                       <span className="text-sm font-medium text-muted-foreground self-center mr-2">業界別:</span>
                       {industryList.map((industry) => (
                         <Button
                           key={industry}
                           variant={selectedIndustry === industry ? "default" : "outline"}
-                          size="sm"
+                          size="xs"
                           onClick={() => setSelectedIndustry(prev => prev === industry ? null : industry)}
                         >
                           {industry}

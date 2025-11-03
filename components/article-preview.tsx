@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, ArrowRight, BookOpen } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { fetchArticleDataServer } from "@/lib/sheets"
 
 export async function ArticlePreview() {
@@ -10,7 +11,7 @@ export async function ArticlePreview() {
   const featuredArticles = allArticles.slice(0, 3) // 最新3件を取得
 
   return (
-    <section className="py-20">
+    <section className="pt-12 pb-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-4">
@@ -26,13 +27,15 @@ export async function ArticlePreview() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {featuredArticles.map((article) => (
             <Card key={article.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
-              <div className="aspect-video overflow-hidden">
-                <img
+              <Link href={`/articles/${article.id}`} className="block aspect-video overflow-hidden relative">
+                <Image
                   src={article.image || "/placeholder.svg?height=200&width=400"}
                   alt={article.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
-              </div>
+              </Link>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-2">
                   <Badge variant="secondary" className="text-xs">

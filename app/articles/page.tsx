@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { AdBanner } from "@/components/ad-banner"
 import { fetchArticleDataServer, type ArticleData } from "@/lib/sheets"
 
@@ -31,12 +32,14 @@ export default async function ArticlesPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((article) => (
-              <Card key={article.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
-                <Link href={`/articles/${article.id}`} className="block aspect-video overflow-hidden">
-                  <img
+              <Card key={article.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col bg-card">
+                <Link href={`/articles/${article.id}`} className="block aspect-video overflow-hidden relative">
+                  <Image
                     src={article.image || "/placeholder.svg?height=200&width=400"}
                     alt={article.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                 </Link>
                 <CardHeader className="pb-3">

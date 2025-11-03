@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock } from "lucide-react"
 import { Metadata } from "next"
 import { StructuredData } from "@/components/structured-data"
+import Image from "next/image"
 import { AdBanner } from "@/components/ad-banner"
 import { Remarkable } from "remarkable"
 
@@ -89,15 +90,22 @@ export default async function ArticlePage({ params }: Props) {
             </header>
 
             {article.image && (
-              <figure className="mb-12">
-                <img src={article.image} alt={article.title} className="w-full h-auto rounded-lg shadow-lg" />
-              </figure>
+              <div className="relative w-full aspect-video my-8 overflow-hidden rounded-lg shadow-lg">
+                <Image
+                  src={article.image}
+                  alt={article.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 768px) 100vw, 768px"
+                />
+              </div>
             )}
 
             <AdBanner />
 
             <div
-              className="prose dark:prose-invert max-w-none mx-auto mt-12 prose-2xl prose-p:leading-loose prose-p:my-10 prose-h2:text-3xl prose-h3:text-2xl prose-a:text-primary hover:prose-a:underline"
+              className="prose dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: htmlContent }}
             />
           </article>
