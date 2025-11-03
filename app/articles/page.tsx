@@ -24,7 +24,7 @@ export default async function ArticlesPage() {
           <div className="text-center mb-12">
             <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">記事一覧</h1>
             <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
-              就活のプロが教える実践的なアドバイスと最新の就活情報をお届けします。
+              就活のプロが実践的なアドバイスと最新の就活情報をお届けします。
             </p>
           </div>
 

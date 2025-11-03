@@ -15,7 +15,7 @@ import { AdBanner } from "@/components/ad-banner"
 export const metadata = {
   title: "注目の非公開企業ランキング | 初任給ランキング 2025",
   description:
-    "公式な初任給データは非公開ですが、業界水準や企業規模から高額な給与が期待される注目企業の一覧です。",
+    "公式な初任給データは非公開ではあるものの、業界水準や企業規模から高額な給与が期待される注目企業の一覧です。",
 }
 
 export default async function FeaturedPage() {
