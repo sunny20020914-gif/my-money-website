@@ -95,11 +95,11 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased bg-background text-foreground">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           {children}

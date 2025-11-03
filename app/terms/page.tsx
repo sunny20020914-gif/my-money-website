@@ -21,7 +21,7 @@ export default function TermsOfServicePage() {
             </p>
           </div>
 
-          <div className="prose dark:prose-invert max-w-none mx-auto mt-12 space-y-6">
+          <div className="prose dark:prose-invert max-w-none mx-auto mt-12">
             <h2>第1条：適用範囲と目的</h2>
             <p>
               本利用規約（以下、「本規約」といいます）は、My Money Web（以下、「本サイト」といいます）の提供するすべての情報およびサービス（以下、「本サービス」といいます）の利用に適用されます。本サイトは、日本国内の企業が公に公開している採用情報に基づき、初任給に関する情報の調査・分析・提供を行うことを目的とします。

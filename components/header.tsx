@@ -177,8 +177,7 @@ export function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 就活記事
-              </Link>
-              <div className="border-t border-border/20 pt-4 space-y-4">
+              </Link>              <div className="border-t border-border/20 pt-4 flex items-center justify-center gap-4">
                 <Link
                   href="/about"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

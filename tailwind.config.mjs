@@ -21,38 +21,38 @@ const config = {
     },
     extend: {
       colors: {
-        border: "oklch(0.9 0.015 240)",
-        input: "oklch(0.9 0.015 240)",
-        ring: "oklch(0.65 0.15 200)",
-        background: "oklch(0.99 0.005 240)",
-        foreground: "oklch(0.2 0.02 240)",
+        border: "oklch(var(--border))",
+        input: "oklch(var(--input))",
+        ring: "oklch(var(--ring))",
+        background: "oklch(var(--background))",
+        foreground: "oklch(var(--foreground))",
         primary: {
-          DEFAULT: "oklch(0.68 0.2 235)",
-          foreground: "oklch(0.99 0.005 240)",
+          DEFAULT: "oklch(var(--primary))",
+          foreground: "oklch(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "oklch(0.94 0.01 240)",
-          foreground: "oklch(0.3 0.02 240)",
+          DEFAULT: "oklch(var(--secondary))",
+          foreground: "oklch(var(--secondary-foreground))",
         },
         destructive: {
-          DEFAULT: "oklch(0.5 0.2 40)",
-          foreground: "oklch(0.98 0.01 90)",
+          DEFAULT: "oklch(var(--destructive))",
+          foreground: "oklch(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "oklch(0.94 0.01 240)",
-          foreground: "oklch(0.45 0.02 240)",
+          DEFAULT: "oklch(var(--muted))",
+          foreground: "oklch(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "oklch(0.85 0.08 90)",
-          foreground: "oklch(0.35 0.06 90)",
+          DEFAULT: "oklch(var(--accent))",
+          foreground: "oklch(var(--accent-foreground))",
         },
         popover: {
-          DEFAULT: "oklch(0.97 0.008 240)",
-          foreground: "oklch(0.2 0.02 240)",
+          DEFAULT: "oklch(var(--popover))",
+          foreground: "oklch(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "oklch(0.97 0.008 240)",
-          foreground: "oklch(0.2 0.02 240)",
+          DEFAULT: "oklch(var(--card))",
+          foreground: "oklch(var(--card-foreground))",
         },
       },
       borderRadius: {
@@ -64,12 +64,12 @@ const config = {
         DEFAULT: {
           css: {
             '--tw-prose-body': theme('colors.foreground'),
-            '--tw-prose-headings': theme('colors.primary.DEFAULT'),
+            '--tw-prose-headings': theme('colors.foreground'),
             '--tw-prose-lead': theme('colors.foreground'),
             '--tw-prose-links': theme('colors.primary.DEFAULT'),
             '--tw-prose-bold': theme('colors.foreground'),
-            '--tw-prose-counters': theme('colors.muted.foreground'),
-            '--tw-prose-bullets': theme('colors.muted.foreground'),
+            '--tw-prose-counters': theme('colors.foreground'),
+            '--tw-prose-bullets': theme('colors.foreground'),
             '--tw-prose-hr': theme('colors.border'),
             '--tw-prose-quotes': theme('colors.foreground'),
             '--tw-prose-quote-borders': theme('colors.border'),

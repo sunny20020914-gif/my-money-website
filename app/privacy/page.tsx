@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </div>
 
-          <div className="prose dark:prose-invert max-w-none mx-auto mt-12 space-y-8">
+          <div className="prose dark:prose-invert max-w-none mx-auto mt-12">
             <h3>第1条：個人情報の取得と利用目的</h3>
             <p>本サイトでは、ユーザーから直接ご提供いただく情報およびサービス利用に伴い収集する情報を、以下の目的のために利用いたします。</p>
             <div className="overflow-x-auto">
