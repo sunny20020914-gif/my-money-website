@@ -77,7 +77,7 @@ export default async function FeaturedPage() {
                 <CardContent>
                   <div className="mb-4">
                     <div className="text-sm text-muted-foreground mb-1">推定年収</div>
-                    <div className="text-2xl font-bold text-foreground">¥{company.estimatedAnnualSalary.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-foreground">¥{company.estimatedAnnualSalary}</div>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{company.reason}</p>
                 </CardContent>

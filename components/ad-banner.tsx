@@ -21,13 +21,13 @@ export function AdBanner() {
         {/* ここに広告コードを挿入します */}
         <Script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-xxxxxxxxxxxxxxxx"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2945316858541395"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
         <ins className="adsbygoogle"
              style={{ display: "block" }}
-             data-ad-client="ca-pub-xxxxxxxxxxxxxxxx"
+             data-ad-client="ca-pub-2945316858541395"
              data-ad-slot="yyyyyyyyyy"
              data-ad-format="auto"
              data-full-width-responsive="true"></ins>

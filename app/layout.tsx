@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { ThemeProvider } from "@/app/providers"
 import "./globals.css"
+import Script from "next/script"
 
 export const metadata: Metadata = {
   title: {
@@ -87,6 +88,12 @@ export default function RootLayout({
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fdfaf6" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020817" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2945316858541395"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider

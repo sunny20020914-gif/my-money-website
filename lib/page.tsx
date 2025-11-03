@@ -81,14 +81,26 @@ export default async function CompanyPage({ params }: Props) {
                 <CardTitle className="flex items-center gap-2 text-xl"><DollarSign className="w-5 h-5" />給与情報</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center sm:text-left">
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">想定年収</p>
+                    <p className="text-sm text-muted-foreground mb-1">想定年収</p>
                     <p className="text-2xl font-bold text-primary">¥{company.annualSalary.toLocaleString()}</p>
                   </div>
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">初任給（月額）</p>
-                    <p className="text-2xl font-bold">¥{company.baseMonthly.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground mb-1">初任給（月額）</p>
+                    <p className="text-xl font-semibold">¥{company.baseMonthly.toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-center sm:text-left">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">設立年</p>
+                    <p className="text-lg font-semibold">{company.founded}年</p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">従業員数</p>
+                    <p className="text-lg font-semibold">
+                      {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : company.employees}
+                    </p>
                   </div>
                 </div>
                 {company.salary_details && <p className="text-sm text-muted-foreground leading-relaxed pt-2">{company.salary_details}</p>}

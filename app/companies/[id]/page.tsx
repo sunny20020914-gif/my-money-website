@@ -103,25 +103,25 @@ export default async function CompanyPage({ params }: Props) {
           {/* --- 給与情報 --- */}
           <section>
             <Card className="py-0 gap-0">
-              <CardContent className="p-6">
-                <div className="flex flex-wrap justify-around items-center gap-x-8 gap-y-6">
+              <CardContent className="p-4 md:p-6">
+                <div className="grid grid-cols-2 gap-4 md:flex md:flex-wrap md:justify-around md:items-center md:gap-x-8 md:gap-y-6">
                   {/* 想定年収 */}
-                  <div className="text-center md:text-left">
+                  <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">想定年収</p>
                     <SalaryDisplay value={company.annualSalary} url={company.salaryUrl} isPrimary />
                   </div>
                   {/* 初任給（月額） */}
-                  <div className="text-center md:text-left">
+                  <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">初任給（月額）</p>
                     <SalaryDisplay value={company.baseMonthly} url={company.salaryUrl} />
                   </div>
                   {/* 設立 */}
-                  <div className="text-center md:text-left">
+                  <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">設立</p>
                     <p className="text-lg font-semibold whitespace-nowrap">{company.founded}年</p>
                   </div>
                   {/* 従業員数 */}
-                  <div className="text-center md:text-left">
+                  <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">従業員数</p>
                     <p className="text-lg font-semibold whitespace-nowrap">{typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}</p>
                   </div>

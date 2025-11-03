@@ -365,16 +365,19 @@ export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompan
       return []
     }
 
-    const parseNumber = (value: string): number => {
-      if (!value) return 0
-      const cleaned = value.toString().replace(/[¥,\s]/g, "")
-      return Number.parseInt(cleaned) || 0
+    const parseSalaryValue = (value: string): number | string => {
+      if (typeof value !== 'string' || value.trim() === '') {
+        return 0;
+      }
+      const cleaned = value.toString().normalize('NFKC').replace(/[¥,円\s]/g, "");
+      const num = Number(cleaned);
+      return isNaN(num) ? value : num;
     }
 
     return data.values.map((row: any[]) => ({
       company: row[0] || "",
       industry: row[1] || "",
-      estimatedAnnualSalary: parseNumber(row[2]),
+      estimatedAnnualSalary: parseSalaryValue(row[2]),
       reason: row[3] || "",
       domain: row[4] || undefined,
       logo: undefined, // スプレッドシートにロゴURL列がないため
