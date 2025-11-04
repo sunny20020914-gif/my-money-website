@@ -41,8 +41,6 @@ const CompanyCard = ({
   index,
   total,
   selectedRanking,
-  renderValue,
-  renderUnit,
 }: {
   company: CompanyData;
   index: number;

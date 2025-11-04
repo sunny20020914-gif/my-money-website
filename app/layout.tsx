@@ -1,8 +1,8 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { ThemeProvider } from "@/app/providers"
 import "./globals.css"
 import Script from "next/script"
+import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: {
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   verification: {
     google: "your-google-verification-code",
   },
-    generator: 'v0.app'
+  generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -94,16 +94,30 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX" // ← 測定IDを正しい値に置き換える
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-ZDV57DQ647'); // ← 測定IDを正しい値に置き換える
+          `}
+        </Script>
       </head>
       <body className="font-sans antialiased bg-background text-foreground">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
-          enableSystem={false}
+          enableSystem={true}
           disableTransitionOnChange
         >
           {children}
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
