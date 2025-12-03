@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "ここにGoogle Search Consoleで取得した認証コードを設定",
+    google: "ご自身の認証コードに置き換えてください",
   },
   generator: 'v0.app'
 }
