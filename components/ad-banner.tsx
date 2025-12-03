@@ -1,41 +1,32 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import Script from "next/script";
+import { useEffect } from "react"
 
 export function AdBanner() {
-  const [isMounted, setIsMounted] = useState(false);
-
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    // サーバーサイドレンダリングや初期表示では広告を表示しない
-    return null;
-  }
+    try {
+      // @ts-ignore
+      ;(window.adsbygoogle = window.adsbygoogle || []).push({})
+    } catch (err) {
+      console.error("AdSense script error:", err)
+    }
+  }, [])
 
   return (
-    <div className="my-8 flex justify-center">
-      <div className="w-full max-w-4xl text-center">
-        {/* ここに広告コードを挿入します */}
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2945316858541395"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-        <ins className="adsbygoogle"
-             style={{ display: "block" }}
-             data-ad-client="ca-pub-2945316858541395"
-             data-ad-slot="yyyyyyyyyy"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-        <Script id="adsbygoogle-init" strategy="afterInteractive">
-          {`(adsbygoogle = window.adsbygoogle || []).push({});`}
-        </Script>
-        <div className="text-xs text-muted-foreground mt-2">スポンサーリンク</div>
+    <div className="my-6 text-center">
+      <p className="text-xs text-muted-foreground mb-2">スポンサーリンク</p>
+      <div className="flex justify-center">
+        <ins
+          className="adsbygoogle"
+          style={{ display: "block", width: "100%", maxWidth: "728px", height: "90px" }}
+          data-ad-client="ca-pub-2945316858541395"
+          data-ad-slot="6473201122" // ここにAdSenseで発行した広告ユニットのスロットIDを入力してください
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
       </div>
     </div>
-  );
+  )
 }
+
+export default AdBanner

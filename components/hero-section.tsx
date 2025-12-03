@@ -16,7 +16,7 @@ export function HeroSection() {
 
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-balance mb-6">
             <span className="block bg-gradient-to-r from-primary from-30% via-primary-foreground to-primary to-70% bg-[length:200%_auto] bg-clip-text text-transparent animate-[animate-gradient_5s_ease_infinite]">
-              納得のいく企業選びを、お金の視点から
+              2025年最新 初任給ランキング
             </span>
           </h1>
 
