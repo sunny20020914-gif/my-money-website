@@ -14,9 +14,9 @@ export default function HomePage() {
         <Header />
         <main>
           <HeroSection />
-          <ArticlePreview />
-          <AdBanner />
           <RankingPreview />
+          <AdBanner />
+          <ArticlePreview />
         </main>
         <Footer />
       </div>

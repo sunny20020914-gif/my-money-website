@@ -96,7 +96,7 @@ export default function RootLayout({
         />
         <Script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX" // ← 測定IDを正しい値に置き換える
+          src="https://www.googletagmanager.com/gtag/js?id=G-ZDV57DQ647"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -104,7 +104,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-ZDV57DQ647'); // ← 測定IDを正しい値に置き換える
+            gtag('config', 'G-ZDV57DQ647');
           `}
         </Script>
       </head>
