@@ -3,8 +3,11 @@ import { HeroSection } from "@/components/hero-section"
 import { RankingPreview } from "@/components/ranking-preview"
 import { ArticlePreview } from "@/components/article-preview"
 import { Footer } from "@/components/footer"
-import { StructuredData } from "@/components/structured-data"
-import { AdBanner } from "@/components/ad-banner"
+import { StructuredData } from "@/components/structured-data";
+import dynamic from 'next/dynamic';
+
+// AdBannerをクライアントサイドでのみ動的に読み込む
+const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
 
 export default function HomePage() {
   return (
@@ -15,7 +18,7 @@ export default function HomePage() {
         <main>
           <HeroSection />
           <RankingPreview />
-          <AdBanner />
+          <DynamicAdBanner />
           <ArticlePreview />
         </main>
         <Footer />
