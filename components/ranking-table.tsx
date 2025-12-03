@@ -92,13 +92,13 @@ export function RankingTable() {
                           <div className="mb-4">
                             <div className="text-sm text-muted-foreground">想定年収</div>
                             <div className="text-2xl font-bold text-foreground">
-                              ¥{company.annualSalary.toLocaleString()}
+                              {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
                             </div>
                           </div>
                           <div>
                             <div className="text-sm text-muted-foreground">初任給（月額）</div>
                             <div className="text-lg font-semibold text-muted-foreground">
-                              ¥{company.baseMonthly.toLocaleString()}
+                              {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
                             </div>
                           </div>
                         </div>
@@ -106,7 +106,7 @@ export function RankingTable() {
                           <div className="mb-4">
                             <div className="text-sm text-muted-foreground">従業員数</div>
                             <div className="text-lg font-semibold text-foreground">
-                              {company.employees.toLocaleString()}人
+                              {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : company.employees || '-'}
                             </div>
                           </div>
                           <div className="text-sm text-muted-foreground">設立: {company.founded}年</div>
@@ -153,13 +153,13 @@ export function RankingTable() {
                         <div className="mb-2 md:mb-4">
                           <div className="text-sm text-muted-foreground">想定年収</div>
                           <div className="text-xl font-bold text-foreground">
-                            ¥{company.annualSalary.toLocaleString()}
+                            {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
                           </div>
                         </div>
                         <div className="mb-2 md:mb-4">
                           <div className="text-sm text-muted-foreground">初任給（月額）</div>
                           <div className="text-base font-semibold text-muted-foreground">
-                            ¥{company.baseMonthly.toLocaleString()}
+                            {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
                           </div>
                         </div>
                       </div>
@@ -167,7 +167,7 @@ export function RankingTable() {
                         <div className="mb-2 md:mb-4">
                           <div className="text-sm text-muted-foreground">従業員数</div>
                           <div className="text-base font-semibold text-foreground">
-                            {company.employees.toLocaleString()}人
+                            {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : company.employees || '-'}
                           </div>
                         </div>
                         <div className="text-sm text-muted-foreground">設立: {company.founded}年</div>

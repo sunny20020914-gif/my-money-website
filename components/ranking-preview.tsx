@@ -77,13 +77,13 @@ export async function RankingPreview() {
                         <div className="mb-3">
                           <div className="text-sm text-muted-foreground mb-1">想定年収</div>
                           <div className="text-3xl font-bold text-foreground">
-                            ¥{company.annualSalary.toLocaleString()}
+                            {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
                           </div>
                         </div>
                         <div className="mb-2">
                           <div className="text-sm text-muted-foreground mb-1">初任給（月額）</div>
                           <div className="text-lg font-semibold text-muted-foreground">
-                            ¥{company.baseMonthly.toLocaleString()}
+                            {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
                           </div>
                         </div>
                       </div>
@@ -123,12 +123,12 @@ export async function RankingPreview() {
                             <div>
                               <div className="text-sm text-muted-foreground">想定年収</div>
                               <div className="text-2xl font-bold text-primary">
-                                ¥{company.annualSalary.toLocaleString()}
+                                {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
                               </div>
                               <div className="mt-4">
                                 <div className="text-xs text-muted-foreground">初任給（月額）</div>
                                 <div className="text-xs font-semibold text-foreground">
-                                  ¥{company.baseMonthly.toLocaleString()}
+                                  {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
                                 </div>
                               </div>
                             </div>
@@ -136,7 +136,7 @@ export async function RankingPreview() {
                               <div>
                                 <div className="text-xs text-muted-foreground">従業員数</div>
                                 <div className="text-xs font-semibold text-foreground">
-                                  {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}
+                                  {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : company.employees || '-'}
                                 </div>
                               </div>
                               <div className="text-xs text-muted-foreground mt-0.5">設立: {company.founded}年</div>

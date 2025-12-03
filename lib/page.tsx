@@ -84,11 +84,11 @@ export default async function CompanyPage({ params }: Props) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center sm:text-left">
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">想定年収</p>
-                    <p className="text-2xl font-bold text-primary">¥{company.annualSalary.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-primary">{typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}</p>
                   </div>
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">初任給（月額）</p>
-                    <p className="text-xl font-semibold">¥{company.baseMonthly.toLocaleString()}</p>
+                    <p className="text-xl font-semibold">{typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-center sm:text-left">
@@ -99,7 +99,7 @@ export default async function CompanyPage({ params }: Props) {
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">従業員数</p>
                     <p className="text-lg font-semibold">
-                      {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : company.employees}
+                      {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : company.employees || '-'}
                     </p>
                   </div>
                 </div>

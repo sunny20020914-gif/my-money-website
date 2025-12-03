@@ -108,7 +108,7 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
       return []
     }
 
-    const parseSalaryValue = (value: string): number | null => {
+    const parseSalaryValue = (value: string): number | string | null => {
       if (typeof value !== 'string' || value.trim() === '') {
         return null;
       }
@@ -122,27 +122,31 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
       // 文字列が数値として解釈できるかチェック
       const num = Number(cleaned);
       // 解釈できなければ（NaNであれば）nullを、解釈できれば数値を返す
-      return isNaN(num) ? null : num;
+      return isNaN(num) ? value.trim() : num;
+    }
+
+    const parseStrictNumber = (value: string): number => {
+      if (typeof value !== 'string' || value.trim() === '') {
+        return 0;
+      }
+      const cleaned = value.toString().normalize('NFKC').replace(/[¥,円\s]/g, "");
+      const num = Number(cleaned);
+      return isNaN(num) ? 0 : num;
     }
 
     const parseEmployees = (value: string): number | string => {
       if (value === '?') return '?'
-      return parseNumber(value)
-    }
-
-    const parseNumber = (value: string): number => {
-      const result = parseSalaryValue(value);
-      return result ?? 0;
+      return parseSalaryValue(value) ?? '?';
     }
 
     return data.values.map((row: any[], index: number) => {
       const id = row[11] || row[1]?.toLowerCase().replace(/\s/g, '_') || `company-${index}`
       const baseData = {
-        rank: parseNumber(row[0]) || index + 1,
+        rank: parseStrictNumber(row[0]) || index + 1,
         company: row[1] || "",
         industry: row[2] || "",
         employees: parseEmployees(row[5]),
-        founded: parseNumber(row[6]), // G列
+        founded: parseStrictNumber(row[6]), // G列
         description: row[7] || "", // H列
         url: row[8] || undefined, // I列
         domain: row[9] || undefined, // J列
