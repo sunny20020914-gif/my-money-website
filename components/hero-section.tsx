@@ -14,9 +14,12 @@ export function HeroSection() {
             2025年最新データ
           </div>
 
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-balance mb-6">
-            <span className="block bg-gradient-to-r from-primary from-30% via-primary-foreground to-primary to-70% bg-[length:200%_auto] bg-clip-text text-transparent animate-[animate-gradient_5s_ease_infinite]">
-              2025年最新 初任給ランキング
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+            <span className="block bg-gradient-to-r from-primary from-30% via-primary-foreground to-primary to-70% bg-[length:200%_auto] bg-clip-text text-transparent animate-[animate-gradient_9s_ease_infinite]">
+              <span className="block md:inline">2025年最新</span>
+              <span className="block md:inline">
+                初任給ランキング
+              </span>
             </span>
           </h1>
 
