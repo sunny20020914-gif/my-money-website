@@ -5,7 +5,7 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-import { DollarSign, TrendingUp, TrendingDown, Info } from "lucide-react"
+import { DollarSign, TrendingUp, Sparkles, Info } from "lucide-react"
 import { Metadata } from "next"
 
 type Props = {
@@ -24,10 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${company.company}の初任給・年収・採用情報`,
-    description: `${company.company}の初任給、想定年収、事業内容、強み・弱みを解説。就活生向けに企業の詳細情報を提供します。`,
+    description: `${company.company}の初任給、想定年収、事業内容、強み・将来性を解説。就活生向けに企業の詳細情報を提供します。`,
     openGraph: {
       title: `${company.company}の初任給・年収・採用情報`,
-      description: `${company.company}の初任給、想定年収、事業内容、強み・弱みを解説。`,
+      description: `${company.company}の初任給、想定年収、事業内容、強み・将来性を解説。`,
       images: [company.logo || "/og-image.jpg"],
     },
   }
@@ -117,9 +117,9 @@ export default async function CompanyPage({ params }: Props) {
               <h3 className="flex items-center gap-2"><TrendingUp className="w-5 h-5" />強み</h3>
               <p>{company.strength}</p>
             </>}
-            {company.weakness && <>
-              <h3 className="flex items-center gap-2"><TrendingDown className="w-5 h-5" />弱み</h3>
-              <p>{company.weakness}</p>
+            {company.future_potential && <>
+              <h3 className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-yellow-500" />将来性</h3>
+              <p>{company.future_potential}</p>
             </>}
           </section>
         </div>

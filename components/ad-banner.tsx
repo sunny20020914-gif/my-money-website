@@ -13,7 +13,7 @@ export function AdBanner() {
   }, [])
 
   return (
-    <div className="my-6 text-center">
+    <div className="my-6 text-center pt-6">
       <p className="text-xs text-muted-foreground mb-2">スポンサーリンク</p>
       <div className="flex justify-center">
         <ins

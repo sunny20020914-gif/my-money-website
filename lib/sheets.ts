@@ -45,8 +45,8 @@ export interface FeaturedCompanyData {
 export interface CompanyDetailData {
   long_description?: string
   strength?: string
-  weakness?: string
   salary_details?: string
+  future_potential?: string
 }
 
 export interface IndustryData {
@@ -192,8 +192,8 @@ export async function fetchCompanyById(id: string): Promise<(CompanyData & Compa
     const companyDetailInfo: CompanyDetailData = companyDetailRow ? {
       long_description: companyDetailRow[1] || '',
       strength: companyDetailRow[2] || '',
-      weakness: companyDetailRow[3] || '',
       salary_details: companyDetailRow[4] || '',
+      future_potential: companyDetailRow[3] || '', // 弱みの代わりに将来性をD列(index:3)から取得
     } : {};
 
     return { ...companyBasicInfo, ...companyDetailInfo };

@@ -9,10 +9,13 @@ import {
 } from "@/components/ui/card"
 import { fetchIndustryDataServer } from "@/lib/sheets"
 import { Building2 } from "lucide-react"
-import { AdBanner } from "@/components/ad-banner"
+import dynamic from "next/dynamic"
+
+// AdBannerをクライアントサイドでのみ動的に読み込む
+const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
 
 export const metadata = {
-  title: "業界別 初任給・年収分析",
+  title: "業界別・職種別分析",
   description:
     "日本の主要な業界ごとの平均年収、企業数、特徴を分析。あなたのキャリア選択に役立つデータを提供します。",
 }
@@ -25,16 +28,16 @@ export default async function IndustryAnalysisPage() {
       <Header />
       <main className="py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">
-              業界別 初任給・年収分析
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4 text-primary">
+              業界別・職種別分析
             </h1>
-            <p className="text-lg text-muted-foreground text-balance max-w-3xl">
-              各業界の平均年収や特徴を比較し、あなたのキャリアパスの参考にしてください。
+            <p className="text-lg text-muted-foreground text-balance max-w-3xl mx-auto">
+              各業界・職種の平均年収や特徴を比較し、あなたのキャリアパスの参考にしてください。
             </p>
           </div>
 
-          <AdBanner />
+          <DynamicAdBanner />
 
           {industryData.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

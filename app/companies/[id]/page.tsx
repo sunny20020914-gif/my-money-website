@@ -5,9 +5,13 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-import { DollarSign, TrendingUp, TrendingDown, Info, ExternalLink, Calendar, Users } from "lucide-react"
+import { DollarSign, TrendingUp, Sparkles, Info, ExternalLink } from "lucide-react"
 import { Metadata } from "next"
+import dynamic from "next/dynamic"
+import { marked } from 'marked';
 
+// AdBannerをクライアントサイドでのみ動的に読み込む
+const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
 type Props = {
   params: { id: string }
 }
@@ -24,10 +28,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${company.company}の初任給・年収・採用情報`,
-    description: `${company.company}の初任給、想定年収、事業内容、強み・弱みを解説。就活生向けに企業の詳細情報を提供します。`,
+    description: `${company.company}の初任給、想定年収、事業内容、強み・将来性を解説。就活生向けに企業の詳細情報を提供します。`,
     openGraph: {
       title: `${company.company}の初任給・年収・採用情報`,
-      description: `${company.company}の初任給、想定年収、事業内容、強み・弱みを解説。`,
+      description: `${company.company}の初任給、想定年収、事業内容、強み・将来性を解説。`,
       images: [company.logo || "/og-image.jpg"],
     },
   }
@@ -134,25 +138,38 @@ export default async function CompanyPage({ params }: Props) {
           <section className="space-y-7">
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
-              <p className="text-[18px] leading-relaxed text-muted-foreground">{company.long_description}</p>
+              <div
+                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: marked(company.long_description) }}
+              />
             </div>}
             {company.strength && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 <TrendingUp className="w-6 h-6" />強み
               </h3>
-              <p className="text-[18px] leading-relaxed text-muted-foreground">{company.strength}</p>
+              <div
+                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: marked(company.strength) }}
+              />
             </div>}
-            {company.weakness && <div className="space-y-3">
+            {company.future_potential && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                <TrendingDown className="w-6 h-6" />弱み
+                <Sparkles className="w-6 h-6" />将来性
               </h3>
-              <p className="text-[18px] leading-relaxed text-muted-foreground">{company.weakness}</p>
+              <div
+                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: marked(company.future_potential) }}
+              />
             </div>}
-            {company.salary_details && <div className="space-y-3">
+            {company.salary_details && <div className="space-y-3 mb-12">
               <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 <DollarSign className="w-5 h-5" />給与に関する補足
               </h3>
-              <p className="text-base leading-relaxed text-muted-foreground">{company.salary_details}</p>
+              <div
+                className="prose prose-p:text-[15px] md:prose-p:text-base dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: marked(company.salary_details) }}
+              />
+              <DynamicAdBanner />
             </div>}
           </section>
         </div>
