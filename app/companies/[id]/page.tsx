@@ -152,7 +152,7 @@ export default async function CompanyPage({ params }: Props) {
                 dangerouslySetInnerHTML={{ __html: marked(company.strength) }}
               />
             </div>}
-            {company.future_potential && <div className="space-y-3">
+            {company.future_potential && <div className={`space-y-3 ${!company.salary_details ? 'mb-12' : ''}`}>
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 <Sparkles className="w-6 h-6" />将来性
               </h3>
@@ -160,6 +160,7 @@ export default async function CompanyPage({ params }: Props) {
                 className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
                 dangerouslySetInnerHTML={{ __html: marked(company.future_potential) }}
               />
+              {!company.salary_details && <DynamicAdBanner />}
             </div>}
             {company.salary_details && <div className="space-y-3 mb-12">
               <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
