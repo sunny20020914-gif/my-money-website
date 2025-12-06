@@ -14,20 +14,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
     switch (type) {
       case "website":
         return {
-          ...baseData,
-          "@type": "WebSite",
-          name: "日本企業初任給ランキング 2025",
-          url: "https://salary-ranking.vercel.app",
-          description: "日本の大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
-          publisher: {
-            "@type": "Organization",
-            name: "初任給ランキング編集部",
-          },
-          potentialAction: {
-            "@type": "SearchAction",
-            target: "https://salary-ranking.vercel.app/ranking?search={search_term_string}",
-            "query-input": "required name=search_term_string",
-          },
+          ...data,
         }
 
       case "article":
@@ -48,7 +35,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
             name: "初任給ランキング編集部",
             logo: {
               "@type": "ImageObject",
-              url: "https://salary-ranking.vercel.app/logo.png",
+              url: "https://www.mymoneyweb.com/logo.png",
             },
           },
           mainEntityOfPage: {
@@ -62,8 +49,8 @@ export function StructuredData({ type, data }: StructuredDataProps) {
           ...baseData,
           "@type": "Organization",
           name: "初任給ランキング編集部",
-          url: "https://salary-ranking.vercel.app",
-          logo: "https://salary-ranking.vercel.app/logo.png",
+          url: "https://www.mymoneyweb.com",
+          logo: "https://www.mymoneyweb.com/logo.png",
           description: "日本の大手企業の初任給情報を提供し、就活生のキャリア選択をサポートする情報サイトです。",
           sameAs: [],
         }

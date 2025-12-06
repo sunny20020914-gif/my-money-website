@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon } from "lucide-react"
+import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown } from "lucide-react"
 import { AdBanner } from "@/components/ad-banner"
 import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
@@ -25,7 +25,7 @@ const rankingTypes: { id: RankingType; label: string; description: string }[] = 
   },
   {
     id: "monthly",
-    label: "月額額面",
+    label: "初任給",
     description: "月々の給与額面（固定残業代や手当を含む）に基づいたランキングです。住宅手当などの固定手当を含んでいる場合があります。",
   },
   { id: "base", label: "基本給", description: "各種手当を含まない、基本給の高さに基づいたランキングです。企業の安定性や給与体系の基礎を知る上での参考になります。" },
@@ -36,38 +36,25 @@ const calculateDescriptionPosition = (index: number, total: number) => {
   return 12.3;
 }
 
+interface CompanyCardProps {
+  company: CompanyData;
+  index: number;
+  selectedRanking: RankingType;
+}
+
 const CompanyCard = ({
   company,
   index,
-  total,
   selectedRanking,
-}: {
-  company: CompanyData;
-  index: number;
-  total: number;
-  selectedRanking: RankingType;
-}) => {
-  const descriptionPosition = calculateDescriptionPosition(index, total);
+}: CompanyCardProps) => {
+  const descriptionPosition = calculateDescriptionPosition(index, 0)
+  const salaryValue =
+    selectedRanking === "annual"
+      ? company.annualSalary
+      : company.baseMonthly ?? company.monthlySalary ?? company.baseSalary
 
-  const getSalaryValue = () => {
-    switch (selectedRanking) {
-      case "annual": return company.annualSalary;
-      case "monthly": return company.baseMonthly;
-      case "base": return company.baseMonthly;
-      default: return '';
-    }
-  };
+  const unit = selectedRanking === "annual" ? "年" : "月"
 
-  const getUnit = () => {
-    switch (selectedRanking) {
-      case "annual": return "年";
-      case "monthly":
-      case "base": return "月";
-      default: return '';
-    }
-  };
-
-  const salaryValue = getSalaryValue();
   const isNumberValue = typeof salaryValue === 'number';
 
   const SalaryDisplay = ({ isMobile = false }: { isMobile?: boolean }) => {
@@ -83,7 +70,7 @@ const CompanyCard = ({
 
     if (company.salaryUrl && !isNumberValue) {
       return (
-        <a href={company.salaryUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+        <a href={company.salaryUrl.startsWith('http') ? company.salaryUrl : `https://www.google.com/search?q=${encodeURIComponent(company.company + " " + "採用情報")}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
           {valueComponent}
           <ExternalLink className="inline-block w-3 h-3 ml-1 text-muted-foreground" />
         </a>
@@ -127,7 +114,7 @@ const CompanyCard = ({
                 <p className="text-xs md:text-sm text-muted-foreground">{rankingTypes.find((r) => r.id === selectedRanking)?.label}</p>
                 <div className="flex items-baseline justify-start md:justify-end">
                   <SalaryDisplay />
-                  {isNumberValue && <span className="ml-0 text-sm font-normal text-muted-foreground">/{getUnit()}</span>}
+                  {isNumberValue && <span className="ml-0 text-sm font-normal text-muted-foreground">/{unit}</span>}
                 </div>
               </div>
               <div className="text-left md:text-right w-28">
@@ -233,7 +220,7 @@ export function RankingPageClient({
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRanking, setSelectedRanking] = useState<RankingType>("annual")
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
-  const [showAll, setShowAll] = useState(false)
+  const [isIndustryFilterOpen, setIsIndustryFilterOpen] = useState(false)
   const { data: companies, loading, error, refreshData } = useRankingData(selectedRanking, {
     fallbackData: selectedRanking === 'annual' ? initialData : undefined,
   })
@@ -253,12 +240,7 @@ export function RankingPageClient({
       .sort((a, b) => a.rank - b.rank)
   }, [companies, searchTerm, selectedIndustry]);
 
-  const displayedCompanies = useMemo(() => {
-    if (showAll || searchTerm) {
-      return sortedAndFilteredCompanies;
-    }
-    return sortedAndFilteredCompanies.slice(0, 10);
-  }, [sortedAndFilteredCompanies, showAll, searchTerm]);
+  const displayedCompanies = sortedAndFilteredCompanies;
 
   const currentError = initialError || error
 
@@ -326,21 +308,6 @@ export function RankingPageClient({
                       </Button>
                     ))}
                   </div>
-                  {industryList.length > 0 && (
-                    <div className="flex flex-wrap gap-1 border-t border-border pt-4">
-                      <span className="text-sm font-medium text-muted-foreground self-center mr-2">業界別:</span>
-                      {industryList.map((industry) => (
-                        <Button
-                          key={industry}
-                          variant={selectedIndustry === industry ? "default" : "outline"}
-                          size="xs"
-                          onClick={() => setSelectedIndustry(prev => prev === industry ? null : industry)}
-                        >
-                          {industry}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
                   <div className="p-4 bg-muted/50 rounded-lg transition-all duration-300">
                     <p className="text-sm text-muted-foreground">
                       {rankingTypes.find((type) => type.id === selectedRanking)?.description}
@@ -355,6 +322,32 @@ export function RankingPageClient({
                       className="w-full pl-10 placeholder:text-xs"
                     />
                   </div>
+                  {industryList.length > 0 && (
+                    <div className="border-t border-border pt-4 space-y-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsIndustryFilterOpen(prev => !prev)}
+                        className="w-full md:w-auto"
+                      >
+                        業界で絞り込む
+                        <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${isIndustryFilterOpen ? 'rotate-180' : ''}`} />
+                      </Button>
+                      {isIndustryFilterOpen && (
+                        <div className="flex flex-wrap gap-2">
+                          {industryList.map((industry) => (
+                            <Button
+                              key={industry}
+                              variant={selectedIndustry === industry ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setSelectedIndustry(prev => prev === industry ? null : industry)}
+                            >
+                              {industry}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -371,20 +364,11 @@ export function RankingPageClient({
                     <CompanyCard
                       company={company}
                       index={index}
-                      total={displayedCompanies.length}
                       selectedRanking={selectedRanking}
                     />
                     {(index + 1) % 10 === 0 && <AdBanner />}
                   </React.Fragment>
                 ))}
-                {sortedAndFilteredCompanies.length > 10 && !showAll && !searchTerm && (
-                  <div className="text-center pt-6">
-                    <Button onClick={() => setShowAll(true)} variant="outline" size="lg" className="bg-transparent">
-                      もっと見る ({sortedAndFilteredCompanies.length - 10}件)
-                      <ArrowRightIcon className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
 

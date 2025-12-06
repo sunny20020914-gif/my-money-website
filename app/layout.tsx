@@ -32,14 +32,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://salary-ranking.vercel.app"),
+  metadataBase: new URL("https://www.mymoneyweb.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "初任給ランキング 2025 | 就活生のための給与情報サイト",
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
-    url: "https://salary-ranking.vercel.app",
+    url: "https://www.mymoneyweb.com",
     siteName: "初任給ランキング",
     images: [
       {
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "ご自身の認証コードに置き換えてください",
+    google: "ここにGoogle Search Consoleで取得した認証コードを貼り付けます",
   },
   generator: 'v0.app'
 }
@@ -89,13 +89,11 @@ export default function RootLayout({
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020817" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Script
-          async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2945316858541395"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
         <Script
-          async
           src="https://www.googletagmanager.com/gtag/js?id=G-ZDV57DQ647"
           strategy="afterInteractive"
         />

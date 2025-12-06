@@ -38,8 +38,8 @@ export interface FeaturedCompanyData {
   industry: string
   estimatedAnnualSalary: number
   reason: string
-  logo?: string
-  domain?: string
+  logoUrl?: string
+  domainUrl?: string
 }
 
 export interface CompanyDetailData {
@@ -335,7 +335,7 @@ export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompan
   }
 
   try {
-    const range = "注目企業!A2:E" // ヘッダー行を除く
+    const range = "注目企業!A2:F" // ヘッダー行を除く
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
 
     console.log("[v0] Google Sheets APIリクエスト (注目企業):", url.replace(SHEETS_API_KEY, "***"))
@@ -380,8 +380,8 @@ export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompan
       industry: row[1] || "",
       estimatedAnnualSalary: parseSalaryValue(row[2]),
       reason: row[3] || "",
-      domain: row[4] || undefined,
-      logo: undefined, // スプレッドシートにロゴURL列がないため
+      domainUrl: row[4] || undefined,
+      logoUrl: row[5] || undefined,
     }))
   } catch (error) {
     console.error("[v0] Google Sheetsからの注目企業データ取得に失敗:", error)

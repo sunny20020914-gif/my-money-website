@@ -12,7 +12,20 @@ const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod 
 export default function HomePage() {
   return (
     <>
-      <StructuredData type="website" data={{}} />
+      <StructuredData
+        type="website"
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          url: "https://www.mymoneyweb.com/",
+          name: "初任給ランキング 2025",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://www.mymoneyweb.com/ranking?q={search_term_string}",
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
       <div className="min-h-screen bg-background">
         <Header />
         <main>

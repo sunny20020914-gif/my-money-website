@@ -53,7 +53,7 @@ export default async function FeaturedPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <Image
-                        src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
+                        src={company.logoUrl || (company.domainUrl ? `https://logo.clearbit.com/${company.domainUrl}` : "/placeholder.svg")}
                         alt={`${company.company}のロゴ`}
                         className="w-12 h-12 rounded-lg object-contain bg-muted"
                         width={48}

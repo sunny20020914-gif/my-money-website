@@ -1,18 +1,2 @@
 User-agent: *
 Allow: /
-
-# Sitemap
-Sitemap: https://salary-ranking.vercel.app/sitemap.xml
-
-# Crawl-delay for respectful crawling
-Crawl-delay: 1
-
-# Block access to admin areas (if any in the future)
-Disallow: /admin/
-Disallow: /api/internal/
-
-# Allow all other content
-Allow: /ranking
-Allow: /industries
-Allow: /articles
-Allow: /about
