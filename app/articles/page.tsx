@@ -22,7 +22,7 @@ export default async function ArticlesPage() {
       <main className="py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">記事一覧</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4 text-primary">記事一覧</h1>
             <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
               就活のプロが実践的なアドバイスと最新の就活情報をお届けします。
             </p>

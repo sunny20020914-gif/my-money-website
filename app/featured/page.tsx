@@ -30,7 +30,7 @@ export default async function FeaturedPage() {
               <Star className="w-4 h-4 mr-2" />
               注目企業
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4 text-primary">
               初任給非公開の注目企業
             </h1>
             <p className="text-lg text-muted-foreground text-balance max-w-3xl mx-auto">

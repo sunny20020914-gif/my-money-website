@@ -8,7 +8,7 @@ import { fetchRankingDataServer } from "@/lib/sheets"
 
 async function getTopCompanies() {
   try {
-    const data = await fetchRankingDataServer("annual")
+    const data = await fetchRankingDataServer("monthly")
     return data.slice(0, 5) // 上位5社のみ取得
   } catch (error) {
     console.error("[v0] ランキングプレビューデータの取得に失敗:", error)
@@ -75,15 +75,15 @@ export async function RankingPreview() {
                       </div>
                       <div className="text-right">
                         <div className="mb-3">
-                          <div className="text-sm text-muted-foreground mb-1">想定年収</div>
+                          <div className="text-sm text-muted-foreground mb-1">初任給（月額）</div>
                           <div className="text-3xl font-bold text-foreground">
-                            {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
+                            {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
                           </div>
                         </div>
                         <div className="mb-2">
-                          <div className="text-sm text-muted-foreground mb-1">初任給（月額）</div>
+                          <div className="text-sm text-muted-foreground mb-1">想定年収</div>
                           <div className="text-lg font-semibold text-muted-foreground">
-                            {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
+                            {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
                           </div>
                         </div>
                       </div>
@@ -121,14 +121,14 @@ export async function RankingPreview() {
                         <div className="flex-1">
                           <div className="grid grid-cols-2 gap-x-12 gap-y-3 items-start pl-[52px]">
                             <div>
-                              <div className="text-sm text-muted-foreground">想定年収</div>
+                              <div className="text-sm text-muted-foreground">初任給（月額）</div>
                               <div className="text-2xl font-bold text-primary">
-                                {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
+                                {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
                               </div>
                               <div className="mt-4">
-                                <div className="text-xs text-muted-foreground">初任給（月額）</div>
+                                <div className="text-xs text-muted-foreground">想定年収</div>
                                 <div className="text-xs font-semibold text-foreground">
-                                  {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
+                                  {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
                                 </div>
                               </div>
                             </div>

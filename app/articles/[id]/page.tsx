@@ -3,15 +3,18 @@ import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock } from "lucide-react"
+import { Calendar, Clock, ChevronLeft, ChevronRight } from "lucide-react"
 import { Metadata } from "next"
 import { StructuredData } from "@/components/structured-data"
 import Image from "next/image"
 import { AdBanner } from "@/components/ad-banner"
 import { Remarkable } from "remarkable"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 type Props = {
   params: { id: string }
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
 // IDで記事を取得するヘルパー関数
@@ -52,17 +55,33 @@ export async function generateStaticParams() {
   }))
 }
 
-export default async function ArticlePage({ params }: Props) {
+export default async function ArticlePage({ params, searchParams }: Props) {
   const article = await fetchArticleById(params.id)
 
   if (!article) {
     notFound()
   }
 
+  // ページ分割処理
+  // スプレッドシート内で [[NEXT_PAGE]] と書かれた場所でページを分割します
+  const SPLIT_MARKER = "[[NEXT_PAGE]]"
+  const contentPages = article.content.split(SPLIT_MARKER)
+
+  // 現在のページ番号を取得（デフォルトは1ページ目）
+  const pageParam = searchParams.page
+  const currentPage = typeof pageParam === 'string' ? parseInt(pageParam, 10) : 1
+
+  // 有効なページ番号であることを確認
+  const safePage = Math.max(1, Math.min(currentPage, contentPages.length))
+  const totalPages = contentPages.length
+
+  // 表示するコンテンツを取得
+  const currentContent = contentPages[safePage - 1] || ""
+
   const md = new Remarkable()
   // スプレッドシートからの改行をMarkdownの段落として正しく解釈させるための処理
   // 1つ以上の連続した改行を2つの改行に置き換える
-  const formattedContent = article.content.replace(/\n+/g, "\n\n")
+  const formattedContent = currentContent.replace(/\n+/g, "\n\n")
   const htmlContent = md.render(formattedContent)
 
   return (
@@ -102,12 +121,45 @@ export default async function ArticlePage({ params }: Props) {
               </div>
             )}
 
-            <AdBanner />
+            {/* 1ページ目の場合のみ、記事上部に広告を表示 */}
+            {safePage === 1 && <AdBanner />}
 
             <div
-              className="prose dark:prose-invert max-w-none"
+              className="prose prose-sm md:prose-lg dark:prose-invert max-w-none [&_p]:text-[16px] [&_p]:leading-8 [&_li]:text-[16px] [&_li]:leading-8 md:[&_p]:text-lg md:[&_p]:leading-8 md:[&_li]:text-lg md:[&_li]:leading-8"
               dangerouslySetInnerHTML={{ __html: htmlContent }}
             />
+
+            {/* 記事本文の下に広告を表示 */}
+            <AdBanner />
+
+            {/* ページネーション */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 my-12">
+                <Button variant="outline" disabled={safePage <= 1} asChild={safePage > 1}>
+                  {safePage > 1 ? (
+                    <Link href={`/articles/${article.id}?page=${safePage - 1}`}>
+                      <ChevronLeft className="mr-2 h-4 w-4" /> 前のページ
+                    </Link>
+                  ) : (
+                    <span><ChevronLeft className="mr-2 h-4 w-4" /> 前のページ</span>
+                  )}
+                </Button>
+
+                <span className="text-sm font-medium mx-2">
+                  {safePage} / {totalPages}
+                </span>
+
+                <Button variant="default" disabled={safePage >= totalPages} asChild={safePage < totalPages}>
+                  {safePage < totalPages ? (
+                    <Link href={`/articles/${article.id}?page=${safePage + 1}`}>
+                      次のページ <ChevronRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  ) : (
+                    <span>次のページ <ChevronRight className="ml-2 h-4 w-4" /></span>
+                  )}
+                </Button>
+              </div>
+            )}
           </article>
         </main>
         <Footer />
