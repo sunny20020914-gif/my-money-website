@@ -5,9 +5,18 @@ import { ArticlePreview } from "@/components/article-preview"
 import { Footer } from "@/components/footer"
 import { StructuredData } from "@/components/structured-data";
 import dynamic from 'next/dynamic';
+import { Metadata } from "next";
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
+
+export const metadata: Metadata = {
+  title: "初任給ランキング 2025 | My Money Web",
+  description: "2025年度の最新初任給ランキング。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。",
+  alternates: {
+    canonical: "https://www.mymoneyweb.com/",
+  },
+};
 
 export default function HomePage() {
   return (
