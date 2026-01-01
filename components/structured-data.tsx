@@ -1,7 +1,7 @@
 import Script from "next/script"
 
 interface StructuredDataProps {
-  type: "website" | "article" | "organization"
+  type: "website" | "article" | "organization" | "breadcrumbs"
   data: any
 }
 
@@ -53,6 +53,18 @@ export function StructuredData({ type, data }: StructuredDataProps) {
           logo: "https://www.mymoneyweb.com/logo.png",
           description: "日本の大手企業の初任給情報を提供し、就活生のキャリア選択をサポートする情報サイトです。",
           sameAs: [],
+        }
+
+      case "breadcrumbs":
+        return {
+          ...baseData,
+          "@type": "BreadcrumbList",
+          itemListElement: data.map((item: any, index: number) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            name: item.name,
+            item: item.url,
+          })),
         }
 
       default:
