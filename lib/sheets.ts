@@ -297,7 +297,7 @@ export async function fetchArticleDataServer(): Promise<ArticleData[]> {
 
     // 開発中はキャッシュせず、本番環境では1時間キャッシュする
     const response = await fetch(url, {
-      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+      next: { revalidate: 3600 },
     })
 
     console.log("[v0] APIレスポンスステータス:", response.status)
@@ -335,6 +335,16 @@ export async function fetchArticleDataServer(): Promise<ArticleData[]> {
   } catch (error) {
     console.error("[v0] Google Sheetsからの記事データ取得に失敗:", error)
     return []
+  }
+}
+
+export async function fetchArticleById(id: string): Promise<ArticleData | null> {
+  try {
+    const articles = await fetchArticleDataServer()
+    return articles.find((article) => article.id === id) || null
+  } catch (error) {
+    console.error(`[v0] 記事ID ${id} の取得に失敗:`, error)
+    return null
   }
 }
 

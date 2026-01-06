@@ -1,4 +1,4 @@
-import { fetchArticleDataServer } from "@/lib/sheets"
+import { fetchArticleDataServer, fetchArticleById } from "@/lib/sheets"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -17,13 +17,8 @@ type Props = {
   searchParams: { [key: string]: string | string[] | undefined }
 }
 
-// IDで記事を取得するヘルパー関数
-async function fetchArticleById(id: string) {
-  const articles = await fetchArticleDataServer()
-  return articles.find((article) => article.id === id)
-}
+export const revalidate = 3600
 
-// 各記事のメタデータを動的に生成
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await fetchArticleById(params.id)
 
