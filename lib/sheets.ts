@@ -321,7 +321,7 @@ export async function fetchArticleDataServer(): Promise<ArticleData[]> {
       }
 
       return {
-        id: row[0] || `article-${index + 1}`,
+        id: (row[0] || `article-${index + 1}`).toString().trim(),
         title: row[1] || "",
         excerpt: row[2] || "",
         content: row[3] || "",
