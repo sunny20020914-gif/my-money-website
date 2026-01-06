@@ -311,17 +311,27 @@ export async function fetchArticleDataServer(): Promise<ArticleData[]> {
       return []
     }
 
-    return data.values.map((row: any[], index: number) => ({
-      id: row[0] || `article-${index + 1}`,
-      title: row[1] || "",
-      excerpt: row[2] || "",
-      content: row[3] || "",
-      category: row[4] || "その他",
-      publishedAt: row[5] || new Date().toISOString(),
-      author: row[6] || "編集部",
-      readTime: Number.parseInt(row[7]) || 5,
-      image: row[8] || undefined,
-    }))
+    return data.values.map((row: any[], index: number) => {
+      let publishedAt = new Date().toISOString()
+      if (row[5]) {
+        const d = new Date(row[5])
+        if (!isNaN(d.getTime())) {
+          publishedAt = d.toISOString()
+        }
+      }
+
+      return {
+        id: row[0] || `article-${index + 1}`,
+        title: row[1] || "",
+        excerpt: row[2] || "",
+        content: row[3] || "",
+        category: row[4] || "その他",
+        publishedAt,
+        author: row[6] || "編集部",
+        readTime: Number.parseInt(row[7]) || 5,
+        image: row[8] || undefined,
+      }
+    })
   } catch (error) {
     console.error("[v0] Google Sheetsからの記事データ取得に失敗:", error)
     return []
