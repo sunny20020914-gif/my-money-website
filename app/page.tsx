@@ -10,6 +10,9 @@ import { Metadata } from "next";
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
 
+// 1時間（3600秒）ごとにデータを再検証して更新する設定（ISR）を追加
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "初任給ランキング 2025 | My Money Web",
   description: "2025年度の最新初任給ランキング。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。",
