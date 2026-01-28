@@ -73,7 +73,9 @@ export default async function ArticlePage({ params, searchParams }: Props) {
   // 表示するコンテンツを取得
   const currentContent = contentPages[safePage - 1] || ""
 
-  const md = new Remarkable()
+  const md = new Remarkable({
+    html: true, // HTMLタグを有効にして、文字色やサイズ指定を反映させる
+  })
   // スプレッドシートからの改行をMarkdownの段落として正しく解釈させるための処理
   // 1つ以上の連続した改行を2つの改行に置き換える
   const formattedContent = currentContent.replace(/\n+/g, "\n\n")
