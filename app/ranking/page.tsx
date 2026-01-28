@@ -3,7 +3,7 @@ import { fetchRankingDataServer } from "@/lib/sheets"
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: "初任給・年収ランキング一覧 | 日本企業初任給ランキング 2025",
+  title: "初任給・年収ランキング一覧 | 日本企業初任給ランキング 2026",
   description: "日本の大手企業の初任給と想定年収を業界別・職種別で詳細比較。最新の給与データと企業情報を提供します。",
 }
 

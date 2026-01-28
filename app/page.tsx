@@ -14,8 +14,8 @@ const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "初任給ランキング 2025 | My Money Web",
-  description: "2025年度の最新初任給ランキング。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。",
+  title: "初任給ランキング 2026 | My Money Web",
+  description: "2026年度の最新初任給ランキング。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。",
   alternates: {
     canonical: "https://www.mymoneyweb.com/",
   },
@@ -30,7 +30,7 @@ export default function HomePage() {
           "@context": "https://schema.org",
           "@type": "WebSite",
           url: "https://www.mymoneyweb.com/",
-          name: "初任給ランキング 2025",
+          name: "初任給ランキング 2026",
           potentialAction: {
             "@type": "SearchAction",
             target: "https://www.mymoneyweb.com/ranking?q={search_term_string}",

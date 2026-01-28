@@ -6,11 +6,11 @@ import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: {
-    default: "初任給ランキング 2025 | 就活生のための給与情報サイト",
-    template: "%s | 初任給ランキング 2025",
+    default: "初任給ランキング 2026 | 就活生のための給与情報サイト",
+    template: "%s | 初任給ランキング 2026",
   },
   description:
-    "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。2025年最新データで企業選択をサポート。",
+    "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。2026年最新データで企業選択をサポート。",
   keywords: [
     "初任給",
     "ランキング",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "初任給ランキング 2025 | 就活生のための給与情報サイト",
+    title: "初任給ランキング 2026 | 就活生のための給与情報サイト",
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
     url: "https://www.mymoneyweb.com",
     siteName: "初任給ランキング",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "初任給ランキング 2025 | 就活生のための給与情報サイト",
+        alt: "初任給ランキング 2026 | 就活生のための給与情報サイト",
       },
     ],
     locale: "ja_JP",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "初任給ランキング 2025 | 就活生のための給与情報サイト",
+    title: "初任給ランキング 2026 | 就活生のための給与情報サイト",
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
     images: ["/og-image.jpg"],
   },

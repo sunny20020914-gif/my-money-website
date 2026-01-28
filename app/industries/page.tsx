@@ -5,7 +5,7 @@ import { IndustryOverview } from "@/components/industry-overview"
 import { IndustryRankings } from "@/components/industry-rankings"
 
 export const metadata = {
-  title: "業界別初任給分析 | 日本企業初任給ランキング 2025",
+  title: "業界別初任給分析 | 日本企業初任給ランキング 2026",
   description:
     "業界別の初任給データを詳細分析。各業界の特徴、将来性、キャリアパスを比較して最適な業界選択をサポートします。",
 }
