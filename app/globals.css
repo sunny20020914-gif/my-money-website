@@ -7,11 +7,11 @@
   :root {
     /* 温かみのあるライトモード */
     --background: 0.99 0.005 240;
-    --foreground: 0.2 0.02 240;
+    --foreground: 0.1 0.01 240;
     --card: 0.97 0.008 240;
-    --card-foreground: 0.2 0.02 240;
+    --card-foreground: 0.1 0.01 240;
     --popover: 0.97 0.008 240;
-    --popover-foreground: 0.2 0.02 240;
+    --popover-foreground: 0.1 0.01 240;
     --primary: 0.68 0.2 235;
     --primary-foreground: 0.99 0.005 240;
     --secondary: 0.94 0.01 240;

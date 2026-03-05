@@ -8,7 +8,7 @@ import Image from "next/image"
 import { DollarSign, TrendingUp, Sparkles, Info, ExternalLink } from "lucide-react"
 import { Metadata } from "next"
 import dynamic from "next/dynamic"
-import { marked } from 'marked';
+import { Remarkable } from "remarkable"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
@@ -71,6 +71,16 @@ export default async function CompanyPage({ params }: Props) {
     }
     return valueComponent;
   };
+
+  // 記事ページと同じ設定でMarkdownパーサーを初期化
+  const md = new Remarkable({
+    html: true, // HTMLタグを有効化
+  })
+
+  // 記事ページと同じ改行処理ルールを適用する関数
+  const renderMarkdown = (content: string) => {
+    return md.render(content.replace(/\n+/g, "\n\n"))
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -139,8 +149,8 @@ export default async function CompanyPage({ params }: Props) {
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: marked(company.long_description) }}
+                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
               />
             </div>}
             {company.strength && <div className="space-y-3">
@@ -148,8 +158,8 @@ export default async function CompanyPage({ params }: Props) {
                 <TrendingUp className="w-6 h-6" />強み
               </h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: marked(company.strength) }}
+                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
               />
             </div>}
             {company.future_potential && <div className={`space-y-3 ${!company.salary_details ? 'mb-12' : ''}`}>
@@ -157,8 +167,8 @@ export default async function CompanyPage({ params }: Props) {
                 <Sparkles className="w-6 h-6" />将来性
               </h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: marked(company.future_potential) }}
+                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
               />
               {!company.salary_details && <DynamicAdBanner />}
             </div>}
@@ -167,8 +177,8 @@ export default async function CompanyPage({ params }: Props) {
                 <DollarSign className="w-5 h-5" />給与に関する補足
               </h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-base dark:prose-invert max-w-none leading-relaxed text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: marked(company.salary_details) }}
+                className="prose prose-p:text-[15px] md:prose-p:text-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
               />
               <DynamicAdBanner />
             </div>}
