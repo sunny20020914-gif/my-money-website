@@ -2,6 +2,9 @@ import { RankingPageClient } from "./ranking-page-client"
 import { fetchRankingDataServer } from "@/lib/sheets"
 import type { Metadata } from 'next'
 
+// 1時間（3600秒）ごとにデータを再検証して更新する設定（ISR）
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: "初任給・年収ランキング一覧 | 日本企業初任給ランキング 2026",
   description: "日本の大手企業の初任給と想定年収を業界別・職種別で詳細比較。最新の給与データと企業情報を提供します。",

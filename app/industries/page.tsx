@@ -4,6 +4,9 @@ import { AdBanner } from "@/components/ad-banner"
 import { IndustryOverview } from "@/components/industry-overview"
 import { IndustryRankings } from "@/components/industry-rankings"
 
+// 1時間（3600秒）ごとにデータを再検証して更新する設定（ISR）
+export const revalidate = 3600
+
 export const metadata = {
   title: "業界別初任給分析 | 日本企業初任給ランキング 2026",
   description:

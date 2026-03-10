@@ -16,6 +16,9 @@ type Props = {
   params: { id: string }
 }
 
+// 1時間（3600秒）ごとにデータを再検証して更新する設定（ISR）
+export const revalidate = 3600
+
 // 各企業のメタデータを動的に生成
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const company = await fetchCompanyById(params.id)
