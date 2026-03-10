@@ -18,15 +18,15 @@ type RankingType = "annual" | "monthly" | "base"
 
 const rankingTypes: { id: RankingType; label: string; description: string }[] = [
   {
+    id: "monthly",
+    label: "初任給",
+    description: "月々の給与額面（固定残業代や手当を含む）に基づいたランキングです。住宅手当などの固定手当を含んでいる場合があります。ランキングの種類は上のボタンで切り替え可能です",
+  },
+  {
     id: "annual",
     label: "想定年収",
     description:
       "新卒入社時の想定年収ランキングです。賞与や残業代を含んだ理論値であり、実際の支給額とは異なる場合があります。",
-  },
-  {
-    id: "monthly",
-    label: "初任給",
-    description: "月々の給与額面（固定残業代や手当を含む）に基づいたランキングです。住宅手当などの固定手当を含んでいる場合があります。ランキングの種類は上のボタンで切り替え可能です",
   },
   { id: "base", label: "基本給", description: "各種手当を含まない、基本給の高さに基づいたランキングです。企業の安定性や給与体系の基礎を知る上での参考になります。" },
 ]
@@ -218,11 +218,11 @@ export function RankingPageClient({
   industryList: string[];
 }) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRanking, setSelectedRanking] = useState<RankingType>("annual")
+  const [selectedRanking, setSelectedRanking] = useState<RankingType>("monthly")
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
   const [isIndustryFilterOpen, setIsIndustryFilterOpen] = useState(false)
   const { data: companies, loading, error, refreshData } = useRankingData(selectedRanking, {
-    fallbackData: selectedRanking === 'annual' ? initialData : undefined,
+    fallbackData: selectedRanking === 'monthly' ? initialData : undefined,
   })
   
   const sortedAndFilteredCompanies = useMemo(() => {

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function RankingPage() {
   try {
-    const initialData = await fetchRankingDataServer("annual")
+    const initialData = await fetchRankingDataServer("monthly")
 
     // C列の業界データを抽出し、重複を除いたリストを作成
     const allIndustries = initialData.flatMap(company => company.industry.split('/')).filter(Boolean);
