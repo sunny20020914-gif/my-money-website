@@ -11,6 +11,7 @@ import { AdBanner } from "@/components/ad-banner"
 import { Remarkable } from "remarkable"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { FavoriteArticleButton } from "@/components/favorite-article-button"
 
 type Props = {
   params: { id: string }
@@ -93,7 +94,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
                 {article.category}
               </Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">{article.title}</h1>
-              <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mb-6">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
                   <span>{new Date(article.publishedAt).toLocaleDateString("ja-JP")}</span>
@@ -102,6 +103,9 @@ export default async function ArticlePage({ params, searchParams }: Props) {
                   <Clock className="h-4 w-4" />
                   <span>{article.readTime}分で読めます</span>
                 </div>
+              </div>
+              <div className="flex justify-center">
+                <FavoriteArticleButton articleId={article.id} />
               </div>
             </header>
 
@@ -157,6 +161,15 @@ export default async function ArticlePage({ params, searchParams }: Props) {
                 </Button>
               </div>
             )}
+
+            {/* 記事一覧に戻るボタン（一番下） */}
+            <div className="mt-12 mb-8 text-center">
+              <Button asChild variant="outline" size="lg">
+                <Link href="/articles">
+                  <ChevronLeft className="mr-2 h-4 w-4" /> 記事一覧に戻る
+                </Link>
+              </Button>
+            </div>
           </article>
         </main>
         <Footer />

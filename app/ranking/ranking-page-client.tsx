@@ -9,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown } from "lucide-react"
+import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, Star } from "lucide-react"
 import { AdBanner } from "@/components/ad-banner"
 import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
+import { useFavorites } from "@/hooks/use-favorites"
+import { showToast } from "@/components/toaster"
 
 type RankingType = "annual" | "monthly" | "base"
 
@@ -47,6 +49,20 @@ const CompanyCard = ({
   index,
   selectedRanking,
 }: CompanyCardProps) => {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isFav = company.id ? isFavorite(company.id, "company") : false;
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!company.id) return;
+    const added = toggleFavorite(company.id, "company");
+    if (added) {
+      showToast("お気に入りに保存しました", "success");
+    } else {
+      showToast("お気に入りから削除しました", "info");
+    }
+  };
+
   const descriptionPosition = calculateDescriptionPosition(index, 0)
   const salaryValue =
     selectedRanking === "annual"
@@ -123,13 +139,27 @@ const CompanyCard = ({
                 <p className="text-sm text-muted-foreground">設立: {company.founded}年</p>
               </div>
               <div className="w-28 flex items-center justify-start md:justify-end">
-                {company.id && (
-                  <Button asChild variant="outline" size="sm" className="bg-transparent w-full">
-                    <Link href={`/companies/${company.id}`}>
-                      詳しく見る<ArrowRightIcon className="ml-2 h-3 w-3" />
-                    </Link>
+                <div className="flex w-full items-center gap-1.5">
+                  {company.id && (
+                    <Button asChild variant="outline" size="sm" className="bg-transparent flex-1">
+                      <Link href={`/companies/${company.id}`}>
+                        詳しく
+                      </Link>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleFavoriteClick}
+                    className={`bg-transparent h-8 w-8 transition-colors shrink-0 ${
+                      isFav
+                        ? "text-primary border-primary dark:text-green-500 dark:border-green-500"
+                        : "text-muted-foreground hover:text-primary hover:border-primary dark:hover:text-green-500 dark:hover:border-green-500"
+                    }`}
+                  >
+                    <Star className="h-4 w-4" fill={isFav ? "currentColor" : "none"} />
                   </Button>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -195,11 +225,23 @@ const CompanyCard = ({
           {company.description && <p className="text-sm text-muted-foreground mt-1 leading-relaxed pl-[52px]">{company.description}</p>}
         </div>
         {company.id && (
-          <div className="mt-4">
-            <Button asChild variant="outline" size="xs" className="w-full bg-transparent">
+          <div className="mt-4 flex items-center gap-2">
+            <Button asChild variant="outline" size="xs" className="bg-transparent flex-1">
               <Link href={`/companies/${company.id}`}>
-                詳しく見る<ArrowRightIcon className="ml-2 h-3 w-3" />
+                詳しく
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleFavoriteClick}
+              className={`bg-transparent h-7 w-7 transition-colors shrink-0 ${
+                isFav
+                  ? "text-primary border-primary dark:text-green-500 dark:border-green-500"
+                  : "text-muted-foreground hover:text-primary hover:border-primary dark:hover:text-green-500 dark:hover:border-green-500"
+              }`}
+            >
+              <Star className="h-4 w-4" fill={isFav ? "currentColor" : "none"} />
             </Button>
           </div>
         )}

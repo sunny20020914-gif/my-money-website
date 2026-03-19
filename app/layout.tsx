@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/app/providers"
 import "./globals.css"
 import Script from "next/script"
 import { Analytics } from "@vercel/analytics/react"
+import { Toaster } from "@/components/toaster"
 
 export const metadata: Metadata = {
   title: {
@@ -114,6 +115,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster />
         </ThemeProvider>
         <Analytics />
       </body>

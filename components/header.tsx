@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { MenuIcon, XIcon, ChevronDownIcon } from "lucide-react"
+import { MenuIcon, XIcon, ChevronDownIcon, Bookmark } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
@@ -78,6 +78,16 @@ export function Header() {
               )}
             >
               就活記事
+            </Link>
+            <Link
+              href="/saved"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-foreground flex items-center gap-1",
+                isActive("/saved") ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              <Bookmark className="h-4 w-4" />
+              お気に入り
             </Link>
             <div className="relative">
               <button
@@ -177,7 +187,19 @@ export function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 就活記事
-              </Link>              <div className="border-t border-border/20 pt-4 flex items-center justify-center gap-4">
+              </Link>
+              <Link
+                href="/saved"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-foreground flex items-center gap-2",
+                  isActive("/saved") ? "text-primary" : "text-muted-foreground",
+                )}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Bookmark className="h-4 w-4" />
+                お気に入り
+              </Link>
+              <div className="border-t border-border/20 pt-4 flex items-center justify-center gap-4">
                 <Link
                   href="/about"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

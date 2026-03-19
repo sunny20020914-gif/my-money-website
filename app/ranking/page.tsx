@@ -1,8 +1,8 @@
-import { RankingPageClient } from "./ranking-page-client"
 import { fetchRankingDataServer } from "@/lib/sheets"
+import { RankingPageClient } from "./ranking-page-client"
 import type { Metadata } from 'next'
 
-// 1時間（3600秒）ごとにデータを再検証して更新する設定（ISR）
+// 1時間ごとに最新のデータをスプレッドシートから取得
 export const revalidate = 3600
 
 export const metadata: Metadata = {
@@ -19,8 +19,8 @@ export default async function RankingPage() {
     const uniqueIndustries = Array.from(new Set(allIndustries)).sort();
 
     return <RankingPageClient initialData={initialData} initialError={null} industryList={uniqueIndustries} />
-  } catch (error: any) {
-    console.error("Failed to fetch initial ranking data:", error)
-    return <RankingPageClient initialData={[]} initialError={error.message || "サーバーでデータ取得中にエラーが発生しました。"} industryList={[]} />
+  } catch (error) {
+    console.error("[v0] ランキングページデータの取得に失敗:", error)
+    return <RankingPageClient initialData={[]} initialError="データの取得に失敗しました。後でもう一度お試しください。" industryList={[]} />
   }
 }
