@@ -9,6 +9,7 @@ import { DollarSign, TrendingUp, Sparkles, Info, ExternalLink } from "lucide-rea
 import { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
+import { CommentSection } from "@/components/comment-section"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
@@ -185,6 +186,11 @@ export default async function CompanyPage({ params }: Props) {
               />
               <DynamicAdBanner />
             </div>}
+          </section>
+
+          {/* --- コメント欄 --- */}
+          <section className="mt-16 border-t pt-10">
+            <CommentSection companyId={company.id} />
           </section>
         </div>
       </main>
