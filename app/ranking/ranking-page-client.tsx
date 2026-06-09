@@ -321,8 +321,9 @@ export function RankingPageClient({
                 初任給・年収ランキング
               </h1>
               <p className="text-base md:text-lg text-muted-foreground text-balance leading-relaxed">
-                このランキングで、あなたの目指せる初任給の水準を知り、内定獲得のために必要な対策を考えましょう。ランキングの種類を切り替えたり、企業名や業界で検索して、あなたのキャリアプランに役立ててください。
-              </p>
+                気になる企業の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
+                ランキングを切り替えて、あなたの目指すキャリアを見つけよう。
+              </p>  
             </div>
 
             <Card className="mb-8">
