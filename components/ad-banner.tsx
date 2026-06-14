@@ -30,7 +30,7 @@ export function AdBanner() {
       
       // 🌟 Tailwindの :has 擬似クラスを使用。
       // 「もし中の広告が unfilled（在庫なし）になったら、このdiv（スポンサーリンクの文字含む）ごと非表示にする」という魔法のクラスです。
-      className="my-8 text-center flex flex-col justify-end overflow-hidden [&:has(ins[data-ad-status='unfilled'])]:hidden"
+      className="mt-6 mb-2 text-center flex flex-col justify-end overflow-hidden [&:has(ins[data-ad-status='unfilled'])]:hidden"
     >
       <p className="text-xs text-muted-foreground mb-2">スポンサーリンク</p>
       
