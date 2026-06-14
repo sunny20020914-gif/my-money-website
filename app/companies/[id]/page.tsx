@@ -93,17 +93,19 @@ export default async function CompanyPage({ params }: Props) {
         <div className="max-w-4xl mx-auto space-y-8">
           {/* --- 企業ヘッダー --- */}
           <section>
-            <div className="flex flex-col sm:flex-row items-start gap-6">
+            {/* 🌟 flex-wrap を追加して、画面幅に収まらない長い企業名は自動でロゴの下に回り込むように調整 */}
+            <div className="flex flex-wrap items-start gap-4 sm:gap-6">
               <Image
                 src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
                 alt={`${company.company}のロゴ`}
                 width={100}
                 height={100}
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-contain border bg-card flex-shrink-0"
+                className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg object-contain border bg-card flex-shrink-0"
               />
-              <div className="flex-grow">
-                <h1 className="text-2xl md:text-4xl font-bold">{company.company}</h1>
-                <div className="flex flex-wrap gap-2 mt-3">
+              {/* 🌟 最小幅（min-w-[200px]）を指定することで、自動折り返しの判定を最適化 */}
+              <div className="flex-grow flex-shrink-0 min-w-[200px]">
+                <h1 className="text-xl md:text-4xl font-bold">{company.company}</h1>
+                <div className="flex flex-wrap gap-2 mt-2 sm:mt-3">
                   {company.industry.split("/").map((industry, i) => (
                     <Badge key={i} variant="secondary">{industry}</Badge>
                   ))}
@@ -153,7 +155,8 @@ export default async function CompanyPage({ params }: Props) {
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                /* 🌟 スマホ版の本文のフォントサイズを 15px から 17px（text-[17px]）に一段階拡大 */
+                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
               />
             </div>}
@@ -162,7 +165,8 @@ export default async function CompanyPage({ params }: Props) {
                 <TrendingUp className="w-6 h-6" />強み
               </h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                /* 🌟 スマホ版の本文のフォントサイズを 17px に拡大 */
+                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
               />
             </div>}
@@ -171,7 +175,8 @@ export default async function CompanyPage({ params }: Props) {
                 <Sparkles className="w-6 h-6" />将来性
               </h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                /* 🌟 スマホ版の本文のフォントサイズを 17px に拡大 */
+                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
               />
               {!company.salary_details && <DynamicAdBanner />}
@@ -181,7 +186,8 @@ export default async function CompanyPage({ params }: Props) {
                 <DollarSign className="w-5 h-5" />給与に関する補足
               </h3>
               <div
-                className="prose prose-p:text-[15px] md:prose-p:text-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                /* 🌟 補足部分もスマホで読みやすいよう 17px に調整 */
+                className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
               />
               <DynamicAdBanner />
