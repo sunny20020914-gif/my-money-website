@@ -1,45 +1,45 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 
 const AD_SLOT_ID = "6473201122"
 
 export function AdBanner() {
-  const insRef = useRef<HTMLModElement>(null)
   const pathname = usePathname()
 
   useEffect(() => {
-    // 広告スロットをリセット
-    if (insRef.current) {
-      insRef.current.innerHTML = ""
-      // AdSenseが追加する可能性のある属性を削除してクリーンな状態に戻す
-      insRef.current.removeAttribute("data-ad-status")
-      insRef.current.removeAttribute("data-ad-format")
-      insRef.current.removeAttribute("data-full-width-responsive")
-    }
-
-    // わずかな遅延を設けてから広告を再プッシュする
-    const timeout = setTimeout(() => {
-      try {
-        // @ts-ignore
-        ;(window.adsbygoogle = window.adsbygoogle || []).push({})
-      } catch (err) {
-        console.error("adsbygoogle.push() error:", err)
+    try {
+      // window.adsbygoogleが存在しない場合は何もしない
+      if (typeof window !== "undefined") {
+        const adsbygoogle = (window as any).adsbygoogle || []
+        // AdSenseに「新しく広告枠ができたよ」と通知して流し込ませる
+        adsbygoogle.push({})
       }
-    }, 50) // 50ミリ秒の遅延
-
-    return () => clearTimeout(timeout)
-  }, [pathname]) // pathnameが変わるたびにエフェクトを再実行
+    } catch (err) {
+      // 既に枠が埋まっている場合などのエラーは無視してOK
+      console.error("adsbygoogle.push() error:", err)
+    }
+  }, [pathname]) // pathnameが変わる（＝ページ遷移する）たびに実行
 
   return (
-    <div className="my-6 text-center pt-6 flex min-h-[128px] flex-col justify-end">
+    <div
+      // 🌟 【超重要】pathnameをkeyにすることで、Reactが自動的に古い枠を破棄し、真っ更な枠を作り直してくれます。
+      // これにより innerHTML の手動クリアなどのハックが一切不要になります。
+      key={pathname}
+      
+      // 🌟 Tailwindの :has 擬似クラスを使用。
+      // 「もし中の広告が unfilled（在庫なし）になったら、このdiv（スポンサーリンクの文字含む）ごと非表示にする」という魔法のクラスです。
+      className="my-8 text-center flex flex-col justify-end overflow-hidden [&:has(ins[data-ad-status='unfilled'])]:hidden"
+    >
       <p className="text-xs text-muted-foreground mb-2">スポンサーリンク</p>
-      <div className="flex justify-center">
+      
+      {/* 最小の高さを設定してレイアウトのガタつき（CLS）を防止 */}
+      <div className="flex justify-center min-h-[90px]">
         <ins
-          ref={insRef}
           className="adsbygoogle"
-          style={{ display: 'block', width: '100%', maxWidth: '728px', height: '90px' }}
+          // 🌟 heightの固定を外し、ブロック要素として幅100%を確保（auto設定と競合させない）
+          style={{ display: "block", width: "100%" }}
           data-ad-client="ca-pub-2945316858541395"
           data-ad-slot={AD_SLOT_ID}
           data-ad-format="auto"
