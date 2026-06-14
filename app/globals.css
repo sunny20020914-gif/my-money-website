@@ -5,31 +5,38 @@
 
 @layer base {
   :root {
-    /* 温かみのあるライトモード */
-    --background: 0.99 0.005 240;
-    --foreground: 0.1 0.01 240;
-    --card: 0.97 0.008 240;
-    --card-foreground: 0.1 0.01 240;
-    --popover: 0.97 0.008 240;
-    --popover-foreground: 0.1 0.01 240;
+    /* 🌟 目に優しい極上のオフホワイトトーンにチューニング */
+    --background: 0.985 0.008 70;      /* #fdfaf6に近い、優しく洗練された背景色 */
+    --foreground: 0.15 0.015 240;      /* 文字のコントラストを少し高めて視認性UP */
+    --card: 0.995 0.003 70;            /* カード背景：土台よりほんの少し明るくして立体感を */
+    --card-foreground: 0.15 0.015 240;
+    --popover: 0.995 0.003 70;
+    --popover-foreground: 0.15 0.015 240;
+    
     --primary: 0.68 0.2 235;
     --primary-foreground: 0.99 0.005 240;
-    --secondary: 0.94 0.01 240;
+    --secondary: 0.95 0.008 70;
     --secondary-foreground: 0.3 0.02 240;
-    --muted: 0.94 0.01 240;
-    --muted-foreground: 0.45 0.02 240;
+    
+    /* 🌟 説明文などの文字色（muted）も背景に負けないよう少しだけ濃く調整 */
+    --muted: 0.95 0.008 70;
+    --muted-foreground: 0.4 0.015 240; /* 薄すぎて読みにくかった文字をくっきり */
+    
     --accent: 0.75 0.12 180;
     --accent-foreground: 0.12 0.02 240;
     --destructive: 0.577 0.245 27.325;
     --destructive-foreground: 0.985 0.01 240;
-    --border: 0.9 0.015 240;
-    --input: 0.9 0.015 240;
+    
+    /* 🌟 境界線も背景のトーンに合わせて馴染むように微調整 */
+    --border: 0.92 0.01 70;
+    --input: 0.92 0.01 70;
+    
     --ring: 0.65 0.15 200;
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark Mode - 既存のダークトーンのカラーシステム */
+    /* Dark Mode - 既存のダークトーンのカラーシステムを維持 */
     --background: 0.12 0.02 240;
     --foreground: 0.92 0.01 240;
     --card: 0.15 0.02 240;
