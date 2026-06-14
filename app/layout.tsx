@@ -7,8 +7,8 @@ import { Toaster } from "@/components/toaster"
 
 export const metadata: Metadata = {
   title: {
-    default: "初任給ランキング 2026 | 就活生のための給与情報サイト",
-    template: "%s | 初任給ランキング 2026",
+    default: "My Money Web | 就活生のための初任給・年収ランキングサイト",
+    template: "%s | My Money Web",
   },
   description:
     "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。2026年最新データで企業選択をサポート。",

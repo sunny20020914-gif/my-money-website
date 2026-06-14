@@ -6,8 +6,8 @@ import type { Metadata } from 'next'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: "初任給・年収ランキング一覧 | 日本企業初任給ランキング 2026",
-  description: "日本の大手企業の初任給と想定年収を業界別・職種別で詳細比較。最新の給与データと企業情報を提供します。",
+  title: "【2026年最新】初任給・年収ランキング一覧",
+  description: "「新卒からいくら稼げる？」気になる企業の初任給や想定年収をリアルタイム検索！業界別・職種別の詳細データから、あなたの目指すキャリアプランに役立つ情報をお届けします。",
 }
 
 export default async function RankingPage() {
