@@ -409,7 +409,7 @@ export function RankingPageClient({
                       index={index}
                       selectedRanking={selectedRanking}
                     />
-                    {(index + 1) % 10 === 0 && <AdBanner />}
+                    {(index + 1) % 6 === 0 && <AdBanner />}
                   </React.Fragment>
                 ))}
               </div>

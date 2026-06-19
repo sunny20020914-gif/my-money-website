@@ -159,6 +159,7 @@ export default async function CompanyPage({ params }: Props) {
                 className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
               />
+              <DynamicAdBanner />
             </div>}
             {company.strength && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">

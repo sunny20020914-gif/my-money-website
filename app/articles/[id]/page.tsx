@@ -80,7 +80,18 @@ export default async function ArticlePage({ params, searchParams }: Props) {
   // スプレッドシートからの改行をMarkdownの段落として正しく解釈させるための処理
   // 1つ以上の連続した改行を2つの改行に置き換える
   const formattedContent = currentContent.replace(/\n+/g, "\n\n")
-  const htmlContent = md.render(formattedContent)
+
+  // 本文中に広告を挟むため、段落単位で前半・後半に分割する
+  // （段落数が少ない薄いコンテンツに無理に広告を挟まないよう、4段落以上の場合のみ分割）
+  const paragraphs = formattedContent.split(/\n\n+/).filter(Boolean)
+  const shouldSplitForInContentAd = paragraphs.length >= 4
+  const splitIndex = Math.ceil(paragraphs.length / 2)
+  const htmlContentTop = md.render(
+    shouldSplitForInContentAd ? paragraphs.slice(0, splitIndex).join("\n\n") : formattedContent,
+  )
+  const htmlContentBottom = shouldSplitForInContentAd
+    ? md.render(paragraphs.slice(splitIndex).join("\n\n"))
+    : ""
 
   return (
     <>
@@ -127,8 +138,18 @@ export default async function ArticlePage({ params, searchParams }: Props) {
 
             <div
               className="prose prose-sm md:prose-lg dark:prose-invert max-w-none [&_p]:text-[16px] [&_p]:leading-8 [&_li]:text-[16px] [&_li]:leading-8 md:[&_p]:text-lg md:[&_p]:leading-8 md:[&_li]:text-lg md:[&_li]:leading-8"
-              dangerouslySetInnerHTML={{ __html: htmlContent }}
+              dangerouslySetInnerHTML={{ __html: htmlContentTop }}
             />
+
+            {/* 本文中（読み進めた最も読まれるタイミング）に広告を表示 */}
+            {htmlContentBottom && <AdBanner />}
+
+            {htmlContentBottom && (
+              <div
+                className="prose prose-sm md:prose-lg dark:prose-invert max-w-none [&_p]:text-[16px] [&_p]:leading-8 [&_li]:text-[16px] [&_li]:leading-8 md:[&_p]:text-lg md:[&_p]:leading-8 md:[&_li]:text-lg md:[&_li]:leading-8"
+                dangerouslySetInnerHTML={{ __html: htmlContentBottom }}
+              />
+            )}
 
             {/* 記事本文の下に広告を表示 */}
             <AdBanner />
