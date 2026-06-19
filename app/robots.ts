@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://salary-ranking.vercel.app/sitemap.xml',
+    sitemap: 'https://www.mymoneyweb.com/sitemap.xml',
   }
 }
