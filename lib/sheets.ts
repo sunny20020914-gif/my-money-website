@@ -168,26 +168,28 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
   }
 }
 
+async function fetchCompanyDetailRow(id: string): Promise<any[] | undefined> {
+  if (!SHEETS_API_KEY || !SPREADSHEET_ID) return undefined;
+
+  const range = `${COMPANIES_SHEET_NAME}!A2:E`; // A列からE列まで取得 (適宜変更)
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
+  const response = await fetch(url, {
+    cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
+  })
+  const data = await response.json()
+  return data.values?.find((row: any[]) => row[0] === id);
+}
+
 export async function fetchCompanyById(id: string): Promise<(CompanyData & CompanyDetailData) | null> {
   try {
-    // まずランキングシートから基本情報を取得
-    const allCompanies = await fetchRankingDataServer("annual");
+    // ランキングシートの基本情報と、企業詳細シートの追加情報を並行取得
+    const [allCompanies, companyDetailRow] = await Promise.all([
+      fetchRankingDataServer("annual"),
+      fetchCompanyDetailRow(id),
+    ]);
+
     const companyBasicInfo = allCompanies.find(c => c.id === id);
-
     if (!companyBasicInfo) return null;
-
-    if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
-      return companyBasicInfo; // 詳細情報なしで基本情報のみ返す
-    }
-
-    // 次に企業詳細シートから追加情報を取得
-    const range = `${COMPANIES_SHEET_NAME}!A2:E`; // A列からE列まで取得 (適宜変更)
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
-    const response = await fetch(url, {
-      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
-    })
-    const data = await response.json()
-    const companyDetailRow = data.values?.find((row: any[]) => row[0] === id);
 
     const companyDetailInfo: CompanyDetailData = companyDetailRow ? {
       long_description: companyDetailRow[1] || '',
