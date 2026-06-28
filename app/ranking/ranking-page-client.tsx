@@ -335,11 +335,13 @@ export function RankingPageClient({
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {rankingTypes.map((type) => (
                       <Button
                         key={type.id}
                         variant={selectedRanking === type.id ? "default" : "outline"}
+                        size="lg"
+                        className={type.id === "base" ? "invisible pointer-events-none" : "text-base px-6"}
                         onClick={() => {
                           // 既に選択されている場合は何もしない
                           if (selectedRanking === type.id) return
@@ -357,23 +359,24 @@ export function RankingPageClient({
                     </p>
                   </div>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       placeholder="企業名、業界などで検索..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 placeholder:text-xs"
+                      className="w-full pl-12 h-12 text-base placeholder:text-sm"
                     />
                   </div>
                   {industryList.length > 0 && (
                     <div className="border-t border-border pt-4 space-y-4">
                       <Button
                         variant="outline"
+                        size="lg"
                         onClick={() => setIsIndustryFilterOpen(prev => !prev)}
-                        className="w-full md:w-auto"
+                        className="w-full md:w-auto font-semibold text-base"
                       >
                         業界で絞り込む
-                        <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${isIndustryFilterOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`ml-2 h-5 w-5 transition-transform ${isIndustryFilterOpen ? 'rotate-180' : ''}`} />
                       </Button>
                       {isIndustryFilterOpen && (
                         <div className="flex flex-wrap gap-2">
