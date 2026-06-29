@@ -6,28 +6,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 静的なページのルート
   const staticRoutes: MetadataRoute.Sitemap = [
-    '/',
-    '/ranking',
-    '/industry-analysis',
-    '/featured',
-    '/articles',
-    '/about',
-    '/privacy',
-    '/terms',
-  ].map((route) => ({
+    { route: '/', priority: 1.0, freq: 'daily' },
+    { route: '/ranking', priority: 0.9, freq: 'daily' },
+    { route: '/industries', priority: 0.9, freq: 'weekly' },
+    { route: '/featured', priority: 0.8, freq: 'weekly' },
+    { route: '/articles', priority: 0.8, freq: 'daily' },
+    { route: '/about', priority: 0.5, freq: 'monthly' },
+    { route: '/privacy', priority: 0.3, freq: 'monthly' },
+    { route: '/terms', priority: 0.3, freq: 'monthly' },
+  ].map(({ route, priority, freq }) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: route === '/' ? 1 : 0.8,
+    changeFrequency: freq as MetadataRoute.Sitemap[number]['changeFrequency'],
+    priority,
   }))
 
-  // 企業詳細ページのルート
+  // 企業詳細ページのルート（priorityを0.8に引き上げ）
   const companies = await fetchRankingDataServer('annual')
   const companyRoutes: MetadataRoute.Sitemap = companies.map((company) => ({
     url: `${baseUrl}/companies/${company.id}`,
-    lastModified: new Date(), // 本来は更新日を入れるべき
-    changeFrequency: 'monthly',
-    priority: 0.7,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }))
+
+  // 業界別ページのルート
+  const industrySet = new Set(
+    companies.flatMap((c) => c.industry.split('/').map((i) => i.trim())).filter(Boolean)
+  )
+  const industryRoutes: MetadataRoute.Sitemap = Array.from(industrySet).map((industry) => ({
+    url: `${baseUrl}/industries/${encodeURIComponent(industry)}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
   }))
 
   // 記事ページのルート
@@ -35,9 +46,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${baseUrl}/articles/${article.id}`,
     lastModified: new Date(article.publishedAt),
-    changeFrequency: 'weekly',
+    changeFrequency: 'weekly' as const,
     priority: 0.9,
   }))
 
-  return [...staticRoutes, ...companyRoutes, ...articleRoutes]
+  return [...staticRoutes, ...industryRoutes, ...companyRoutes, ...articleRoutes]
 }

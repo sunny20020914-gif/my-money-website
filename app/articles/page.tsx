@@ -9,8 +9,11 @@ import { AdBanner } from "@/components/ad-banner"
 import { fetchArticleDataServer, type ArticleData } from "@/lib/sheets"
 
 export const metadata = {
-  title: "記事一覧",
-  description: "就職活動に役立つ記事の一覧です。最新の就活情報や専門家によるアドバイスを提供します。",
+  title: "就活コラム・記事一覧 | 初任給ランキング 2026",
+  description: "初任給・年収・企業選びに役立つ就活コラムを掲載。業界研究・面接対策・給与交渉まで、就職活動を成功に導く最新情報をお届けします。",
+  alternates: {
+    canonical: "https://www.mymoneyweb.com/articles",
+  },
 }
 
 export default async function ArticlesPage() {

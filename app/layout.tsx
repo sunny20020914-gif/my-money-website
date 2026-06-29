@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "年収",
     "企業比較",
     "就職活動",
-    "2025年",
+    "2026年",
     "業界別",
     "職種別",
   ],
@@ -73,7 +73,6 @@ export const metadata: Metadata = {
   verification: {
     google: "a_S1UPZldDGqHo0zX2mfgEBKBNQSw0uQOpknC14uP5w",
   },
-  generator: 'v0.app'
 }
 
 export default function RootLayout({

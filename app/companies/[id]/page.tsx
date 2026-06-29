@@ -30,12 +30,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  const fmtSalary = (v: number | string | undefined) =>
+    typeof v === "number" ? `¥${v.toLocaleString()}` : v ?? "要確認"
+
+  const monthly = company.baseMonthly ?? company.monthlySalary ?? company.baseSalary
+  const parts = [
+    `初任給${fmtSalary(monthly)}/月`,
+    `想定年収${fmtSalary(company.annualSalary)}/年`,
+    `従業員数${typeof company.employees === "number" ? company.employees.toLocaleString() : company.employees}人`,
+  ]
+  const description = `${company.company}の${parts.join("、")}。業界：${company.industry.split("/")[0]}。事業内容・強み・将来性を解説。`
+
   return {
     title: `${company.company}の初任給・年収・採用情報`,
-    description: `${company.company}の初任給、想定年収、事業内容、強み・将来性を解説。就活生向けに企業の詳細情報を提供します。`,
+    description,
+    alternates: {
+      canonical: `https://www.mymoneyweb.com/companies/${params.id}`,
+    },
     openGraph: {
       title: `${company.company}の初任給・年収・採用情報`,
-      description: `${company.company}の初任給、想定年収、事業内容、強み・将来性を解説。`,
+      description,
       images: [company.logo || "/og-image.jpg"],
     },
   }
@@ -86,7 +100,48 @@ export default async function CompanyPage({ params }: Props) {
     return md.render(content.replace(/\n+/g, "\n\n"))
   }
 
+  const pageUrl = `https://www.mymoneyweb.com/companies/${company.id}`
+  const logoUrl = company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : undefined)
+  const fmtNum = (v: number | string | undefined) =>
+    typeof v === "number" ? v : undefined
+
+  const organizationLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: company.company,
+    url: company.url || pageUrl,
+    ...(logoUrl ? { logo: logoUrl } : {}),
+    ...(company.description ? { description: company.description } : {}),
+    ...(company.founded ? { foundingDate: String(company.founded) } : {}),
+    ...(company.employees !== undefined ? {
+      numberOfEmployees: {
+        "@type": "QuantitativeValue",
+        value: fmtNum(company.employees) ?? company.employees,
+      },
+    } : {}),
+    sameAs: company.url ? [company.url] : [],
+  }
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "ホーム", item: "https://www.mymoneyweb.com/" },
+      { "@type": "ListItem", position: 2, name: "初任給ランキング", item: "https://www.mymoneyweb.com/ranking" },
+      { "@type": "ListItem", position: 3, name: company.company, item: pageUrl },
+    ],
+  }
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 md:py-12">
@@ -203,5 +258,6 @@ export default async function CompanyPage({ params }: Props) {
       </main>
       <Footer />
     </div>
+    </>
   )
 }
