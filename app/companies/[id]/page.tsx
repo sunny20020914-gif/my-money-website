@@ -1,4 +1,4 @@
-import { fetchRankingDataServer, fetchCompanyById } from "@/lib/sheets"
+import { fetchAllUniqueCompanies, fetchCompanyById } from "@/lib/sheets"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  const fmtSalary = (v: number | string | undefined) =>
+  const fmtSalary = (v: number | string | null | undefined) =>
     typeof v === "number" ? `¥${v.toLocaleString()}` : v ?? "要確認"
 
   const monthly = company.baseMonthly ?? company.monthlySalary ?? company.baseSalary
@@ -55,9 +55,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-// ビルド時に全企業ページを静的に生成
+// ビルド時に全企業ページを静的に生成（年俸・月額両シートの全企業が対象）
 export async function generateStaticParams() {
-  const companies = await fetchRankingDataServer("annual")
+  const companies = await fetchAllUniqueCompanies()
   return companies.map((company) => ({
     id: company.id,
   }))
@@ -70,7 +70,7 @@ export default async function CompanyPage({ params }: Props) {
     notFound()
   }
 
-  const SalaryDisplay = (props: { value: number | string, url?: string, isPrimary?: boolean }) => {
+  const SalaryDisplay = (props: { value: number | string | null | undefined, url?: string, isPrimary?: boolean }) => {
     const { value, url, isPrimary = false } = props;
     const isNumberValue = typeof value === 'number';
 
@@ -80,7 +80,7 @@ export default async function CompanyPage({ params }: Props) {
           ? (isPrimary ? "text-xl md:text-2xl font-bold text-primary" : "text-lg md:text-xl font-semibold")
           : "text-lg font-semibold"
       }>
-        {isNumberValue ? `¥${value.toLocaleString()}` : value}
+        {isNumberValue ? `¥${(value as number).toLocaleString()}` : value}
       </p>
     );
 

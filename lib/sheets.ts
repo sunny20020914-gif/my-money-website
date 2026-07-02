@@ -8,10 +8,10 @@ export interface CompanyData {
   rank: number
   company: string
   industry: string
-  annualSalary: number | string // 想定年収
-  baseMonthly: number | string // 基本給（月）
-  monthlySalary?: number // 追加
-  baseSalary?: number // 追加
+  annualSalary: number | string | null // 想定年収（データなしの場合 null）
+  baseMonthly: number | string | null // 基本給（月）（データなしの場合 null）
+  monthlySalary?: number | null // 追加
+  baseSalary?: number | null // 追加
   employees: number | string
   founded: number
   description: string
@@ -180,11 +180,46 @@ async function fetchCompanyDetailRow(id: string): Promise<any[] | undefined> {
   return data.values?.find((row: any[]) => row[0] === id);
 }
 
+export async function fetchAllUniqueCompanies(): Promise<CompanyData[]> {
+  // 年俸・月額の両シートから全企業を取得し、id で重複排除してマージする。
+  // 同じ企業が両シートに存在する場合は年俸シートのデータを優先しつつ、
+  // 片方にしかない給与データは欠けたままにする（null）。
+  const [annualList, monthlyList] = await Promise.all([
+    fetchRankingDataServer("annual"),
+    fetchRankingDataServer("monthly"),
+  ]);
+
+  const map = new Map<string, CompanyData>();
+
+  // まず月額シートを登録
+  for (const c of monthlyList) {
+    if (c.id) map.set(c.id, c);
+  }
+
+  // 年俸シートで上書き（年俸を優先）。ただし月額データは月額シートから引き継ぐ。
+  for (const c of annualList) {
+    if (!c.id) continue;
+    const existing = map.get(c.id);
+    if (existing) {
+      // 両シートにいる企業：年俸シート情報を基本として月額データを補完
+      map.set(c.id, {
+        ...c,
+        baseMonthly: c.baseMonthly ?? existing.baseMonthly,
+        monthlySalary: c.monthlySalary ?? existing.monthlySalary,
+      });
+    } else {
+      map.set(c.id, c);
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 export async function fetchCompanyById(id: string): Promise<(CompanyData & CompanyDetailData) | null> {
   try {
-    // ランキングシートの基本情報と、企業詳細シートの追加情報を並行取得
+    // 年俸・月額両シートから探す＋企業詳細シートを並行取得
     const [allCompanies, companyDetailRow] = await Promise.all([
-      fetchRankingDataServer("annual"),
+      fetchAllUniqueCompanies(),
       fetchCompanyDetailRow(id),
     ]);
 
@@ -195,15 +230,13 @@ export async function fetchCompanyById(id: string): Promise<(CompanyData & Compa
       long_description: companyDetailRow[1] || '',
       strength: companyDetailRow[2] || '',
       salary_details: companyDetailRow[4] || '',
-      future_potential: companyDetailRow[3] || '', // 弱みの代わりに将来性をD列(index:3)から取得
+      future_potential: companyDetailRow[3] || '',
     } : {};
 
     return { ...companyBasicInfo, ...companyDetailInfo };
 
   } catch (e) {
     console.error(`Failed to fetch company data for id: ${id}`, e);
-    // 本番環境ではエラーをスローするか、nullを返すかを選択
-    // ここではnullを返してページが404になるようにする
     return null;
   }
 }

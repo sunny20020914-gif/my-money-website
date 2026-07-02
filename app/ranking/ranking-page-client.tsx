@@ -80,7 +80,7 @@ const CompanyCard = ({
           ? (isMobile ? "text-2xl" : "text-3xl") + " font-bold text-primary"
           : (isMobile ? "text-base" : "text-lg") + " font-semibold text-primary"
       }>
-        {isNumberValue ? `¥${salaryValue.toLocaleString()}` : salaryValue}
+        {isNumberValue ? `¥${(salaryValue as number).toLocaleString()}` : salaryValue}
       </span>
     );
 
