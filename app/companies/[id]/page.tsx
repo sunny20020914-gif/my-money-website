@@ -10,6 +10,9 @@ import { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
+import Link from "next/link"
+import { computeCompanyStats, buildLeadSummary, buildFaq } from "@/lib/company-stats"
+import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
@@ -64,11 +67,22 @@ export async function generateStaticParams() {
 }
 
 export default async function CompanyPage({ params }: Props) {
-  const company = await fetchCompanyById(params.id)
+  // fetchCompanyById は内部で fetchAllUniqueCompanies を呼ぶため、
+  // Next.js の fetch 重複排除により追加のAPIコールは発生しない
+  const [company, allCompanies] = await Promise.all([
+    fetchCompanyById(params.id),
+    fetchAllUniqueCompanies(),
+  ])
 
   if (!company) {
     notFound()
   }
+
+  // 取得済みデータから業界内順位・平均・FAQ・関連企業を計算（AI不使用）
+  const stats = computeCompanyStats(allCompanies, company)
+  const leadSummary = buildLeadSummary(company, stats, FISCAL_YEAR)
+  const faq = buildFaq(company, stats, FISCAL_YEAR)
+  const lastUpdated = new Date() // ISR再生成のたびに更新される
 
   const SalaryDisplay = (props: { value: number | string | null | undefined, url?: string, isPrimary?: boolean }) => {
     const { value, url, isPrimary = false } = props;
@@ -126,11 +140,22 @@ export default async function CompanyPage({ params }: Props) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "ホーム", item: "https://www.mymoneyweb.com/" },
-      { "@type": "ListItem", position: 2, name: "初任給ランキング", item: "https://www.mymoneyweb.com/ranking" },
+      { "@type": "ListItem", position: 1, name: "ホーム", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "初任給ランキング", item: `${SITE_URL}/ranking` },
       { "@type": "ListItem", position: 3, name: company.company, item: pageUrl },
     ],
   }
+
+  // 【SEO】FAQリッチリザルト獲得用。表示しているFAQと完全に同一内容にする
+  const faqLd = faq.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  } : null
 
   return (
     <>
@@ -142,6 +167,12 @@ export default async function CompanyPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
+      {faqLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+        />
+      )}
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 md:py-12">
@@ -173,6 +204,15 @@ export default async function CompanyPage({ params }: Props) {
                 </div>
               </div>
             </div>
+            {/* 【AI SEO】答えを先に書く自己完結型サマリー。AI検索がこの一文だけで引用できる */}
+            {leadSummary && (
+              <p className="mt-4 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                {leadSummary}
+              </p>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              最終更新日: <time dateTime={lastUpdated.toISOString()}>{lastUpdated.toLocaleDateString("ja-JP")}</time>
+            </p>
           </section>
 
           {/* --- 給与情報 --- */}
@@ -204,6 +244,42 @@ export default async function CompanyPage({ params }: Props) {
               </CardContent>
             </Card>
           </section>
+
+          {/* --- 業界内比較（取得済みランキングデータから算出） --- */}
+          {stats.rankInIndustry !== null && stats.totalInIndustry > 1 && (
+            <section>
+              <Card className="py-0 gap-0">
+                <CardContent className="p-4 md:p-6">
+                  <h2 className="text-base md:text-lg font-bold mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    {stats.industry}業界内での初任給の位置づけ
+                  </h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="space-y-1 md:text-center">
+                      <p className="text-sm text-muted-foreground">業界内順位</p>
+                      <p className="text-lg md:text-xl font-bold text-primary">
+                        {stats.rankInIndustry}位<span className="text-sm font-normal text-muted-foreground"> / {stats.totalInIndustry}社中</span>
+                      </p>
+                    </div>
+                    {stats.industryAvgMonthly !== null && (
+                      <div className="space-y-1 md:text-center">
+                        <p className="text-sm text-muted-foreground">業界平均（初任給）</p>
+                        <p className="text-lg md:text-xl font-semibold">¥{stats.industryAvgMonthly.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {stats.diffFromAvgMonthly !== null && (
+                      <div className="space-y-1 md:text-center col-span-2 md:col-span-1">
+                        <p className="text-sm text-muted-foreground">業界平均との差</p>
+                        <p className={`text-lg md:text-xl font-semibold ${stats.diffFromAvgMonthly >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
+                          {stats.diffFromAvgMonthly >= 0 ? "+" : "-"}¥{Math.abs(stats.diffFromAvgMonthly).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+          )}
 
           {/* --- 企業概要 --- */}
           <section className="space-y-7">
@@ -249,6 +325,67 @@ export default async function CompanyPage({ params }: Props) {
               <DynamicAdBanner />
             </div>}
           </section>
+
+          {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
+          {faq.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                {company.company}に関するよくある質問
+              </h2>
+              <dl className="space-y-5">
+                {faq.map((item, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <dt className="font-bold text-[16px] md:text-lg">Q. {item.question}</dt>
+                    <dd className="text-[15px] md:text-base leading-relaxed text-muted-foreground">A. {item.answer}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {/* --- 同業界の関連企業（内部リンク強化） --- */}
+          {stats.relatedCompanies.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                {stats.industry}業界の他の企業
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {stats.relatedCompanies.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/companies/${c.id}`}
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
+                  >
+                    <Image
+                      src={c.logo || (c.domain ? `https://logo.clearbit.com/${c.domain}` : "/placeholder.svg")}
+                      alt={`${c.company}のロゴ`}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded object-contain border bg-background flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{c.company}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {typeof c.baseMonthly === "number"
+                          ? `初任給 ¥${c.baseMonthly.toLocaleString()}/月`
+                          : typeof c.annualSalary === "number"
+                            ? `想定年収 ¥${c.annualSalary.toLocaleString()}`
+                            : c.industry.split("/")[0]}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="text-right">
+                <Link
+                  href={`/industries/${encodeURIComponent(stats.industry)}`}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {stats.industry}業界のランキングをすべて見る →
+                </Link>
+              </div>
+            </section>
+          )}
 
           {/* --- コメント欄 --- */}
           <section className="mt-16 border-t pt-10">

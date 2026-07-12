@@ -1,10 +1,12 @@
-import Script from "next/script"
+import { SITE_URL } from "@/lib/config"
 
 interface StructuredDataProps {
   type: "website" | "article" | "organization" | "breadcrumbs"
   data: any
 }
 
+// 【SEO】next/script(afterInteractive)ではなく素の<script>を使うことで、
+// JSON-LDが初期HTMLに必ず含まれ、クローラーがJS実行なしで確実に読み取れる。
 export function StructuredData({ type, data }: StructuredDataProps) {
   const generateStructuredData = () => {
     const baseData = {
@@ -35,7 +37,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
             name: "初任給ランキング編集部",
             logo: {
               "@type": "ImageObject",
-              url: "https://www.mymoneyweb.com/logo.png",
+              url: `${SITE_URL}/logo.png`,
             },
           },
           mainEntityOfPage: {
@@ -49,8 +51,8 @@ export function StructuredData({ type, data }: StructuredDataProps) {
           ...baseData,
           "@type": "Organization",
           name: "初任給ランキング編集部",
-          url: "https://www.mymoneyweb.com",
-          logo: "https://www.mymoneyweb.com/logo.png",
+          url: SITE_URL,
+          logo: `${SITE_URL}/logo.png`,
           description: "日本の大手企業の初任給情報を提供し、就活生のキャリア選択をサポートする情報サイトです。",
           sameAs: [],
         }
@@ -73,8 +75,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
   }
 
   return (
-    <Script
-      id={`structured-data-${type}`}
+    <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
         __html: JSON.stringify(generateStructuredData()),

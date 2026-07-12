@@ -1,8 +1,14 @@
 import { MetadataRoute } from 'next'
 import { fetchRankingDataServer, fetchArticleDataServer } from '@/lib/sheets'
+import { SITE_URL } from '@/lib/config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://www.mymoneyweb.com'
+  const baseUrl = SITE_URL
+
+  // 【SEO】lastModified に毎回 new Date() を入れると「全ページが常に更新されている」
+  // という嘘のシグナルになり、クローラーからの信頼を失う。
+  // 実際の更新日が分からないページは lastModified を省略し、
+  // 更新日が分かる記事ページのみ publishedAt を使う。
 
   // 静的なページのルート
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -16,16 +22,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { route: '/terms', priority: 0.3, freq: 'monthly' },
   ].map(({ route, priority, freq }) => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date(),
     changeFrequency: freq as MetadataRoute.Sitemap[number]['changeFrequency'],
     priority,
   }))
 
-  // 企業詳細ページのルート（priorityを0.8に引き上げ）
+  // 企業詳細ページのルート
   const companies = await fetchRankingDataServer('annual')
   const companyRoutes: MetadataRoute.Sitemap = companies.map((company) => ({
     url: `${baseUrl}/companies/${company.id}`,
-    lastModified: new Date(),
     changeFrequency: 'monthly' as const,
     priority: 0.8,
   }))
@@ -36,12 +40,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   )
   const industryRoutes: MetadataRoute.Sitemap = Array.from(industrySet).map((industry) => ({
     url: `${baseUrl}/industries/${encodeURIComponent(industry)}`,
-    lastModified: new Date(),
     changeFrequency: 'monthly' as const,
     priority: 0.85,
   }))
 
-  // 記事ページのルート
+  // 記事ページのルート（実際の公開日をlastModifiedとして使用）
   const articles = await fetchArticleDataServer()
   const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${baseUrl}/articles/${article.id}`,

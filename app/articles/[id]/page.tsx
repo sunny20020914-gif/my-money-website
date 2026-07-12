@@ -12,6 +12,7 @@ import { Remarkable } from "remarkable"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FavoriteArticleButton } from "@/components/favorite-article-button"
+import { SITE_URL } from "@/lib/config"
 
 type Props = {
   params: { id: string }
@@ -32,6 +33,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: article.title,
     description: article.excerpt,
+    alternates: {
+      canonical: `${SITE_URL}/articles/${params.id}`,
+    },
     openGraph: {
       title: article.title,
       description: article.excerpt,
@@ -95,7 +99,17 @@ export default async function ArticlePage({ params, searchParams }: Props) {
 
   return (
     <>
-      <StructuredData type="article" data={article} />
+      <StructuredData
+        type="article"
+        data={{
+          title: article.title,
+          description: article.excerpt,
+          image: article.image,
+          publishedAt: article.publishedAt,
+          author: article.author,
+          url: `${SITE_URL}/articles/${article.id}`,
+        }}
+      />
       <div className="flex flex-col min-h-screen bg-background">
         <Header />
         <main className="py-12 flex-grow">

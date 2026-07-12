@@ -7,7 +7,14 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    // ロゴURLはスプシ（K列）由来で任意ドメインになり得るため、httpsを全て許可する。
+    // next/imageの最適化（WebP変換・リサイズ）が有効になり、LCP・Core Web Vitalsが改善する。
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
   },
 }
 
