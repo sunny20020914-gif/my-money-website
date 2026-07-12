@@ -2,21 +2,33 @@ import type { CompanyData } from "./sheets"
 
 // 取得済みのランキングデータだけから比較コンテキストを計算するヘルパー。
 // AI・外部APIは一切使わない。スプシ側のロジックにも影響しない。
+// 企業が複数業界に属する場合（"IT/通信" のように / 区切り）は全業界分の統計を返す。
 
 const num = (v: number | string | null | undefined): number | null =>
   typeof v === "number" && v > 0 ? v : null
 
 const yen = (n: number) => `${n.toLocaleString()}円`
 
-export interface CompanyStats {
-  industry: string // 主業界（"IT/通信" の場合は "IT"）
+const splitIndustries = (industry: string): string[] =>
+  (industry || "")
+    .split("/")
+    .map((i) => i.trim())
+    .filter(Boolean)
+
+// 1業界あたりの統計
+export interface IndustryStat {
+  industry: string
   rankInIndustry: number | null
   totalInIndustry: number
   industryAvgMonthly: number | null
   diffFromAvgMonthly: number | null
+}
+
+export interface CompanyStats {
+  industryStats: IndustryStat[] // 所属する全業界分
   overallRankMonthly: number | null
   totalWithMonthly: number
-  relatedCompanies: CompanyData[]
+  relatedCompanies: CompanyData[] // 全所属業界の企業を統合（重複排除）
 }
 
 export function computeCompanyStats(
@@ -24,58 +36,68 @@ export function computeCompanyStats(
   company: CompanyData,
   relatedLimit = 6,
 ): CompanyStats {
-  const primaryIndustry = (company.industry || "").split("/")[0]?.trim() || ""
-
-  const peers = primaryIndustry
-    ? all.filter((c) =>
-        c.industry
-          .split("/")
-          .map((i) => i.trim())
-          .includes(primaryIndustry),
-      )
-    : []
-
-  // 月額初任給が数値で入っている企業のみを統計対象にする
-  const peersWithMonthly = peers.filter((c) => num(c.baseMonthly) !== null)
-  const allWithMonthly = all.filter((c) => num(c.baseMonthly) !== null)
+  const industries = splitIndustries(company.industry)
   const myMonthly = num(company.baseMonthly)
+  const allWithMonthly = all.filter((c) => num(c.baseMonthly) !== null)
 
-  const industryAvgMonthly =
-    peersWithMonthly.length > 0
-      ? Math.round(
-          peersWithMonthly.reduce((s, c) => s + (num(c.baseMonthly) as number), 0) /
-            peersWithMonthly.length,
-        )
-      : null
+  // 業界ごとの順位・平均を計算
+  const industryStats: IndustryStat[] = industries.map((ind) => {
+    const peersWithMonthly = all.filter(
+      (c) => splitIndustries(c.industry).includes(ind) && num(c.baseMonthly) !== null,
+    )
 
-  const rankInIndustry =
-    myMonthly !== null
-      ? peersWithMonthly.filter((c) => (num(c.baseMonthly) as number) > myMonthly).length + 1
-      : null
+    const industryAvgMonthly =
+      peersWithMonthly.length > 0
+        ? Math.round(
+            peersWithMonthly.reduce((s, c) => s + (num(c.baseMonthly) as number), 0) /
+              peersWithMonthly.length,
+          )
+        : null
+
+    const rankInIndustry =
+      myMonthly !== null
+        ? peersWithMonthly.filter((c) => (num(c.baseMonthly) as number) > myMonthly).length + 1
+        : null
+
+    return {
+      industry: ind,
+      rankInIndustry,
+      totalInIndustry: peersWithMonthly.length,
+      industryAvgMonthly,
+      diffFromAvgMonthly:
+        myMonthly !== null && industryAvgMonthly !== null ? myMonthly - industryAvgMonthly : null,
+    }
+  })
 
   const overallRankMonthly =
     myMonthly !== null
       ? allWithMonthly.filter((c) => (num(c.baseMonthly) as number) > myMonthly).length + 1
       : null
 
-  // 同業界の関連企業（自社を除き、初任給の高い順）
-  const relatedCompanies = peers
-    .filter((c) => c.id !== company.id)
+  // 関連企業: 所属する全業界の企業を統合し、id で重複排除して初任給の高い順
+  const relatedMap = new Map<string, CompanyData>()
+  for (const c of all) {
+    if (c.id === company.id) continue
+    const cIndustries = splitIndustries(c.industry)
+    if (industries.some((ind) => cIndustries.includes(ind))) {
+      relatedMap.set(c.id, c)
+    }
+  }
+  const relatedCompanies = Array.from(relatedMap.values())
     .sort((a, b) => (num(b.baseMonthly) ?? 0) - (num(a.baseMonthly) ?? 0))
     .slice(0, relatedLimit)
 
   return {
-    industry: primaryIndustry,
-    rankInIndustry,
-    totalInIndustry: peersWithMonthly.length,
-    industryAvgMonthly,
-    diffFromAvgMonthly:
-      myMonthly !== null && industryAvgMonthly !== null ? myMonthly - industryAvgMonthly : null,
+    industryStats,
     overallRankMonthly,
     totalWithMonthly: allWithMonthly.length,
     relatedCompanies,
   }
 }
+
+// 順位情報がある（業界内に比較対象が2社以上いる）業界だけを返す
+export const rankedIndustries = (stats: CompanyStats): IndustryStat[] =>
+  stats.industryStats.filter((s) => s.rankInIndustry !== null && s.totalInIndustry > 1)
 
 // 【AI SEO】ページ冒頭に置く「答えを先に書く」自己完結型サマリー。
 // AI検索エンジンがこの一文だけで引用できる形にする。
@@ -99,12 +121,15 @@ export function buildLeadSummary(
     parts.push(`${company.company}の想定年収は${yen(annual)}です（${fiscalYear}年度）。`)
   }
 
-  if (stats.rankInIndustry !== null && stats.totalInIndustry > 1) {
-    let rankText = `${stats.industry}業界${stats.totalInIndustry}社中${stats.rankInIndustry}位`
+  const ranked = rankedIndustries(stats)
+  if (ranked.length > 0) {
+    const industryTexts = ranked.map(
+      (s) => `${s.industry}業界${s.totalInIndustry}社中${s.rankInIndustry}位`,
+    )
     if (stats.overallRankMonthly !== null && stats.totalWithMonthly > 1) {
-      rankText += `、掲載企業全体では${stats.totalWithMonthly}社中${stats.overallRankMonthly}位`
+      industryTexts.push(`掲載企業全体では${stats.totalWithMonthly}社中${stats.overallRankMonthly}位`)
     }
-    parts.push(`初任給は${rankText}の水準です。`)
+    parts.push(`初任給は${industryTexts.join("、")}の水準です。`)
   }
 
   return parts.join("")
@@ -123,12 +148,16 @@ export function buildFaq(
 ): FaqItem[] {
   const monthly = num(company.baseMonthly)
   const annual = num(company.annualSalary)
+  const ranked = rankedIndustries(stats)
   const faq: FaqItem[] = []
 
   if (monthly !== null) {
     let answer = `${company.company}の初任給は月額${yen(monthly)}です（${fiscalYear}年度・当サイト調べ）。`
-    if (stats.rankInIndustry !== null && stats.totalInIndustry > 1) {
-      answer += `${stats.industry}業界${stats.totalInIndustry}社中${stats.rankInIndustry}位の水準です。`
+    if (ranked.length > 0) {
+      const rankTexts = ranked.map(
+        (s) => `${s.industry}業界${s.totalInIndustry}社中${s.rankInIndustry}位`,
+      )
+      answer += `${rankTexts.join("、")}の水準です。`
     }
     faq.push({ question: `${company.company}の初任給はいくらですか？`, answer })
   }
@@ -140,17 +169,24 @@ export function buildFaq(
     })
   }
 
-  if (monthly !== null && stats.industryAvgMonthly !== null && stats.diffFromAvgMonthly !== null && stats.totalInIndustry > 1) {
-    const diff = stats.diffFromAvgMonthly
-    const diffText =
-      diff === 0
-        ? "業界平均とほぼ同じ水準です"
-        : diff > 0
-          ? `業界平均より${yen(diff)}高い水準です`
-          : `業界平均より${yen(Math.abs(diff))}低い水準です`
+  // 業界平均との比較（全所属業界をまとめて1問で回答）
+  const avgComparable = ranked.filter(
+    (s) => s.industryAvgMonthly !== null && s.diffFromAvgMonthly !== null,
+  )
+  if (monthly !== null && avgComparable.length > 0) {
+    const answerParts = avgComparable.map((s) => {
+      const diff = s.diffFromAvgMonthly as number
+      const diffText =
+        diff === 0
+          ? "ほぼ同水準"
+          : diff > 0
+            ? `${yen(diff)}高い水準`
+            : `${yen(Math.abs(diff))}低い水準`
+      return `${s.industry}業界（掲載${s.totalInIndustry}社）の平均初任給は月額${yen(s.industryAvgMonthly as number)}で、平均より${diffText}`
+    })
     faq.push({
-      question: `${company.company}の初任給は${stats.industry}業界の平均と比べて高いですか？`,
-      answer: `${stats.industry}業界（掲載${stats.totalInIndustry}社）の平均初任給は月額${yen(stats.industryAvgMonthly)}で、${company.company}は${diffText}。`,
+      question: `${company.company}の初任給は業界平均と比べて高いですか？`,
+      answer: `${answerParts.join("。")}です。`,
     })
   }
 

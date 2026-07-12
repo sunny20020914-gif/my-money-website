@@ -11,7 +11,7 @@ import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
 import Link from "next/link"
-import { computeCompanyStats, buildLeadSummary, buildFaq } from "@/lib/company-stats"
+import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries } from "@/lib/company-stats"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
@@ -79,7 +79,9 @@ export default async function CompanyPage({ params }: Props) {
   }
 
   // 取得済みデータから業界内順位・平均・FAQ・関連企業を計算（AI不使用）
+  // 複数業界（"IT/通信"等）に属する場合は全業界分の統計を計算する
   const stats = computeCompanyStats(allCompanies, company)
+  const industryComparisons = rankedIndustries(stats)
   const leadSummary = buildLeadSummary(company, stats, FISCAL_YEAR)
   const faq = buildFaq(company, stats, FISCAL_YEAR)
   const lastUpdated = new Date() // ISR再生成のたびに更新される
@@ -245,39 +247,47 @@ export default async function CompanyPage({ params }: Props) {
             </Card>
           </section>
 
-          {/* --- 業界内比較（取得済みランキングデータから算出） --- */}
-          {stats.rankInIndustry !== null && stats.totalInIndustry > 1 && (
-            <section>
-              <Card className="py-0 gap-0">
-                <CardContent className="p-4 md:p-6">
-                  <h2 className="text-base md:text-lg font-bold mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    {stats.industry}業界内での初任給の位置づけ
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="space-y-1 md:text-center">
-                      <p className="text-sm text-muted-foreground">業界内順位</p>
-                      <p className="text-lg md:text-xl font-bold text-primary">
-                        {stats.rankInIndustry}位<span className="text-sm font-normal text-muted-foreground"> / {stats.totalInIndustry}社中</span>
-                      </p>
-                    </div>
-                    {stats.industryAvgMonthly !== null && (
+          {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
+          {industryComparisons.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                業界内での初任給の位置づけ
+              </h2>
+              {industryComparisons.map((s) => (
+                <Card key={s.industry} className="py-0 gap-0">
+                  <CardContent className="p-4 md:p-6">
+                    <p className="text-sm font-semibold text-primary mb-3">
+                      <Link href={`/industries/${encodeURIComponent(s.industry)}`} className="hover:underline">
+                        {s.industry}業界
+                      </Link>
+                      <span className="text-muted-foreground font-normal">（掲載{s.totalInIndustry}社）</span>
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div className="space-y-1 md:text-center">
-                        <p className="text-sm text-muted-foreground">業界平均（初任給）</p>
-                        <p className="text-lg md:text-xl font-semibold">¥{stats.industryAvgMonthly.toLocaleString()}</p>
-                      </div>
-                    )}
-                    {stats.diffFromAvgMonthly !== null && (
-                      <div className="space-y-1 md:text-center col-span-2 md:col-span-1">
-                        <p className="text-sm text-muted-foreground">業界平均との差</p>
-                        <p className={`text-lg md:text-xl font-semibold ${stats.diffFromAvgMonthly >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
-                          {stats.diffFromAvgMonthly >= 0 ? "+" : "-"}¥{Math.abs(stats.diffFromAvgMonthly).toLocaleString()}
+                        <p className="text-sm text-muted-foreground">業界内順位</p>
+                        <p className="text-lg md:text-xl font-bold text-primary">
+                          {s.rankInIndustry}位<span className="text-sm font-normal text-muted-foreground"> / {s.totalInIndustry}社中</span>
                         </p>
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      {s.industryAvgMonthly !== null && (
+                        <div className="space-y-1 md:text-center">
+                          <p className="text-sm text-muted-foreground">業界平均（初任給）</p>
+                          <p className="text-lg md:text-xl font-semibold">¥{s.industryAvgMonthly.toLocaleString()}</p>
+                        </div>
+                      )}
+                      {s.diffFromAvgMonthly !== null && (
+                        <div className="space-y-1 md:text-center col-span-2 md:col-span-1">
+                          <p className="text-sm text-muted-foreground">業界平均との差</p>
+                          <p className={`text-lg md:text-xl font-semibold ${s.diffFromAvgMonthly >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
+                            {s.diffFromAvgMonthly >= 0 ? "+" : "-"}¥{Math.abs(s.diffFromAvgMonthly).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </section>
           )}
 
@@ -343,11 +353,11 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
-          {/* --- 同業界の関連企業（内部リンク強化） --- */}
+          {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (
             <section className="space-y-4">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                {stats.industry}業界の他の企業
+                同じ業界の他の企業
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {stats.relatedCompanies.map((c) => (
@@ -376,13 +386,16 @@ export default async function CompanyPage({ params }: Props) {
                   </Link>
                 ))}
               </div>
-              <div className="text-right">
-                <Link
-                  href={`/industries/${encodeURIComponent(stats.industry)}`}
-                  className="text-sm text-primary hover:underline"
-                >
-                  {stats.industry}業界のランキングをすべて見る →
-                </Link>
+              <div className="flex flex-wrap justify-end gap-x-6 gap-y-1">
+                {stats.industryStats.map((s) => (
+                  <Link
+                    key={s.industry}
+                    href={`/industries/${encodeURIComponent(s.industry)}`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {s.industry}業界のランキングをすべて見る →
+                  </Link>
+                ))}
               </div>
             </section>
           )}
