@@ -12,6 +12,7 @@ import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
 import Link from "next/link"
 import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries } from "@/lib/company-stats"
+import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
 
@@ -88,6 +89,10 @@ export default async function CompanyPage({ params }: Props) {
   const leadSummary = buildLeadSummary(company, stats, FISCAL_YEAR)
   const faq = buildFaq(company, stats, FISCAL_YEAR)
   const netSalary = estimateNetSalary(company.baseMonthly)
+  // この企業が属する業界のクロス条件一覧ページ（内部リンク用）
+  const industryListDefs = buildAllListDefinitions(allCompanies).filter(
+    (d) => d.industry && company.industry.split("/").map((i) => i.trim()).includes(d.industry),
+  )
   const lastUpdated = new Date() // ISR再生成のたびに更新される
 
   const SalaryDisplay = (props: { value: number | string | null | undefined, url?: string, isPrimary?: boolean }) => {
@@ -265,6 +270,9 @@ export default async function CompanyPage({ params }: Props) {
             </Card>
           </section>
 
+          {/* 広告1: 給与データ直後（最も注目度の高い情報の直下） */}
+          <DynamicAdBanner />
+
           {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
           {industryComparisons.length > 0 && (
             <section className="space-y-4">
@@ -306,51 +314,79 @@ export default async function CompanyPage({ params }: Props) {
                   </CardContent>
                 </Card>
               ))}
+              {/* 【SEO】業界×給与のクロス条件一覧への内部リンク */}
+              {industryListDefs.length > 0 && (
+                <div className="flex flex-wrap gap-x-5 gap-y-1 pt-1">
+                  {industryListDefs.map((d) => (
+                    <Link
+                      key={d.slug}
+                      href={`/lists/${encodeURIComponent(d.slug)}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {d.shortName}の企業一覧（{d.count}社）→
+                    </Link>
+                  ))}
+                </div>
+              )}
             </section>
           )}
+
+          {/* 広告2: 業界内比較の直後 */}
+          {industryComparisons.length > 0 && <DynamicAdBanner />}
 
           {/* --- 企業概要 --- */}
           <section className="space-y-7">
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
               <div
-                /* 🌟 スマホ版の本文のフォントサイズを 15px から 17px（text-[17px]）に一段階拡大 */
                 className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
               />
-              <DynamicAdBanner />
             </div>}
-            {company.strength && <div className="space-y-3">
-              <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                <TrendingUp className="w-6 h-6" />強み
-              </h3>
-              <div
-                /* 🌟 スマホ版の本文のフォントサイズを 17px に拡大 */
-                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
-              />
-            </div>}
-            {company.future_potential && <div className={`space-y-3 ${!company.salary_details ? 'mb-12' : ''}`}>
-              <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                <Sparkles className="w-6 h-6" />将来性
-              </h3>
-              <div
-                /* 🌟 スマホ版の本文のフォントサイズを 17px に拡大 */
-                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
-              />
-              {!company.salary_details && <DynamicAdBanner />}
-            </div>}
-            {company.salary_details && <div className="space-y-3 mb-12">
+
+            {/* 強み・将来性は短文のため2カラムのカード形式で表示（レイアウトの均等化） */}
+            {(company.strength || company.future_potential) && (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {company.strength && (
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
+                        <TrendingUp className="w-5 h-5" />強み
+                      </h3>
+                      <div
+                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                {company.future_potential && (
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
+                        <Sparkles className="w-5 h-5" />将来性
+                      </h3>
+                      <div
+                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* 広告3: 本文コンテンツの中間（読了エンゲージメントの高い位置） */}
+            <DynamicAdBanner />
+
+            {company.salary_details && <div className="space-y-3">
               <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 <DollarSign className="w-5 h-5" />給与に関する補足
               </h3>
               <div
-                /* 🌟 補足部分もスマホで読みやすいよう 17px に調整 */
                 className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
               />
-              <DynamicAdBanner />
             </div>}
           </section>
 
@@ -370,6 +406,9 @@ export default async function CompanyPage({ params }: Props) {
               </dl>
             </section>
           )}
+
+          {/* 広告4: FAQの直後・関連企業の直前（回遊直前の位置） */}
+          {faq.length > 0 && <DynamicAdBanner />}
 
           {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (

@@ -15,7 +15,7 @@ import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
 import { useFavorites } from "@/hooks/use-favorites"
 import { showToast } from "@/components/toaster"
-import { LIST_DEFINITIONS } from "@/lib/list-definitions"
+import { buildAllListDefinitions } from "@/lib/list-definitions"
 
 type RankingType = "annual" | "monthly" | "base"
 
@@ -285,6 +285,9 @@ export function RankingPageClient({
 
   const displayedCompanies = sortedAndFilteredCompanies;
 
+  // クロス条件ページへのリンク（該当数の多い順に上位12件）
+  const listLinks = useMemo(() => buildAllListDefinitions(initialData).slice(0, 12), [initialData])
+
   const currentError = initialError || error
 
   // 初期表示時にサーバーサイドでエラーが発生した場合
@@ -399,16 +402,26 @@ export function RankingPageClient({
               </CardContent>
             </Card>
 
-            {/* 【SEO】条件別一覧ページへの内部リンク（クロール導線 + 回遊性向上） */}
-            <div className="mb-8 -mt-4">
-              <p className="text-sm font-semibold text-muted-foreground mb-2">条件から探す</p>
-              <div className="flex flex-wrap gap-2">
-                {LIST_DEFINITIONS.map((def) => (
-                  <Button key={def.slug} asChild variant="outline" size="sm" className="bg-transparent">
-                    <Link href={`/lists/${def.slug}`}>{def.shortName}</Link>
+            {/* 【SEO】クロス条件一覧ページへの内部リンク（クロール導線 + 回遊性向上） */}
+            {listLinks.length > 0 && (
+              <div className="mb-4 -mt-4">
+                <p className="text-sm font-semibold text-muted-foreground mb-2">条件から探す</p>
+                <div className="flex flex-wrap gap-2">
+                  {listLinks.map((def) => (
+                    <Button key={def.slug} asChild variant="outline" size="sm" className="bg-transparent">
+                      <Link href={`/lists/${encodeURIComponent(def.slug)}`}>{def.shortName}</Link>
+                    </Button>
+                  ))}
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/lists">すべての条件 →</Link>
                   </Button>
-                ))}
+                </div>
               </div>
+            )}
+
+            {/* リスト直前の広告（一覧を見始める直前＝視認性の高い位置） */}
+            <div className="mb-6">
+              <AdBanner />
             </div>
 
             {loading && companies.length === 0 ? (

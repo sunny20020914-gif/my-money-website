@@ -1,4 +1,6 @@
 import { fetchRankingDataServer } from "@/lib/sheets"
+import { buildAllListDefinitions } from "@/lib/list-definitions"
+import React from "react"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -62,6 +64,9 @@ export default async function IndustryPage({ params }: Props) {
     .sort((a, b) => a.rank - b.rank)
 
   if (companies.length === 0) notFound()
+
+  // この業界のクロス条件一覧ページ（業界×給与閾値）
+  const industryDefs = buildAllListDefinitions(allCompanies).filter((d) => d.industry === industry)
 
   // 平均初任給（数値のみで計算）
   const numericSalaries = companies
@@ -131,6 +136,20 @@ export default async function IndustryPage({ params }: Props) {
                   </div>
                 )}
               </div>
+              {/* 【SEO】業界×給与のクロス条件一覧への内部リンク */}
+              {industryDefs.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {industryDefs
+                    .sort((a, b) => a.threshold - b.threshold)
+                    .map((d) => (
+                      <Button key={d.slug} asChild variant="outline" size="sm" className="bg-transparent">
+                        <Link href={`/lists/${encodeURIComponent(d.slug)}`}>
+                          初任給{d.threshold / 10000}万円以上に絞る（{d.count}社）
+                        </Link>
+                      </Button>
+                    ))}
+                </div>
+              )}
             </div>
 
             <AdBanner />
@@ -143,7 +162,8 @@ export default async function IndustryPage({ params }: Props) {
                 const isNumericAnnual = typeof company.annualSalary === "number"
 
                 return (
-                  <Card key={company.id || company.company} className="hover:shadow-md transition-shadow">
+                  <React.Fragment key={company.id || company.company}>
+                  <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 md:p-5">
                       <div className="flex items-center gap-4">
                         {/* 順位 */}
@@ -208,9 +228,14 @@ export default async function IndustryPage({ params }: Props) {
                       </div>
                     </CardContent>
                   </Card>
+                  {/* 8社ごとに広告を挿入 */}
+                  {(index + 1) % 8 === 0 && index + 1 < companies.length && <AdBanner />}
+                  </React.Fragment>
                 )
               })}
             </div>
+
+            <AdBanner />
 
             <div className="mt-8 flex gap-3">
               <Button asChild variant="outline" className="bg-transparent">

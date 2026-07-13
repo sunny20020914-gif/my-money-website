@@ -6,8 +6,9 @@ import { Calendar, Clock, BarChart3, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { AdBanner } from "@/components/ad-banner"
-import { fetchArticleDataServer, type ArticleData } from "@/lib/sheets"
-import { LIST_DEFINITIONS } from "@/lib/list-definitions"
+import { fetchArticleDataServer, fetchAllUniqueCompanies, type ArticleData } from "@/lib/sheets"
+import { buildAllListDefinitions } from "@/lib/list-definitions"
+import React from "react"
 
 export const metadata = {
   title: "就活コラム・記事一覧 | 初任給ランキング 2026",
@@ -18,7 +19,12 @@ export const metadata = {
 }
 
 export default async function ArticlesPage() {
-  const articles: ArticleData[] = await fetchArticleDataServer()
+  const [articles, allCompanies] = await Promise.all([
+    fetchArticleDataServer(),
+    fetchAllUniqueCompanies(),
+  ])
+  // クロス条件一覧のうち該当数の多い上位6件を「データ特集」として表示
+  const featuredLists = buildAllListDefinitions(allCompanies).slice(0, 6)
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,22 +50,32 @@ export default async function ArticlesPage() {
               最新の給与データから条件別に企業をまとめました。データは自動で更新されます。
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {LIST_DEFINITIONS.map((def) => (
+              {featuredLists.map((def) => (
                 <Link
                   key={def.slug}
-                  href={`/lists/${def.slug}`}
+                  href={`/lists/${encodeURIComponent(def.slug)}`}
                   className="group flex items-center justify-between gap-2 p-4 rounded-lg border bg-card hover:bg-accent hover:shadow-md transition-all"
                 >
-                  <span className="font-semibold text-sm leading-snug">{def.shortName}の企業一覧</span>
+                  <span className="font-semibold text-sm leading-snug">{def.shortName}の企業一覧（{def.count}社）</span>
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                 </Link>
               ))}
             </div>
+            <p className="mt-3 text-sm text-right">
+              <Link href="/lists" className="text-primary hover:underline">すべての条件を見る →</Link>
+            </p>
           </section>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.map((article) => (
-              <Card key={article.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col bg-card">
+            {articles.map((article, index) => (
+              <React.Fragment key={article.id}>
+              {/* 6記事ごとにグリッド全幅の広告を挿入 */}
+              {index > 0 && index % 6 === 0 && (
+                <div className="col-span-full">
+                  <AdBanner />
+                </div>
+              )}
+              <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col bg-card">
                 <Link href={`/articles/${article.id}`} className="block aspect-video overflow-hidden relative">
                   <Image
                     src={article.image || "/placeholder.svg?height=200&width=400"}
@@ -89,8 +105,11 @@ export default async function ArticlesPage() {
                   </div>
                 </CardContent>
               </Card>
+              </React.Fragment>
             ))}
           </div>
+
+          <AdBanner />
         </div>
       </main>
       <Footer />

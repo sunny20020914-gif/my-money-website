@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
-import { fetchRankingDataServer, fetchArticleDataServer } from '@/lib/sheets'
-import { LIST_DEFINITIONS } from '@/lib/list-definitions'
+import { fetchRankingDataServer, fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
+import { buildAllListDefinitions } from '@/lib/list-definitions'
 import { SITE_URL } from '@/lib/config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { route: '/industries', priority: 0.9, freq: 'weekly' },
     { route: '/featured', priority: 0.8, freq: 'weekly' },
     { route: '/articles', priority: 0.8, freq: 'daily' },
+    { route: '/lists', priority: 0.85, freq: 'weekly' },
     { route: '/about', priority: 0.5, freq: 'monthly' },
     { route: '/privacy', priority: 0.3, freq: 'monthly' },
     { route: '/terms', priority: 0.3, freq: 'monthly' },
@@ -45,9 +46,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }))
 
-  // 条件別一覧ページのルート
-  const listRoutes: MetadataRoute.Sitemap = LIST_DEFINITIONS.map((def) => ({
-    url: `${baseUrl}/lists/${def.slug}`,
+  // クロス条件一覧ページのルート（データから動的生成・有効な組み合わせのみ）
+  const allCompanies = await fetchAllUniqueCompanies()
+  const listRoutes: MetadataRoute.Sitemap = buildAllListDefinitions(allCompanies).map((def) => ({
+    url: `${baseUrl}/lists/${encodeURIComponent(def.slug)}`,
     changeFrequency: 'weekly' as const,
     priority: 0.85,
   }))

@@ -1,5 +1,5 @@
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
-import { LIST_DEFINITIONS, getListBySlug, buildList, buildListLeadSummary } from "@/lib/list-definitions"
+import { buildAllListDefinitions, getListBySlug, buildList, buildListLeadSummary } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
 import { notFound } from "next/navigation"
@@ -8,9 +8,11 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { AdBanner } from "@/components/ad-banner"
 import Image from "next/image"
 import Link from "next/link"
 import { Metadata } from "next"
+import React from "react"
 
 type Props = {
   params: { slug: string }
@@ -20,18 +22,21 @@ type Props = {
 export const revalidate = 3600
 
 export async function generateStaticParams() {
-  return LIST_DEFINITIONS.map((d) => ({ slug: d.slug }))
+  const all = await fetchAllUniqueCompanies()
+  return buildAllListDefinitions(all).map((d) => ({ slug: encodeURIComponent(d.slug) }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const def = getListBySlug(params.slug)
+  const slug = decodeURIComponent(params.slug)
+  const all = await fetchAllUniqueCompanies()
+  const def = getListBySlug(slug, all)
   if (!def) return { title: "ページが見つかりません" }
 
   return {
     title: def.name,
     description: def.description,
     alternates: {
-      canonical: `${SITE_URL}/lists/${def.slug}`,
+      canonical: `${SITE_URL}/lists/${encodeURIComponent(def.slug)}`,
     },
     openGraph: {
       title: def.name,
@@ -41,15 +46,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ListPage({ params }: Props) {
-  const def = getListBySlug(params.slug)
+  const slug = decodeURIComponent(params.slug)
+  const all = await fetchAllUniqueCompanies()
+  const allDefs = buildAllListDefinitions(all)
+  const def = allDefs.find((d) => d.slug === slug)
   if (!def) notFound()
 
-  const all = await fetchAllUniqueCompanies()
   const companies = buildList(def, all)
   const leadSummary = buildListLeadSummary(def, companies)
   const lastUpdated = new Date()
-  const pageUrl = `${SITE_URL}/lists/${def.slug}`
-  const otherLists = LIST_DEFINITIONS.filter((d) => d.slug !== def.slug)
+  const pageUrl = `${SITE_URL}/lists/${encodeURIComponent(def.slug)}`
+
+  // 関連条件: 同じセグメントの別閾値 + 同じ閾値の他セグメント（該当数の多い順に最大8件）
+  const sameSegment = allDefs.filter((d) => d.segmentLabel === def.segmentLabel && d.slug !== def.slug)
+  const sameThreshold = allDefs
+    .filter((d) => d.threshold === def.threshold && d.segmentLabel !== def.segmentLabel)
+    .slice(0, 8)
 
   const itemListLd = {
     "@context": "https://schema.org",
@@ -70,7 +82,7 @@ export default async function ListPage({ params }: Props) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "ホーム", item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "初任給・年収ランキング", item: `${SITE_URL}/ranking` },
+      { "@type": "ListItem", position: 2, name: "条件で探す", item: `${SITE_URL}/lists` },
       { "@type": "ListItem", position: 3, name: def.shortName, item: pageUrl },
     ],
   }
@@ -88,12 +100,12 @@ export default async function ListPage({ params }: Props) {
               <nav aria-label="パンくずリスト" className="text-xs text-muted-foreground mb-3">
                 <Link href="/" className="hover:underline">ホーム</Link>
                 <span className="mx-1.5">›</span>
-                <Link href="/ranking" className="hover:underline">ランキング</Link>
+                <Link href="/lists" className="hover:underline">条件で探す</Link>
                 <span className="mx-1.5">›</span>
                 <span>{def.shortName}</span>
               </nav>
               <h1 className="text-xl md:text-3xl font-bold text-primary">{def.name}</h1>
-              {/* 【AI SEO】答えを先に書く自己完結型サマリー（集計値は当サイトの独自データ） */}
+              {/* 【AI SEO】答えを先に書く自己完結型サマリー（母集団比率＝独自の集計データ） */}
               {leadSummary && (
                 <p className="mt-4 text-[15px] md:text-base leading-relaxed text-muted-foreground">
                   {leadSummary}
@@ -104,6 +116,8 @@ export default async function ListPage({ params }: Props) {
                 （データは自動で最新に保たれます）
               </p>
             </section>
+
+            <AdBanner />
 
             {/* --- 企業一覧 --- */}
             {companies.length === 0 ? (
@@ -119,65 +133,69 @@ export default async function ListPage({ params }: Props) {
                   const annual = typeof c.annualSalary === "number" ? c.annualSalary : null
                   const net = estimateNetSalary(c.baseMonthly)
                   return (
-                    <Card key={c.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4 md:p-5">
-                        <div className="flex items-start gap-3 md:gap-4">
-                          <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-base flex-shrink-0">
-                            {i + 1}
-                          </div>
-                          <Image
-                            src={c.logo || (c.domain ? `https://logo.clearbit.com/${c.domain}` : "/placeholder.svg")}
-                            alt={`${c.company}のロゴ`}
-                            width={48}
-                            height={48}
-                            className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-contain border bg-card flex-shrink-0"
-                          />
-                          <div className="flex-grow min-w-0">
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                              <h2 className="text-base md:text-lg font-bold leading-tight">
-                                <Link href={`/companies/${c.id}`} className="hover:text-primary transition-colors">
-                                  {c.company}
-                                </Link>
-                              </h2>
-                              <div className="flex flex-wrap gap-1">
-                                {c.industry.split("/").filter(Boolean).slice(0, 3).map((ind, j) => (
-                                  <Badge key={j} variant="secondary" className="text-[10px] md:text-xs">{ind}</Badge>
-                                ))}
-                              </div>
+                    <React.Fragment key={c.id}>
+                      <Card className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4 md:p-5">
+                          <div className="flex items-start gap-3 md:gap-4">
+                            <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-base flex-shrink-0">
+                              {i + 1}
                             </div>
-                            <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-                              {monthly !== null && (
-                                <div className="flex items-baseline gap-1.5">
-                                  <dt className="text-muted-foreground text-xs">初任給</dt>
-                                  <dd className="font-semibold text-primary">¥{monthly.toLocaleString()}/月</dd>
+                            <Image
+                              src={c.logo || (c.domain ? `https://logo.clearbit.com/${c.domain}` : "/placeholder.svg")}
+                              alt={`${c.company}のロゴ`}
+                              width={48}
+                              height={48}
+                              className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-contain border bg-card flex-shrink-0"
+                            />
+                            <div className="flex-grow min-w-0">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <h2 className="text-base md:text-lg font-bold leading-tight">
+                                  <Link href={`/companies/${c.id}`} className="hover:text-primary transition-colors">
+                                    {c.company}
+                                  </Link>
+                                </h2>
+                                <div className="flex flex-wrap gap-1">
+                                  {c.industry.split("/").filter(Boolean).slice(0, 3).map((ind, j) => (
+                                    <Badge key={j} variant="secondary" className="text-[10px] md:text-xs">{ind.trim()}</Badge>
+                                  ))}
                                 </div>
-                              )}
-                              {net !== null && (
-                                <div className="flex items-baseline gap-1.5">
-                                  <dt className="text-muted-foreground text-xs">手取り目安</dt>
-                                  <dd className="font-semibold">約¥{roundNet(net.netMonthlyFirstYear).toLocaleString()}</dd>
-                                </div>
-                              )}
-                              {annual !== null && (
-                                <div className="flex items-baseline gap-1.5">
-                                  <dt className="text-muted-foreground text-xs">想定年収</dt>
-                                  <dd className="font-semibold">¥{annual.toLocaleString()}</dd>
-                                </div>
-                              )}
-                              {typeof c.employees === "number" && (
-                                <div className="flex items-baseline gap-1.5">
-                                  <dt className="text-muted-foreground text-xs">従業員数</dt>
-                                  <dd>{c.employees.toLocaleString()}人</dd>
-                                </div>
-                              )}
-                            </dl>
+                              </div>
+                              <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                                {monthly !== null && (
+                                  <div className="flex items-baseline gap-1.5">
+                                    <dt className="text-muted-foreground text-xs">初任給</dt>
+                                    <dd className="font-semibold text-primary">¥{monthly.toLocaleString()}/月</dd>
+                                  </div>
+                                )}
+                                {net !== null && (
+                                  <div className="flex items-baseline gap-1.5">
+                                    <dt className="text-muted-foreground text-xs">手取り目安</dt>
+                                    <dd className="font-semibold">約¥{roundNet(net.netMonthlyFirstYear).toLocaleString()}</dd>
+                                  </div>
+                                )}
+                                {annual !== null && (
+                                  <div className="flex items-baseline gap-1.5">
+                                    <dt className="text-muted-foreground text-xs">想定年収</dt>
+                                    <dd className="font-semibold">¥{annual.toLocaleString()}</dd>
+                                  </div>
+                                )}
+                                {typeof c.employees === "number" && (
+                                  <div className="flex items-baseline gap-1.5">
+                                    <dt className="text-muted-foreground text-xs">従業員数</dt>
+                                    <dd>{c.employees.toLocaleString()}人</dd>
+                                  </div>
+                                )}
+                              </dl>
+                            </div>
+                            <Button asChild variant="outline" size="sm" className="bg-transparent flex-shrink-0 hidden sm:inline-flex">
+                              <Link href={`/companies/${c.id}`}>詳しく</Link>
+                            </Button>
                           </div>
-                          <Button asChild variant="outline" size="sm" className="bg-transparent flex-shrink-0 hidden sm:inline-flex">
-                            <Link href={`/companies/${c.id}`}>詳しく</Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                      {/* 8社ごとに広告を挿入 */}
+                      {(i + 1) % 8 === 0 && i + 1 < companies.length && <AdBanner />}
+                    </React.Fragment>
                   )
                 })}
                 <p className="pt-2 text-xs text-muted-foreground leading-relaxed">
@@ -186,21 +204,43 @@ export default async function ListPage({ params }: Props) {
               </section>
             )}
 
-            {/* --- 他の条件・ランキングへの導線 --- */}
-            <section className="space-y-3 border-t pt-8">
-              <h2 className="text-base md:text-lg font-bold">他の条件で探す</h2>
-              <div className="flex flex-wrap gap-2">
-                {otherLists.map((d) => (
-                  <Button key={d.slug} asChild variant="outline" size="sm" className="bg-transparent">
-                    <Link href={`/lists/${d.slug}`}>{d.shortName}</Link>
-                  </Button>
-                ))}
+            <AdBanner />
+
+            {/* --- 関連条件への導線 --- */}
+            <section className="space-y-5 border-t pt-8">
+              {sameSegment.length > 0 && (
+                <div className="space-y-2">
+                  <h2 className="text-base md:text-lg font-bold">{def.segmentLabel}の他の条件</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {sameSegment.map((d) => (
+                      <Button key={d.slug} asChild variant="outline" size="sm" className="bg-transparent">
+                        <Link href={`/lists/${encodeURIComponent(d.slug)}`}>{d.shortName}（{d.count}社）</Link>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {sameThreshold.length > 0 && (
+                <div className="space-y-2">
+                  <h2 className="text-base md:text-lg font-bold">他の業界・セグメントで初任給{def.threshold / 10000}万円以上</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {sameThreshold.map((d) => (
+                      <Button key={d.slug} asChild variant="outline" size="sm" className="bg-transparent">
+                        <Link href={`/lists/${encodeURIComponent(d.slug)}`}>{d.shortName}（{d.count}社）</Link>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                <Link href="/lists" className="text-primary hover:underline">すべての条件を見る →</Link>
+                {def.industry && (
+                  <Link href={`/industries/${encodeURIComponent(def.industry)}`} className="text-primary hover:underline">
+                    {def.industry}業界の全ランキング →
+                  </Link>
+                )}
+                <Link href="/ranking" className="text-primary hover:underline">全企業ランキング →</Link>
               </div>
-              <p className="text-sm">
-                <Link href="/ranking" className="text-primary hover:underline">
-                  全企業の初任給ランキングを見る →
-                </Link>
-              </p>
             </section>
           </div>
         </main>
