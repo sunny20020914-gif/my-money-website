@@ -12,6 +12,7 @@ import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
 import Link from "next/link"
 import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries } from "@/lib/company-stats"
+import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
@@ -37,8 +38,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     typeof v === "number" ? `¥${v.toLocaleString()}` : v ?? "要確認"
 
   const monthly = company.baseMonthly ?? company.monthlySalary ?? company.baseSalary
+  const netForMeta = estimateNetSalary(monthly)
   const parts = [
     `初任給${fmtSalary(monthly)}/月`,
+    ...(netForMeta ? [`手取り目安¥${roundNet(netForMeta.netMonthlyFirstYear).toLocaleString()}`] : []),
     `想定年収${fmtSalary(company.annualSalary)}/年`,
     `従業員数${typeof company.employees === "number" ? company.employees.toLocaleString() : company.employees}人`,
   ]
@@ -84,6 +87,7 @@ export default async function CompanyPage({ params }: Props) {
   const industryComparisons = rankedIndustries(stats)
   const leadSummary = buildLeadSummary(company, stats, FISCAL_YEAR)
   const faq = buildFaq(company, stats, FISCAL_YEAR)
+  const netSalary = estimateNetSalary(company.baseMonthly)
   const lastUpdated = new Date() // ISR再生成のたびに更新される
 
   const SalaryDisplay = (props: { value: number | string | null | undefined, url?: string, isPrimary?: boolean }) => {
@@ -232,6 +236,15 @@ export default async function CompanyPage({ params }: Props) {
                     <p className="text-sm text-muted-foreground">初任給（月額）</p>
                     <SalaryDisplay value={company.baseMonthly} url={company.salaryUrl} />
                   </div>
+                  {/* 手取り目安（1年目・概算） */}
+                  {netSalary && (
+                    <div className="space-y-1 md:text-center">
+                      <p className="text-sm text-muted-foreground">手取り目安（1年目）</p>
+                      <p className="text-lg md:text-xl font-semibold whitespace-nowrap">
+                        約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
                   {/* 設立 */}
                   <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">設立</p>
@@ -243,6 +256,11 @@ export default async function CompanyPage({ params }: Props) {
                     <p className="text-lg font-semibold whitespace-nowrap">{typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}</p>
                   </div>
                 </div>
+                {netSalary && (
+                  <p className="mt-4 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
+                    ※手取りは独身・扶養なしを前提に、社会保険料（健康保険・厚生年金・雇用保険）と所得税を差し引いた概算です。新卒1年目は住民税がかからないため、2年目以降は住民税（月約¥{netSalary.residentTaxMonthly.toLocaleString()}）を差し引いた約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}が目安になります。
+                  </p>
+                )}
               </CardContent>
             </Card>
           </section>

@@ -15,6 +15,7 @@ import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
 import { useFavorites } from "@/hooks/use-favorites"
 import { showToast } from "@/components/toaster"
+import { LIST_DEFINITIONS } from "@/lib/list-definitions"
 
 type RankingType = "annual" | "monthly" | "base"
 
@@ -397,6 +398,18 @@ export function RankingPageClient({
                 </div>
               </CardContent>
             </Card>
+
+            {/* 【SEO】条件別一覧ページへの内部リンク（クロール導線 + 回遊性向上） */}
+            <div className="mb-8 -mt-4">
+              <p className="text-sm font-semibold text-muted-foreground mb-2">条件から探す</p>
+              <div className="flex flex-wrap gap-2">
+                {LIST_DEFINITIONS.map((def) => (
+                  <Button key={def.slug} asChild variant="outline" size="sm" className="bg-transparent">
+                    <Link href={`/lists/${def.slug}`}>{def.shortName}</Link>
+                  </Button>
+                ))}
+              </div>
+            </div>
 
             {loading && companies.length === 0 ? (
               <div className="text-center py-12">

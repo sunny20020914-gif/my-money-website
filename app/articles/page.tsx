@@ -2,11 +2,12 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock } from "lucide-react"
+import { Calendar, Clock, BarChart3, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { AdBanner } from "@/components/ad-banner"
 import { fetchArticleDataServer, type ArticleData } from "@/lib/sheets"
+import { LIST_DEFINITIONS } from "@/lib/list-definitions"
 
 export const metadata = {
   title: "就活コラム・記事一覧 | 初任給ランキング 2026",
@@ -32,6 +33,29 @@ export default async function ArticlesPage() {
           </div>
 
           <AdBanner />
+
+          {/* --- データ特集（条件別一覧ページへの導線・スプシ更新で自動的に最新化） --- */}
+          <section className="mb-12">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <h2 className="text-xl md:text-2xl font-bold">データで見る特集</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              最新の給与データから条件別に企業をまとめました。データは自動で更新されます。
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {LIST_DEFINITIONS.map((def) => (
+                <Link
+                  key={def.slug}
+                  href={`/lists/${def.slug}`}
+                  className="group flex items-center justify-between gap-2 p-4 rounded-lg border bg-card hover:bg-accent hover:shadow-md transition-all"
+                >
+                  <span className="font-semibold text-sm leading-snug">{def.shortName}の企業一覧</span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </section>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((article) => (

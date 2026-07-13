@@ -1,4 +1,5 @@
 import type { CompanyData } from "./sheets"
+import { estimateNetSalary, roundNet } from "./net-salary"
 
 // 取得済みのランキングデータだけから比較コンテキストを計算するヘルパー。
 // AI・外部APIは一切使わない。スプシ側のロジックにも影響しない。
@@ -160,6 +161,17 @@ export function buildFaq(
       answer += `${rankTexts.join("、")}の水準です。`
     }
     faq.push({ question: `${company.company}の初任給はいくらですか？`, answer })
+  }
+
+  // 【SEO】「企業名 初任給 手取り」は検索需要が大きい。額面から計算した概算で回答する
+  const net = estimateNetSalary(monthly)
+  if (net !== null) {
+    faq.push({
+      question: `${company.company}の初任給の手取りはいくらですか？`,
+      answer:
+        `額面${yen(net.grossMonthly)}から社会保険料（約${yen(net.socialInsuranceTotal)}）と所得税（約${yen(net.incomeTaxMonthly)}）を差し引いた1年目の手取りは月額約${yen(roundNet(net.netMonthlyFirstYear))}です（独身・扶養なしの概算）。` +
+        `新卒1年目は住民税が徴収されないため、住民税（月約${yen(net.residentTaxMonthly)}）が始まる2年目以降の手取りは約${yen(roundNet(net.netMonthlySecondYear))}が目安です。`,
+    })
   }
 
   if (annual !== null) {

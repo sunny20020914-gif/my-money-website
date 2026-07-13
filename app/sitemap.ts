@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { fetchRankingDataServer, fetchArticleDataServer } from '@/lib/sheets'
+import { LIST_DEFINITIONS } from '@/lib/list-definitions'
 import { SITE_URL } from '@/lib/config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -44,6 +45,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }))
 
+  // 条件別一覧ページのルート
+  const listRoutes: MetadataRoute.Sitemap = LIST_DEFINITIONS.map((def) => ({
+    url: `${baseUrl}/lists/${def.slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.85,
+  }))
+
   // 記事ページのルート（実際の公開日をlastModifiedとして使用）
   const articles = await fetchArticleDataServer()
   const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
@@ -53,5 +61,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }))
 
-  return [...staticRoutes, ...industryRoutes, ...companyRoutes, ...articleRoutes]
+  return [...staticRoutes, ...industryRoutes, ...listRoutes, ...companyRoutes, ...articleRoutes]
 }
