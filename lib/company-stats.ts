@@ -215,3 +215,45 @@ export function buildFaq(
 
   return faq
 }
+
+// 初任給の全体ランキングで前後に位置する企業（回遊導線用）
+export function getRankNeighbors(
+  all: CompanyData[],
+  company: CompanyData,
+): { prev: CompanyData | null; next: CompanyData | null; rank: number | null; total: number } {
+  const sorted = all
+    .filter((c) => num(c.baseMonthly) !== null)
+    .sort((a, b) => (num(b.baseMonthly) as number) - (num(a.baseMonthly) as number))
+  const idx = sorted.findIndex((c) => c.id === company.id)
+  if (idx === -1) return { prev: null, next: null, rank: null, total: sorted.length }
+  return {
+    prev: idx > 0 ? sorted[idx - 1] : null,
+    next: idx < sorted.length - 1 ? sorted[idx + 1] : null,
+    rank: idx + 1,
+    total: sorted.length,
+  }
+}
+
+// 比較候補: 同業界で初任給が近い企業（比較ページへの導線・静的生成用）
+export function getCompareCandidates(
+  all: CompanyData[],
+  company: CompanyData,
+  limit = 4,
+): CompanyData[] {
+  const myMonthly = num(company.baseMonthly)
+  if (myMonthly === null) return []
+  const industries = splitIndustries(company.industry)
+  return all
+    .filter(
+      (c) =>
+        c.id !== company.id &&
+        num(c.baseMonthly) !== null &&
+        splitIndustries(c.industry).some((i) => industries.includes(i)),
+    )
+    .sort(
+      (a, b) =>
+        Math.abs((num(a.baseMonthly) as number) - myMonthly) -
+        Math.abs((num(b.baseMonthly) as number) - myMonthly),
+    )
+    .slice(0, limit)
+}

@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { fetchRankingDataServer, fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
 import { buildAllListDefinitions } from '@/lib/list-definitions'
+import { buildComparePairs } from '@/lib/compare'
 import { SITE_URL } from '@/lib/config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -54,6 +55,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }))
 
+  // 企業比較ページのルート（同業界・初任給が近いペアを自動生成）
+  const compareRoutes: MetadataRoute.Sitemap = buildComparePairs(allCompanies).map((pair) => ({
+    url: `${baseUrl}/compare/${pair}`,
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
   // 記事ページのルート（実際の公開日をlastModifiedとして使用）
   const articles = await fetchArticleDataServer()
   const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
@@ -63,5 +71,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }))
 
-  return [...staticRoutes, ...industryRoutes, ...listRoutes, ...companyRoutes, ...articleRoutes]
+  return [...staticRoutes, ...industryRoutes, ...listRoutes, ...companyRoutes, ...compareRoutes, ...articleRoutes]
 }

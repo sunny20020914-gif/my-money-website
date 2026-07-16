@@ -11,7 +11,8 @@ import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
 import Link from "next/link"
-import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries } from "@/lib/company-stats"
+import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries, getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
+import { pairSlug } from "@/lib/compare"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
@@ -93,6 +94,10 @@ export default async function CompanyPage({ params }: Props) {
   const industryListDefs = buildAllListDefinitions(allCompanies).filter(
     (d) => d.industry && company.industry.split("/").map((i) => i.trim()).includes(d.industry),
   )
+  // 回遊導線: 初任給ランキングで前後の企業 + 同業界の比較候補
+  const neighbors = getRankNeighbors(allCompanies, company)
+  const compareCandidates = getCompareCandidates(allCompanies, company, 3)
+  const primaryIndustry = company.industry.split("/")[0]?.trim() || null
   const lastUpdated = new Date() // ISR再生成のたびに更新される
 
   const SalaryDisplay = (props: { value: number | string | null | undefined, url?: string, isPrimary?: boolean }) => {
@@ -147,12 +152,15 @@ export default async function CompanyPage({ params }: Props) {
     sameAs: company.url ? [company.url] : [],
   }
 
+  // 可視パンくずと同一内容にする（業界ページをハブとして経由）
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "ホーム", item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "初任給ランキング", item: `${SITE_URL}/ranking` },
+      primaryIndustry
+        ? { "@type": "ListItem", position: 2, name: `${primaryIndustry}業界`, item: `${SITE_URL}/industries/${encodeURIComponent(primaryIndustry)}` }
+        : { "@type": "ListItem", position: 2, name: "初任給ランキング", item: `${SITE_URL}/ranking` },
       { "@type": "ListItem", position: 3, name: company.company, item: pageUrl },
     ],
   }
@@ -190,6 +198,20 @@ export default async function CompanyPage({ params }: Props) {
         <div className="max-w-4xl mx-auto space-y-8">
           {/* --- 企業ヘッダー --- */}
           <section>
+            {/* 可視パンくず（業界ページへの回遊導線・BreadcrumbList JSON-LDと同一内容） */}
+            <nav aria-label="パンくずリスト" className="text-xs text-muted-foreground mb-4">
+              <Link href="/" className="hover:underline">ホーム</Link>
+              <span className="mx-1.5">›</span>
+              {primaryIndustry ? (
+                <Link href={`/industries/${encodeURIComponent(primaryIndustry)}`} className="hover:underline">
+                  {primaryIndustry}業界
+                </Link>
+              ) : (
+                <Link href="/ranking" className="hover:underline">初任給ランキング</Link>
+              )}
+              <span className="mx-1.5">›</span>
+              <span>{company.company}</span>
+            </nav>
             {/* 🌟 flex-wrap を追加して、画面幅に収まらない長い企業名は自動でロゴの下に回り込むように調整 */}
             <div className="flex flex-wrap items-start gap-4 sm:gap-6">
               <Image
@@ -269,6 +291,67 @@ export default async function CompanyPage({ params }: Props) {
               </CardContent>
             </Card>
           </section>
+
+          {/* --- ランキング前後の企業＋比較導線（給与を見た直後の自然な次クリック） --- */}
+          {(neighbors.prev || neighbors.next || compareCandidates.length > 0) && (
+            <section>
+              <Card className="py-0 gap-0">
+                <CardContent className="p-4 md:p-5 space-y-4">
+                  {neighbors.rank !== null && (neighbors.prev || neighbors.next) && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        初任給ランキング {neighbors.rank}位 / {neighbors.total}社中 — 前後の企業
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {neighbors.prev ? (
+                          <Link
+                            href={`/companies/${neighbors.prev.id}`}
+                            className="flex items-center gap-2 p-2.5 rounded-lg border bg-card hover:bg-accent transition-colors min-w-0"
+                          >
+                            <span className="text-xs text-muted-foreground flex-shrink-0">↑{neighbors.rank - 1}位</span>
+                            <span className="text-sm font-semibold truncate">{neighbors.prev.company}</span>
+                            {typeof neighbors.prev.baseMonthly === "number" && (
+                              <span className="text-xs text-muted-foreground ml-auto flex-shrink-0 hidden sm:inline">
+                                ¥{neighbors.prev.baseMonthly.toLocaleString()}
+                              </span>
+                            )}
+                          </Link>
+                        ) : <div />}
+                        {neighbors.next ? (
+                          <Link
+                            href={`/companies/${neighbors.next.id}`}
+                            className="flex items-center gap-2 p-2.5 rounded-lg border bg-card hover:bg-accent transition-colors min-w-0"
+                          >
+                            <span className="text-xs text-muted-foreground flex-shrink-0">↓{neighbors.rank + 1}位</span>
+                            <span className="text-sm font-semibold truncate">{neighbors.next.company}</span>
+                            {typeof neighbors.next.baseMonthly === "number" && (
+                              <span className="text-xs text-muted-foreground ml-auto flex-shrink-0 hidden sm:inline">
+                                ¥{neighbors.next.baseMonthly.toLocaleString()}
+                              </span>
+                            )}
+                          </Link>
+                        ) : <div />}
+                      </div>
+                    </div>
+                  )}
+                  {compareCandidates.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">同業界の企業と比較する</p>
+                      <div className="flex flex-wrap gap-2">
+                        {compareCandidates.map((c) => (
+                          <Button key={c.id} asChild variant="outline" size="sm" className="bg-transparent">
+                            <Link href={`/compare/${pairSlug(company.id, c.id)}`}>
+                              vs {c.company}
+                            </Link>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          )}
 
           {/* 広告1: 給与データ直後（最も注目度の高い情報の直下） */}
           <DynamicAdBanner />
