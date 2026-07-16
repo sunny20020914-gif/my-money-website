@@ -17,8 +17,10 @@ export function parsePairSlug(slug: string): [string, string] | null {
 export function buildComparePairs(all: CompanyData[], perCompany = 2): string[] {
   const set = new Set<string>()
   for (const c of all) {
-    if (!c.id) continue
+    // IDに区切り文字"-vs-"を含む企業はスラッグが曖昧になるため除外
+    if (!c.id || c.id.includes("-vs-")) continue
     for (const partner of getCompareCandidates(all, c, perCompany)) {
+      if (!partner.id || partner.id.includes("-vs-")) continue
       set.add(pairSlug(c.id, partner.id))
     }
   }

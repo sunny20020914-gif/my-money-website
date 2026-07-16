@@ -60,7 +60,22 @@ const SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY || process.env.NEXT_PUB
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || process.env.NEXT_PUBLIC_SPREADSHEET_ID
 const COMPANIES_SHEET_NAME = "companies"
 
+// 【重要・429対策】本番/ビルド時は Next.js の Data Cache に1時間キャッシュする。
+// これによりビルド中の全静的ページ生成（企業・比較・条件ページ等の数百ページ）で
+// 同一URLへのAPI呼び出しが1回に集約され、Google Sheets APIのレート制限を回避できる。
+// 従来の cache:'default' は Next のキャッシュ対象外のため、ページごとに毎回APIを叩いていた。
+const fetchCacheOptions: RequestInit & { next?: { revalidate: number } } =
+  process.env.NODE_ENV === 'development'
+    ? { cache: 'no-store' }
+    : { next: { revalidate: 3600 } }
+
 export async function fetchRankingDataServer(rankingType: RankingType = "annual"): Promise<CompanyData[]> {
+  // 【デバッグ】MOCK_SHEETS=1 でAPIを使わず疑似データでビルドを再現できる
+  if (process.env.MOCK_SHEETS === "1") {
+    const { mockRankingData } = await import("./mock-data")
+    return mockRankingData()
+  }
+
   console.log("[v0] 環境変数チェック:")
   console.log(
     "[v0] GOOGLE_SHEETS_API_KEY:",
@@ -92,10 +107,7 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
 
     console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
 
-    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
-    const response = await fetch(url, {
-      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
-    })
+    const response = await fetch(url, fetchCacheOptions)
 
     console.log("[v0] APIレスポンスステータス:", response.status)
 
@@ -169,13 +181,15 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
 }
 
 async function fetchCompanyDetailRow(id: string): Promise<any[] | undefined> {
+  if (process.env.MOCK_SHEETS === "1") {
+    const { mockDetailRow } = await import("./mock-data")
+    return mockDetailRow(id)
+  }
   if (!SHEETS_API_KEY || !SPREADSHEET_ID) return undefined;
 
   const range = `${COMPANIES_SHEET_NAME}!A2:E`; // A列からE列まで取得 (適宜変更)
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
-  const response = await fetch(url, {
-    cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
-  })
+  const response = await fetch(url, fetchCacheOptions)
   const data = await response.json()
   return data.values?.find((row: any[]) => row[0] === id);
 }
@@ -242,6 +256,10 @@ export async function fetchCompanyById(id: string): Promise<(CompanyData & Compa
 }
 
 export async function fetchIndustryDataServer(): Promise<IndustryData[]> {
+  if (process.env.MOCK_SHEETS === "1") {
+    const { mockIndustryData } = await import("./mock-data")
+    return mockIndustryData()
+  }
   if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
     console.warn("[v0] Google Sheets API設定が見つかりません。業界データは取得できません。")
     return []
@@ -253,10 +271,7 @@ export async function fetchIndustryDataServer(): Promise<IndustryData[]> {
 
     console.log("[v0] Google Sheets APIリクエスト (業界別):", url.replace(SHEETS_API_KEY, "***"))
 
-    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
-    const response = await fetch(url, {
-      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
-    })
+    const response = await fetch(url, fetchCacheOptions)
 
     if (!response.ok) {
       throw new Error(`API responded with status ${response.status}`)
@@ -297,9 +312,7 @@ export async function fetchSheetNames(): Promise<string[]> {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties.title&key=${SHEETS_API_KEY}`
     console.log("[v0] Google Sheets APIリクエスト (シート名一覧):", url.replace(SHEETS_API_KEY, "***"))
 
-    const response = await fetch(url, {
-      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
-    })
+    const response = await fetch(url, fetchCacheOptions)
 
     if (!response.ok) throw new Error(`API responded with status ${response.status}`)
 
@@ -312,6 +325,11 @@ export async function fetchSheetNames(): Promise<string[]> {
 }
 
 export async function fetchArticleDataServer(): Promise<ArticleData[]> {
+  if (process.env.MOCK_SHEETS === "1") {
+    const { mockArticles } = await import("./mock-data")
+    return mockArticles()
+  }
+
   console.log("[v0] 環境変数チェック:")
   console.log(
     "[v0] GOOGLE_SHEETS_API_KEY:",
@@ -330,10 +348,7 @@ export async function fetchArticleDataServer(): Promise<ArticleData[]> {
 
     console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
 
-    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
-    const response = await fetch(url, {
-      next: { revalidate: 3600 },
-    })
+    const response = await fetch(url, fetchCacheOptions)
 
     console.log("[v0] APIレスポンスステータス:", response.status)
 
@@ -384,6 +399,10 @@ export async function fetchArticleById(id: string): Promise<ArticleData | null> 
 }
 
 export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompanyData[]> {
+  if (process.env.MOCK_SHEETS === "1") {
+    const { mockFeaturedCompanies } = await import("./mock-data")
+    return mockFeaturedCompanies()
+  }
   if (!SHEETS_API_KEY || !SPREADSHEET_ID) {
     console.warn("[v0] Google Sheets API設定が見つかりません。注目企業データは取得できません。")
     return []
@@ -395,10 +414,7 @@ export async function fetchFeaturedCompaniesDataServer(): Promise<FeaturedCompan
 
     console.log("[v0] Google Sheets APIリクエスト (注目企業):", url.replace(SHEETS_API_KEY, "***"))
 
-    // 開発中はキャッシュせず、本番環境では1時間キャッシュする
-    const response = await fetch(url, {
-      cache: process.env.NODE_ENV === 'development' ? 'no-store' : 'default',
-    })
+    const response = await fetch(url, fetchCacheOptions)
 
     console.log("[v0] 注目企業APIレスポンスステータス:", response.status)
     const responseData = await response.json()
