@@ -1,4 +1,5 @@
 import { fetchRankingDataServer } from "@/lib/sheets"
+import { buildRankingSummary } from "@/lib/ranking-summary"
 import { RankingPageClient } from "./ranking-page-client"
 import type { Metadata } from 'next'
 
@@ -20,6 +21,10 @@ export default async function RankingPage() {
     // C列の業界データを抽出し、重複を除いたリストを作成
     const allIndustries = initialData.flatMap(company => company.industry.split('/')).filter(Boolean);
     const uniqueIndustries = Array.from(new Set(allIndustries)).sort();
+
+    // 【SEO】冒頭サマリー用の集計（平均・中央値・業種別平均＝独自データ）
+    const summary = buildRankingSummary(initialData)
+    const updatedLabel = new Date().toLocaleDateString("ja-JP")
 
     const itemListLd = {
       "@context": "https://schema.org",
@@ -48,11 +53,11 @@ export default async function RankingPage() {
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-        <RankingPageClient initialData={initialData} initialError={null} industryList={uniqueIndustries} />
+        <RankingPageClient initialData={initialData} initialError={null} industryList={uniqueIndustries} summary={summary} updatedLabel={updatedLabel} />
       </>
     )
   } catch (error) {
     console.error("[v0] ランキングページデータの取得に失敗:", error)
-    return <RankingPageClient initialData={[]} initialError="データの取得に失敗しました。後でもう一度お試しください。" industryList={[]} />
+    return <RankingPageClient initialData={[]} initialError="データの取得に失敗しました。後でもう一度お試しください。" industryList={[]} summary={null} updatedLabel="" />
   }
 }

@@ -26,23 +26,13 @@ const getAuth = () => {
   });
 };
 
-// Googleからのエラーを、原因が特定できる利用者向けメッセージに変換する
-const toUserError = (error: unknown): string => {
+// 利用者にはサーバー内部の詳細を見せず、汎用メッセージのみ返す。
+// 原因特定用の詳細は console.error でVercelのFunctionログにのみ出力する。
+const GENERIC_UNAVAILABLE = 'コメント機能は現在利用できません。';
+
+const logDetail = (context: string, error: unknown) => {
   const e = error as { code?: number | string; message?: string };
-  const msg = e?.message || String(error);
-  if (e?.code === 403 || msg.includes('does not have permission')) {
-    return 'サーバー設定エラー(403): サービスアカウントにスプレッドシートの権限がありません。シートをGOOGLE_CLIENT_EMAILのアドレスに「編集者」で共有してください。';
-  }
-  if (e?.code === 404 || msg.includes('Requested entity was not found')) {
-    return 'サーバー設定エラー(404): GOOGLE_SHEET_ID のスプレッドシートが見つかりません。IDを確認してください。';
-  }
-  if (msg.includes('Unable to parse range')) {
-    return 'サーバー設定エラー: スプレッドシートに「Comments」シートが存在しません。タブ名を確認してください。';
-  }
-  if (msg.includes('DECODER') || msg.includes('PEM') || msg.includes('private_key') || msg.includes('invalid_grant')) {
-    return 'サーバー設定エラー: GOOGLE_PRIVATE_KEY の形式が不正です。改行を含む鍵全体を正しく設定してください。';
-  }
-  return 'コメントの処理に失敗しました。時間をおいて再度お試しください。';
+  console.error(`[comments] ${context}:`, e?.code ?? '', e?.message ?? String(error));
 };
 
 export type Comment = {
@@ -60,8 +50,8 @@ export type CommentsResult = {
 export async function getComments(companyId: string): Promise<CommentsResult> {
   const missing = missingEnvs();
   if (missing.length > 0) {
-    console.error('コメント機能: 環境変数が未設定です:', missing.join(', '));
-    return { comments: [], error: `サーバー設定エラー: 環境変数 ${missing.join(', ')} が未設定です。` };
+    console.error('[comments] 環境変数が未設定です:', missing.join(', '));
+    return { comments: [], error: GENERIC_UNAVAILABLE };
   }
 
   try {
@@ -87,8 +77,8 @@ export async function getComments(companyId: string): Promise<CommentsResult> {
       .reverse();
     return { comments };
   } catch (error) {
-    console.error('コメントの取得に失敗しました:', error);
-    return { comments: [], error: toUserError(error) };
+    logDetail('コメントの取得に失敗', error);
+    return { comments: [], error: GENERIC_UNAVAILABLE };
   }
 }
 
@@ -104,8 +94,8 @@ export async function addComment(formData: FormData) {
 
   const missing = missingEnvs();
   if (missing.length > 0) {
-    console.error('コメント機能: 環境変数が未設定です:', missing.join(', '));
-    return { error: `サーバー設定エラー: 環境変数 ${missing.join(', ')} が未設定です。` };
+    console.error('[comments] 環境変数が未設定です:', missing.join(', '));
+    return { error: GENERIC_UNAVAILABLE };
   }
 
   try {
@@ -125,7 +115,7 @@ export async function addComment(formData: FormData) {
     revalidatePath(`/companies/${companyId}`);
     return { success: true };
   } catch (error) {
-    console.error('コメントの投稿に失敗しました:', error);
-    return { error: toUserError(error) };
+    logDetail('コメントの投稿に失敗', error);
+    return { error: 'コメントの送信に失敗しました。時間をおいて再度お試しください。' };
   }
 }

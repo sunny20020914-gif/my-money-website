@@ -16,6 +16,8 @@ import type { CompanyData } from "@/lib/sheets"
 import { useFavorites } from "@/hooks/use-favorites"
 import { showToast } from "@/components/toaster"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
+import type { RankingSummary } from "@/lib/ranking-summary"
+import { FISCAL_YEAR } from "@/lib/config"
 
 type RankingType = "annual" | "monthly" | "base"
 
@@ -255,10 +257,14 @@ export function RankingPageClient({
   initialData,
   initialError,
   industryList,
+  summary,
+  updatedLabel,
 }: {
   initialData: CompanyData[];
   initialError: string | null;
   industryList: string[];
+  summary: RankingSummary | null;
+  updatedLabel: string;
 }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRanking, setSelectedRanking] = useState<RankingType>("monthly")
@@ -327,8 +333,61 @@ export function RankingPageClient({
               <p className="text-base md:text-lg text-muted-foreground text-balance leading-relaxed">
                 気になる企業の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
                 ランキングを切り替えて、あなたの目指すキャリアを見つけよう。
-              </p>  
+              </p>
             </div>
+
+            {/* 【SEO】集計サマリー: 平均・中央値・業種別平均は当サイトの独自データ。
+                冒頭で検索意図（平均はいくら？どの業界が高い？）に即答する */}
+            {summary && summary.avgMonthly !== null && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle className="text-base md:text-lg">
+                    【{FISCAL_YEAR}年度】初任給データ集計（掲載{summary.withMonthly}社・当サイト調べ）
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <p className="text-sm md:text-base leading-relaxed text-muted-foreground">
+                    当サイト掲載{summary.withMonthly}社の平均初任給は月額{summary.avgMonthly.toLocaleString()}円
+                    {summary.medianMonthly !== null && <>、中央値は{summary.medianMonthly.toLocaleString()}円</>}です。
+                    {summary.topCompany && summary.topMonthly !== null && (
+                      <>最高は{summary.topCompany}の{summary.topMonthly.toLocaleString()}円。</>
+                    )}
+                    初任給40万円以上は{summary.over40}社、35万円以上は{summary.over35}社、30万円以上は{summary.over30}社です。
+                  </p>
+                  {summary.industryAverages.length > 0 && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <caption className="sr-only">業種別平均初任給（{FISCAL_YEAR}年度・当サイト調べ）</caption>
+                        <thead>
+                          <tr className="border-b text-muted-foreground">
+                            <th scope="col" className="py-2 pr-4 text-left font-medium">業界</th>
+                            <th scope="col" className="py-2 pr-4 text-right font-medium">掲載社数</th>
+                            <th scope="col" className="py-2 text-right font-medium">平均初任給（月額）</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {summary.industryAverages.slice(0, 10).map((row) => (
+                            <tr key={row.industry} className="border-b last:border-b-0">
+                              <th scope="row" className="py-2 pr-4 text-left font-normal">
+                                <Link href={`/industries/${encodeURIComponent(row.industry)}`} className="text-primary hover:underline">
+                                  {row.industry}
+                                </Link>
+                              </th>
+                              <td className="py-2 pr-4 text-right">{row.count}社</td>
+                              <td className="py-2 text-right font-semibold">¥{row.avgMonthly.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    出典: 各社の新卒採用情報をもとに当サイト編集部が集計（{FISCAL_YEAR}年度・掲載3社以上の業界のみ表示）。
+                    金額は固定残業代や諸手当を含む場合があります。最終更新: {updatedLabel}（データは自動更新）
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="mb-8">
               <CardHeader>
