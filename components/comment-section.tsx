@@ -12,32 +12,51 @@ export function CommentSection({ companyId }: { companyId: string }) {
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
   // 初回読み込み時にコメントを取得
   useEffect(() => {
+    let cancelled = false
     const fetchComments = async () => {
-      const data = await getComments(companyId)
-      setComments(data)
-      setIsLoading(false)
+      try {
+        const result = await getComments(companyId)
+        if (cancelled) return
+        setComments(result.comments)
+        setLoadError(result.error ?? null)
+      } catch (e) {
+        // サーバーアクション自体の呼び出しに失敗した場合も「読み込み中」のまま固まらないようにする
+        console.error("コメントの読み込みに失敗:", e)
+        if (!cancelled) setLoadError("コメントの読み込みに失敗しました。ページを再読み込みしてください。")
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
     fetchComments()
+    return () => { cancelled = true }
   }, [companyId])
 
   // コメント送信処理
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
-    const result = await addComment(formData)
-    setIsSubmitting(false)
+    try {
+      const result = await addComment(formData)
 
-    if (result.error) {
-      showToast(result.error, "info")
-    } else {
-      showToast("コメントを投稿しました", "success")
-      formRef.current?.reset() // フォームをリセット
-      // 最新のコメントを再取得して表示を更新
-      const updatedData = await getComments(companyId)
-      setComments(updatedData)
+      if (result.error) {
+        showToast(result.error, "info")
+      } else {
+        showToast("コメントを投稿しました", "success")
+        formRef.current?.reset() // フォームをリセット
+        // 最新のコメントを再取得して表示を更新
+        const updatedData = await getComments(companyId)
+        setComments(updatedData.comments)
+        setLoadError(updatedData.error ?? null)
+      }
+    } catch (e) {
+      console.error("コメントの投稿に失敗:", e)
+      showToast("コメントの送信に失敗しました。通信環境を確認して再度お試しください。", "info")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -80,9 +99,14 @@ export function CommentSection({ companyId }: { companyId: string }) {
 
       {/* コメント一覧 */}
       <div className="space-y-4">
+        {loadError && (
+          <p className="text-sm text-center py-3 px-4 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive">
+            {loadError}
+          </p>
+        )}
         {isLoading ? (
           <p className="text-muted-foreground text-sm text-center py-4">読み込み中...</p>
-        ) : comments.length === 0 ? (
+        ) : loadError ? null : comments.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-8 bg-muted/30 rounded-lg">まだコメントはありません。最初のコメントを投稿してみましょう！</p>
         ) : (
           comments.map((comment, i) => (
