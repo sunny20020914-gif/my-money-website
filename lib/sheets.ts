@@ -94,7 +94,9 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
       case "annual":
         return "年俸ランキング"
       case "monthly":
-        return "月額額面ランキング"
+        // 月額額面ランキングは専用タブではなく年俸ランキングタブのE列から導出する
+        // （タブの二重管理を廃止。同一URLのfetchはキャッシュされるためAPI呼び出しも増えない）
+        return "年俸ランキング"
       case "base":
         return "基本給ランキング"
     }
@@ -151,7 +153,7 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
       return parseSalaryValue(value) ?? '?';
     }
 
-    return data.values.map((row: any[], index: number) => {
+    const companies: CompanyData[] = data.values.map((row: any[], index: number) => {
       const id = row[11] || row[1]?.toLowerCase().replace(/\s/g, '_') || `company-${index}`
       const baseData = {
         rank: parseStrictNumber(row[0]) || index + 1,
@@ -174,6 +176,17 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
         baseMonthly: parseSalaryValue(row[4]),
       }
     })
+
+    // 月額額面ランキング: 年俸タブのうち月額が数値で入っている企業のみを
+    // 月額降順に並べ替え、順位を振り直して返す（月額未記載の企業は載せない）
+    if (rankingType === "monthly") {
+      return companies
+        .filter((c) => typeof c.baseMonthly === "number" && c.baseMonthly > 0)
+        .sort((a, b) => (b.baseMonthly as number) - (a.baseMonthly as number))
+        .map((c, i) => ({ ...c, rank: i + 1 }))
+    }
+
+    return companies
   } catch (error) {
     console.error("[v0] Google Sheetsからのデータ取得に失敗:", error)
     return []
