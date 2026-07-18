@@ -12,6 +12,7 @@ import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
 import { RecentlyViewed } from "@/components/recently-viewed"
+import { CompanyLogo } from "@/components/company-logo"
 import Link from "next/link"
 import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries, getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
 import { pairSlug } from "@/lib/compare"
@@ -216,11 +217,11 @@ export default async function CompanyPage({ params }: Props) {
             </nav>
             {/* 🌟 flex-wrap を追加して、画面幅に収まらない長い企業名は自動でロゴの下に回り込むように調整 */}
             <div className="flex flex-wrap items-start gap-4 sm:gap-6">
-              <Image
-                src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
-                alt={`${company.company}のロゴ`}
-                width={100}
-                height={100}
+              <CompanyLogo
+                logo={company.logo}
+                domain={company.domain}
+                company={company.company}
+                size={100}
                 className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg object-contain border bg-card flex-shrink-0"
               />
               {/* 🌟 最小幅（min-w-[200px]）を指定することで、自動折り返しの判定を最適化 */}
@@ -518,11 +519,11 @@ export default async function CompanyPage({ params }: Props) {
                     href={`/companies/${c.id}`}
                     className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
                   >
-                    <Image
-                      src={c.logo || (c.domain ? `https://logo.clearbit.com/${c.domain}` : "/placeholder.svg")}
-                      alt={`${c.company}のロゴ`}
-                      width={40}
-                      height={40}
+                    <CompanyLogo
+                      logo={c.logo}
+                      domain={c.domain}
+                      company={c.company}
+                      size={40}
                       className="w-10 h-10 rounded object-contain border bg-background flex-shrink-0"
                     />
                     <div className="min-w-0">

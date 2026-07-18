@@ -9,6 +9,7 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AdBanner } from "@/components/ad-banner"
+import { CompanyLogo } from "@/components/company-logo"
 import Image from "next/image"
 import Link from "next/link"
 import { Metadata } from "next"
@@ -175,11 +176,11 @@ export default async function ComparePage({ params }: Props) {
 
   const CompanyHeader = ({ c }: { c: CompanyData }) => (
     <Link href={`/companies/${c.id}`} className="flex flex-col items-center gap-2 group">
-      <Image
-        src={c.logo || (c.domain ? `https://logo.clearbit.com/${c.domain}` : "/placeholder.svg")}
-        alt={`${c.company}のロゴ`}
-        width={56}
-        height={56}
+      <CompanyLogo
+        logo={c.logo}
+        domain={c.domain}
+        company={c.company}
+        size={56}
         className="w-12 h-12 md:w-14 md:h-14 rounded-lg object-contain border bg-card"
       />
       <span className="text-sm md:text-base font-bold text-center leading-tight group-hover:text-primary transition-colors">

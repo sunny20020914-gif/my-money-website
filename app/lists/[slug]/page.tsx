@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AdBanner } from "@/components/ad-banner"
+import { CompanyLogo } from "@/components/company-logo"
 import Image from "next/image"
 import Link from "next/link"
 import { Metadata } from "next"
@@ -140,11 +141,11 @@ export default async function ListPage({ params }: Props) {
                             <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-base flex-shrink-0">
                               {i + 1}
                             </div>
-                            <Image
-                              src={c.logo || (c.domain ? `https://logo.clearbit.com/${c.domain}` : "/placeholder.svg")}
-                              alt={`${c.company}のロゴ`}
-                              width={48}
-                              height={48}
+                            <CompanyLogo
+                              logo={c.logo}
+                              domain={c.domain}
+                              company={c.company}
+                              size={48}
                               className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-contain border bg-card flex-shrink-0"
                             />
                             <div className="flex-grow min-w-0">

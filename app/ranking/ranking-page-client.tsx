@@ -15,6 +15,7 @@ import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
 import { useFavorites } from "@/hooks/use-favorites"
 import { showToast } from "@/components/toaster"
+import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import type { RankingSummary } from "@/lib/ranking-summary"
 import { FISCAL_YEAR } from "@/lib/config"
@@ -111,12 +112,12 @@ const CompanyCard = ({
               <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground font-bold text-2xl shrink-0">
                 {company.rank || index + 1}
               </div>
-              <Image
-                src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
-                alt={`${company.company}のロゴ`}
+              <CompanyLogo
+                logo={company.logo}
+                domain={company.domain}
+                company={company.company}
+                size={64}
                 className="w-16 h-16 rounded-lg object-contain"
-                width={64}
-                height={64}
               />
               <div>
                 <h3 className="text-xl font-bold text-foreground">{company.company}</h3>
@@ -190,12 +191,12 @@ const CompanyCard = ({
               <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
                 {company.rank || index + 1}
               </div>
-              <Image
-                src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
-                alt={`${company.company}のロゴ`}
+              <CompanyLogo
+                logo={company.logo}
+                domain={company.domain}
+                company={company.company}
+                size={40}
                 className="w-10 h-10 rounded-lg object-contain"
-                width={40}
-                height={40}
               />
               <div className="ml-1 text-left">
                 <h3 className="text-sm font-bold text-foreground leading-tight">{company.company}</h3>

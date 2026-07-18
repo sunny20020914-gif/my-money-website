@@ -1,5 +1,6 @@
 import { fetchRankingDataServer } from "@/lib/sheets"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
+import { CompanyLogo } from "@/components/company-logo"
 import React from "react"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
@@ -172,11 +173,11 @@ export default async function IndustryPage({ params }: Props) {
                         </div>
 
                         {/* ロゴ */}
-                        <Image
-                          src={company.logo || (company.domain ? `https://logo.clearbit.com/${company.domain}` : "/placeholder.svg")}
-                          alt={`${company.company}のロゴ`}
-                          width={44}
-                          height={44}
+                        <CompanyLogo
+                          logo={company.logo}
+                          domain={company.domain}
+                          company={company.company}
+                          size={44}
                           className="w-11 h-11 rounded-lg object-contain shrink-0"
                         />
 
