@@ -53,12 +53,21 @@ export interface NetSalaryEstimate {
   netMonthlySecondYear: number
 }
 
+export interface NetSalaryOptions {
+  /** 扶養人数（所得税38万円/人・住民税33万円/人の扶養控除を適用） */
+  dependents?: number
+}
+
 /**
  * 月額額面から手取りを概算する。
  * 月額が数値でない（"要確認"等）場合は null を返す。
  */
-export function estimateNetSalary(grossMonthly: number | string | null | undefined): NetSalaryEstimate | null {
+export function estimateNetSalary(
+  grossMonthly: number | string | null | undefined,
+  options?: NetSalaryOptions,
+): NetSalaryEstimate | null {
   if (typeof grossMonthly !== "number" || grossMonthly <= 0) return null
+  const dependents = Math.max(0, Math.min(Math.floor(options?.dependents ?? 0), 5))
 
   const healthInsurance = Math.round(Math.min(grossMonthly, HEALTH_CAP) * HEALTH_RATE)
   const pension = Math.round(Math.min(grossMonthly, PENSION_CAP) * PENSION_RATE)
@@ -70,14 +79,14 @@ export function estimateNetSalary(grossMonthly: number | string | null | undefin
   const annualSocial = socialInsuranceTotal * 12
   const taxableIncome = Math.max(
     0,
-    annualGross - salaryIncomeDeduction(annualGross) - 480_000 - annualSocial,
+    annualGross - salaryIncomeDeduction(annualGross) - 480_000 - 380_000 * dependents - annualSocial,
   )
   const incomeTaxMonthly = Math.round(incomeTaxFromTaxable(taxableIncome) / 12)
 
   // 住民税（2年目以降の目安）: 基礎控除43万円・所得割10%・均等割5,000円/年
   const residentTaxable = Math.max(
     0,
-    annualGross - salaryIncomeDeduction(annualGross) - 430_000 - annualSocial,
+    annualGross - salaryIncomeDeduction(annualGross) - 430_000 - 330_000 * dependents - annualSocial,
   )
   const residentTaxMonthly = Math.round((residentTaxable * 0.1 + 5_000) / 12)
 

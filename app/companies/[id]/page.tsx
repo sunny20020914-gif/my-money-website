@@ -11,6 +11,7 @@ import { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
+import { RecentlyViewed } from "@/components/recently-viewed"
 import Link from "next/link"
 import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries, getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
 import { pairSlug } from "@/lib/compare"
@@ -285,9 +286,19 @@ export default async function CompanyPage({ params }: Props) {
                   </div>
                 </div>
                 {netSalary && (
-                  <p className="mt-4 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
-                    ※手取りは独身・扶養なしを前提に、社会保険料（健康保険・厚生年金・雇用保険）と所得税を差し引いた概算です。新卒1年目は住民税がかからないため、2年目以降は住民税（月約¥{netSalary.residentTaxMonthly.toLocaleString()}）を差し引いた約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}が目安になります。
-                  </p>
+                  <>
+                    <p className="mt-4 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
+                      ※手取りは独身・扶養なしを前提に、社会保険料（健康保険・厚生年金・雇用保険）と所得税を差し引いた概算です。新卒1年目は住民税がかからないため、2年目以降は住民税（月約¥{netSalary.residentTaxMonthly.toLocaleString()}）を差し引いた約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}が目安になります。
+                    </p>
+                    <p className="mt-2">
+                      <Link
+                        href={`/simulator?monthly=${netSalary.grossMonthly}&name=${encodeURIComponent(company.company)}`}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {company.company}の初任給で手取りを詳しくシミュレーション →
+                      </Link>
+                    </p>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -540,6 +551,15 @@ export default async function CompanyPage({ params }: Props) {
               </div>
             </section>
           )}
+
+          {/* --- 閲覧履歴（localStorage・回遊導線） --- */}
+          <RecentlyViewed
+            current={{
+              id: company.id,
+              name: company.company,
+              monthly: typeof company.baseMonthly === "number" ? company.baseMonthly : null,
+            }}
+          />
 
           {/* --- コメント欄 --- */}
           <section className="mt-16 border-t pt-10">

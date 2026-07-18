@@ -336,26 +336,24 @@ export function RankingPageClient({
               </p>
             </div>
 
-            {/* 【SEO】集計サマリー: 平均・中央値・業種別平均は当サイトの独自データ。
-                冒頭で検索意図（平均はいくら？どの業界が高い？）に即答する */}
+            {/* 【SEO】集計サマリー: 結論の1文は常時表示、業種別表は折りたたみ
+                （details内のコンテンツも初期HTMLに含まれクローラーに読まれる） */}
             {summary && summary.avgMonthly !== null && (
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle className="text-base md:text-lg">
-                    【{FISCAL_YEAR}年度】初任給データ集計（掲載{summary.withMonthly}社・当サイト調べ）
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <p className="text-sm md:text-base leading-relaxed text-muted-foreground">
-                    当サイト掲載{summary.withMonthly}社の平均初任給は月額{summary.avgMonthly.toLocaleString()}円
-                    {summary.medianMonthly !== null && <>、中央値は{summary.medianMonthly.toLocaleString()}円</>}です。
-                    {summary.topCompany && summary.topMonthly !== null && (
-                      <>最高は{summary.topCompany}の{summary.topMonthly.toLocaleString()}円。</>
-                    )}
-                    初任給40万円以上は{summary.over40}社、35万円以上は{summary.over35}社、30万円以上は{summary.over30}社です。
-                  </p>
-                  {summary.industryAverages.length > 0 && (
-                    <div className="overflow-x-auto">
+              <div className="mb-6 rounded-lg border bg-card p-4">
+                <p className="text-sm md:text-[15px] leading-relaxed text-muted-foreground">
+                  【{FISCAL_YEAR}年度】掲載{summary.withMonthly}社の平均初任給は月額{summary.avgMonthly.toLocaleString()}円
+                  {summary.medianMonthly !== null && <>（中央値{summary.medianMonthly.toLocaleString()}円）</>}。
+                  {summary.topCompany && summary.topMonthly !== null && (
+                    <>最高は{summary.topCompany}の{summary.topMonthly.toLocaleString()}円。</>
+                  )}
+                  40万円以上{summary.over40}社・35万円以上{summary.over35}社・30万円以上{summary.over30}社。
+                </p>
+                {summary.industryAverages.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-sm font-semibold text-primary hover:underline">
+                      業種別の平均初任給・調査概要を見る
+                    </summary>
+                    <div className="overflow-x-auto mt-3">
                       <table className="w-full text-sm">
                         <caption className="sr-only">業種別平均初任給（{FISCAL_YEAR}年度・当サイト調べ）</caption>
                         <thead>
@@ -380,31 +378,26 @@ export function RankingPageClient({
                         </tbody>
                       </table>
                     </div>
-                  )}
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    出典: 各社の新卒採用情報をもとに当サイト編集部が集計（{FISCAL_YEAR}年度・掲載3社以上の業界のみ表示）。
-                    金額は固定残業代や諸手当を含む場合があります。最終更新: {updatedLabel}（データは自動更新）
-                  </p>
-                </CardContent>
-              </Card>
+                    <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                      出典: 各社の新卒採用情報をもとに当サイト編集部が集計（{FISCAL_YEAR}年度・掲載3社以上の業界のみ表示）。
+                      金額は固定残業代や諸手当を含む場合があります。最終更新: {updatedLabel}（データは自動更新）
+                    </p>
+                  </details>
+                )}
+              </div>
             )}
 
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Search className="h-5 w-5" />
-                  ランキングの種類・検索
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
+            {/* 検索・絞り込み（コンパクト化: ランキング1位がファーストビューに入るように） */}
+            <Card className="mb-6">
+              <CardContent className="pt-4 md:pt-5">
+                <div className="flex flex-col gap-3">
                   <div className="flex flex-wrap gap-3">
                     {rankingTypes.map((type) => (
                       <Button
                         key={type.id}
                         variant={selectedRanking === type.id ? "default" : "outline"}
-                        size="lg"
-                        className={type.id === "base" ? "invisible pointer-events-none" : "text-base px-6"}
+                        size="sm"
+                        className={type.id === "base" ? "invisible pointer-events-none" : "px-5"}
                         onClick={() => {
                           // 既に選択されている場合は何もしない
                           if (selectedRanking === type.id) return
@@ -416,11 +409,9 @@ export function RankingPageClient({
                       </Button>
                     ))}
                   </div>
-                  <div className="p-4 bg-muted/50 rounded-lg transition-all duration-300">
-                    <p className="text-sm text-muted-foreground">
-                      {rankingTypes.find((type) => type.id === selectedRanking)?.description}
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {rankingTypes.find((type) => type.id === selectedRanking)?.description}
+                  </p>
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -461,28 +452,6 @@ export function RankingPageClient({
               </CardContent>
             </Card>
 
-            {/* 【SEO】クロス条件一覧ページへの内部リンク（クロール導線 + 回遊性向上） */}
-            {listLinks.length > 0 && (
-              <div className="mb-4 -mt-4">
-                <p className="text-sm font-semibold text-muted-foreground mb-2">条件から探す</p>
-                <div className="flex flex-wrap gap-2">
-                  {listLinks.map((def) => (
-                    <Button key={def.slug} asChild variant="outline" size="sm" className="bg-transparent">
-                      <Link href={`/lists/${encodeURIComponent(def.slug)}`}>{def.shortName}</Link>
-                    </Button>
-                  ))}
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href="/lists">すべての条件 →</Link>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* リスト直前の広告（一覧を見始める直前＝視認性の高い位置） */}
-            <div className="mb-6">
-              <AdBanner />
-            </div>
-
             {loading && companies.length === 0 ? (
               <div className="text-center py-12">
                 <RefreshCw className="animate-spin h-8 w-8 text-primary mx-auto mb-4" />
@@ -500,6 +469,23 @@ export function RankingPageClient({
                     {(index + 1) % 6 === 0 && <AdBanner />}
                   </React.Fragment>
                 ))}
+              </div>
+            )}
+
+            {/* 【SEO】クロス条件一覧への内部リンク（リスト下・クロール導線 + 回遊性向上） */}
+            {listLinks.length > 0 && !loading && (
+              <div className="mt-10 border-t pt-6">
+                <p className="text-sm font-semibold text-muted-foreground mb-2">条件から探す</p>
+                <div className="flex flex-wrap gap-2">
+                  {listLinks.map((def) => (
+                    <Button key={def.slug} asChild variant="outline" size="sm" className="bg-transparent">
+                      <Link href={`/lists/${encodeURIComponent(def.slug)}`}>{def.shortName}</Link>
+                    </Button>
+                  ))}
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/lists">すべての条件 →</Link>
+                  </Button>
+                </div>
               </div>
             )}
 
