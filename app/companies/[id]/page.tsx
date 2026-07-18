@@ -349,7 +349,9 @@ export default async function CompanyPage({ params }: Props) {
                   )}
                   {compareCandidates.length > 0 && (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">同業界の企業と比較する</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {primaryIndustry ? `${primaryIndustry}業界の企業と比較する` : "同業界の企業と比較する"}
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {compareCandidates.map((c) => (
                           <Button key={c.id} asChild variant="outline" size="sm" className="bg-transparent">

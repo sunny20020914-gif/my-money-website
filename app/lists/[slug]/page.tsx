@@ -24,7 +24,8 @@ export const revalidate = 3600
 
 export async function generateStaticParams() {
   const all = await fetchAllUniqueCompanies()
-  return buildAllListDefinitions(all).map((d) => ({ slug: encodeURIComponent(d.slug) }))
+  // 【重要】生のスラッグを返す（encodeURIComponent済みだと二重エンコードで日本語URLが404になる）
+  return buildAllListDefinitions(all).map((d) => ({ slug: d.slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

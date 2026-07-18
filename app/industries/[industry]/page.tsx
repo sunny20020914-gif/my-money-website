@@ -24,7 +24,9 @@ export async function generateStaticParams() {
   const industries = new Set(
     companies.flatMap((c) => c.industry.split("/").map((i) => i.trim())).filter(Boolean)
   )
-  return Array.from(industries).map((industry) => ({ industry: encodeURIComponent(industry) }))
+  // 【重要】生の値を返す（Next.jsがビルド時にエンコードするため、
+  // encodeURIComponent済みの値を返すと二重エンコードになり日本語URLが404になる）
+  return Array.from(industries).map((industry) => ({ industry }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
