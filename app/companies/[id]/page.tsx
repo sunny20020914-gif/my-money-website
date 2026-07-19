@@ -13,6 +13,7 @@ import { Remarkable } from "remarkable"
 import { CommentSection } from "@/components/comment-section"
 import { RecentlyViewed } from "@/components/recently-viewed"
 import { CompanyLogo } from "@/components/company-logo"
+import { ShareButtons } from "@/components/share-buttons"
 import Link from "next/link"
 import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries, getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
 import { pairSlug } from "@/lib/compare"
@@ -249,6 +250,9 @@ export default async function CompanyPage({ params }: Props) {
             <p className="mt-2 text-xs text-muted-foreground">
               最終更新日: <time dateTime={lastUpdated.toISOString()}>{lastUpdated.toLocaleDateString("ja-JP")}</time>
             </p>
+            <div className="mt-3">
+              <ShareButtons url={pageUrl} text={`${company.company}の初任給・年収・手取り情報`} />
+            </div>
           </section>
 
           {/* --- 給与情報 --- */}

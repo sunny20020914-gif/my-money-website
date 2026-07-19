@@ -332,7 +332,7 @@ export function RankingPageClient({
                 初任給・年収ランキング
               </h1>
               <p className="text-base md:text-lg text-muted-foreground text-balance leading-relaxed">
-                気になる企業の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
+                27卒・28卒向けに、新卒の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
                 ランキングを切り替えて、あなたの目指すキャリアを見つけよう。
               </p>
             </div>
@@ -381,7 +381,8 @@ export function RankingPageClient({
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
                       出典: 各社の新卒採用情報をもとに当サイト編集部が集計（{FISCAL_YEAR}年度・掲載3社以上の業界のみ表示）。
-                      金額は固定残業代や諸手当を含む場合があります。最終更新: {updatedLabel}（データは自動更新）
+                      金額は固定残業代や諸手当を含む場合があります。初任給は多くの企業で前年同水準か引き上げ傾向のため、27卒・28卒の企業選びの目安としてご活用ください。
+                      最終更新: {updatedLabel}（データは自動更新）
                     </p>
                   </details>
                 )}
@@ -488,6 +489,29 @@ export function RankingPageClient({
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* 【SEO】就活文脈の解説ブロック（「就活 初任給」系の複合クエリ対策 + 内部リンク） */}
+            {!loading && companies.length > 0 && (
+              <section className="mt-10 border-t pt-6 space-y-3 text-left">
+                <h2 className="text-base md:text-lg font-bold">新卒の企業選びで初任給ランキングを活用するには</h2>
+                <div className="space-y-3 text-sm md:text-[15px] leading-relaxed text-muted-foreground">
+                  <p>
+                    新卒で入社する企業を比較するとき、初任給の額面だけで判断するのは危険です。金額に固定残業代や住宅手当が含まれている場合があるため、
+                    同じ30万円でも実質的な条件は企業によって大きく異なります。各企業の詳細ページで給与の内訳と
+                    <Link href="/simulator" className="text-primary hover:underline mx-1">手取り額</Link>
+                    まで確認するのがおすすめです。
+                  </p>
+                  <p>
+                    また、初任給の水準は業界によって差があります。志望業界の
+                    <Link href="/industries" className="text-primary hover:underline mx-1">業界別ランキング</Link>
+                    で平均と比較すると、その企業の給与水準が業界内でどの位置にあるかが分かります。
+                    エントリー前の企業研究には、面接対策や業界研究をまとめた
+                    <Link href="/articles" className="text-primary hover:underline mx-1">就活記事</Link>
+                    もあわせてご活用ください。
+                  </p>
+                </div>
+              </section>
             )}
 
             {sortedAndFilteredCompanies.length === 0 && !loading && (

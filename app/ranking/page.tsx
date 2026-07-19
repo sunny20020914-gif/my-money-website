@@ -7,8 +7,8 @@ import type { Metadata } from 'next'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: "【2026年最新】初任給・年収ランキング一覧 | 新卒給与を企業比較",
-  description: "2026年度版・新卒初任給ランキング。上場企業・成長企業の初任給（月額）・想定年収・従業員数を一覧比較。業界別に絞り込んで、自分に合った企業を探せます。",
+  title: "【2026年最新】新卒初任給・年収ランキング一覧 | 27卒・28卒の企業比較",
+  description: "27卒・28卒の就活生向け・新卒初任給ランキング（2026年度実績）。上場企業・成長企業の新卒初任給（月額）・想定年収・従業員数を一覧比較。業界別に絞り込めて、新卒の企業選びにそのまま使えます。",
   alternates: {
     canonical: "https://www.mymoneyweb.com/ranking",
   },
