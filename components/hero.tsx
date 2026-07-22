@@ -27,7 +27,7 @@ export function Hero() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="h-12 px-8 text-lg">
-              <Link href="/industry-analysis">
+              <Link href="/industries">
                 業界分析を読む
               </Link>
             </Button>

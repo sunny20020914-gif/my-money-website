@@ -16,6 +16,16 @@ const nextConfig = {
       },
     ],
   },
+  // 旧「業界別分析」ページは /industries に統合。旧URLを 308 で恒久リダイレクトする。
+  async redirects() {
+    return [
+      {
+        source: "/industry-analysis",
+        destination: "/industries",
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig

@@ -53,10 +53,10 @@ export function Header() {
               ランキング
             </Link>
             <Link
-              href="/industry-analysis"
+              href="/industries"
               className={cn(
                 "text-sm font-medium transition-colors hover:text-foreground",
-                isActive("/industry-analysis") ? "text-foreground" : "text-muted-foreground",
+                isActive("/industries") ? "text-foreground" : "text-muted-foreground",
               )}
             >
               業界別分析
@@ -159,10 +159,10 @@ export function Header() {
                 ランキング
               </Link>
               <Link
-                href="/industry-analysis"
+                href="/industries"
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-foreground",
-                  isActive("/industry-analysis") ? "text-foreground" : "text-muted-foreground",
+                  isActive("/industries") ? "text-foreground" : "text-muted-foreground",
                 )}
                 onClick={() => setIsMenuOpen(false)}
               >

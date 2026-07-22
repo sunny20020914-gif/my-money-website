@@ -1,5 +1,13 @@
 import { fetchRankingDataServer } from "@/lib/sheets"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
+import {
+  buildIndustryAnalyses,
+  buildOverallStats,
+  buildIndustryLeadSummary,
+  buildIndustryFaq,
+  industryRank,
+} from "@/lib/industry-stats"
+import { FISCAL_YEAR } from "@/lib/config"
 import { CompanyLogo } from "@/components/company-logo"
 import React from "react"
 import { notFound } from "next/navigation"
@@ -12,7 +20,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Metadata } from "next"
 import { AdBanner } from "@/components/ad-banner"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, TrendingUp, Trophy } from "lucide-react"
 
 type Props = { params: { industry: string } }
 
@@ -80,6 +88,14 @@ export default async function IndustryPage({ params }: Props) {
       ? Math.round(numericSalaries.reduce((a, b) => a + b, 0) / numericSalaries.length)
       : null
 
+  // 【自動生成】取得済みデータだけからこの業界の分析コンテキストを算出（AI不使用）
+  const analyses = buildIndustryAnalyses(allCompanies, 3)
+  const overall = buildOverallStats(allCompanies, analyses)
+  const analysis = analyses.find((a) => a.industry === industry) ?? null
+  const rank = industryRank(analyses, industry)
+  const leadSummary = analysis ? buildIndustryLeadSummary(analysis, overall, rank, FISCAL_YEAR) : ""
+  const faq = analysis ? buildIndustryFaq(analysis, overall, rank, FISCAL_YEAR) : []
+
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -103,10 +119,22 @@ export default async function IndustryPage({ params }: Props) {
     ],
   }
 
+  // 【SEO】FAQリッチリザルト用。表示しているFAQと完全に同一内容にする
+  const faqLd = faq.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  } : null
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <div className="min-h-screen bg-background">
         <Header />
         <main className="py-8 md:py-12">
@@ -154,6 +182,78 @@ export default async function IndustryPage({ params }: Props) {
                 </div>
               )}
             </div>
+
+            {/* 【自動生成】業界分析（AI不使用・取得済みデータの集計） */}
+            {analysis && (
+              <section className="mb-8 space-y-4">
+                {leadSummary && (
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    {leadSummary}
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {analysis.avgMonthly !== null && (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="text-xs text-muted-foreground mb-1">平均初任給</div>
+                      <div className="text-lg md:text-xl font-bold text-primary">¥{analysis.avgMonthly.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/月</span></div>
+                    </div>
+                  )}
+                  {analysis.medianMonthly !== null && (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="text-xs text-muted-foreground mb-1">初任給の中央値</div>
+                      <div className="text-lg md:text-xl font-bold text-foreground">¥{analysis.medianMonthly.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/月</span></div>
+                    </div>
+                  )}
+                  {analysis.avgAnnual !== null && (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="text-xs text-muted-foreground mb-1">平均想定年収</div>
+                      <div className="text-lg md:text-xl font-bold text-foreground">¥{analysis.avgAnnual.toLocaleString()}</div>
+                    </div>
+                  )}
+                  {analysis.maxMonthly !== null && (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="text-xs text-muted-foreground mb-1">最高初任給</div>
+                      <div className="text-lg md:text-xl font-bold text-foreground">¥{analysis.maxMonthly.toLocaleString()}</div>
+                      {analysis.maxCompany && (
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">{analysis.maxCompany.company}</div>
+                      )}
+                    </div>
+                  )}
+                  {analysis.minMonthly !== null && (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="text-xs text-muted-foreground mb-1">最低初任給</div>
+                      <div className="text-lg md:text-xl font-bold text-foreground">¥{analysis.minMonthly.toLocaleString()}</div>
+                    </div>
+                  )}
+                  {rank && (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Trophy className="w-3 h-3" />全業界内の順位</div>
+                      <div className="text-lg md:text-xl font-bold text-primary">{rank.rank}<span className="text-sm font-normal text-muted-foreground">位 / {rank.total}業界</span></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 全体平均との比較 */}
+                {analysis.avgMonthly !== null && overall.avgMonthly !== null && (
+                  <div className="rounded-xl border bg-muted/40 p-4 flex items-center gap-3">
+                    <TrendingUp className="w-5 h-5 text-primary shrink-0" />
+                    <p className="text-sm text-muted-foreground">
+                      掲載企業全体の平均初任給（月額¥{overall.avgMonthly.toLocaleString()}）と比べて、{industry}業界は
+                      {" "}
+                      {analysis.avgMonthly - overall.avgMonthly === 0 ? (
+                        <span className="font-semibold text-foreground">ほぼ同水準</span>
+                      ) : analysis.avgMonthly - overall.avgMonthly > 0 ? (
+                        <span className="font-semibold text-green-600 dark:text-green-500">+¥{(analysis.avgMonthly - overall.avgMonthly).toLocaleString()} 高い</span>
+                      ) : (
+                        <span className="font-semibold text-red-600 dark:text-red-500">-¥{Math.abs(analysis.avgMonthly - overall.avgMonthly).toLocaleString()} 低い</span>
+                      )}
+                      {" "}水準です。
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
 
             <AdBanner />
 
@@ -239,6 +339,23 @@ export default async function IndustryPage({ params }: Props) {
             </div>
 
             <AdBanner />
+
+            {/* 【自動生成】業界FAQ（FAQPageスキーマと同一内容） */}
+            {faq.length > 0 && (
+              <section className="mt-10 space-y-4">
+                <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                  {industry}業界の初任給に関するよくある質問
+                </h2>
+                <dl className="space-y-5">
+                  {faq.map((item, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <dt className="font-bold text-[16px] md:text-lg">Q. {item.question}</dt>
+                      <dd className="text-[15px] md:text-base leading-relaxed text-muted-foreground">A. {item.answer}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
 
             <div className="mt-8 flex gap-3">
               <Button asChild variant="outline" className="bg-transparent">

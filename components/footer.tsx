@@ -26,7 +26,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/industry-analysis" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/industries" className="text-muted-foreground hover:text-foreground transition-colors">
                   業界別分析
                 </Link>
               </li>
