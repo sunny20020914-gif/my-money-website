@@ -372,9 +372,6 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
-          {/* 広告1: 給与データ直後（最も注目度の高い情報の直下） */}
-          <DynamicAdBanner />
-
           {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
           {industryComparisons.length > 0 && (
             <section className="space-y-4">
@@ -433,8 +430,8 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
-          {/* 広告2: 業界内比較の直後 */}
-          {industryComparisons.length > 0 && <DynamicAdBanner />}
+          {/* 広告1/2: 給与・業界内比較を見た直後の自然な区切り（ページ上部で唯一の広告） */}
+          <DynamicAdBanner />
 
           {/* --- 企業概要 --- */}
           <section className="space-y-7">
@@ -478,9 +475,6 @@ export default async function CompanyPage({ params }: Props) {
               </div>
             )}
 
-            {/* 広告3: 本文コンテンツの中間（読了エンゲージメントの高い位置） */}
-            <DynamicAdBanner />
-
             {company.salary_details && <div className="space-y-3">
               <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 <DollarSign className="w-5 h-5" />給与に関する補足
@@ -509,8 +503,8 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
-          {/* 広告4: FAQの直後・関連企業の直前（回遊直前の位置） */}
-          {faq.length > 0 && <DynamicAdBanner />}
+          {/* 広告2/2: 記事本文・FAQを読み終えた後、関連企業への回遊直前（上部広告との隣接を避けるため本文がある場合のみ） */}
+          {(faq.length > 0 || company.long_description || company.strength || company.future_potential || company.salary_details) && <DynamicAdBanner />}
 
           {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (
