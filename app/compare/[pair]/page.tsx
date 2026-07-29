@@ -24,9 +24,11 @@ export const revalidate = 3600
 const num = (v: number | string | null | undefined): number | null =>
   typeof v === "number" && v > 0 ? v : null
 
+// 【クロールバジェット対策】比較ページは noindex にしたため、全ペアを事前生成する必要がない。
+// 空配列を返してビルド時の静的生成を止め、実際にアクセスされたペアだけをオンデマンドでISR生成する。
+// ビルド時間とGoogle Sheets APIの呼び出し回数も削減される。
 export async function generateStaticParams() {
-  const all = await fetchAllUniqueCompanies()
-  return buildComparePairs(all).map((pair) => ({ pair }))
+  return []
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -49,6 +51,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: {
       canonical: `${SITE_URL}/compare/${pairSlug(a.id, b.id)}`,
     },
+    // 【クロールバジェット対策】組み合わせで自動生成される比較ページは検索需要が乏しく、
+    // 数だけが多いため新規ドメインの限られたクロール枠を食い潰していた（GSCで有効96ページ中42ページがcompare）。
+    // noindexでインデックス対象から外しつつ、follow は維持して企業ページへのリンク評価は通す。
+    // ユーザーの回遊導線としては引き続き機能する。
+    robots: { index: false, follow: true },
     openGraph: { title, description },
   }
 }

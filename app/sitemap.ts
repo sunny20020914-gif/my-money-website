@@ -1,7 +1,6 @@
 import { MetadataRoute } from 'next'
 import { fetchRankingDataServer, fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
 import { buildAllListDefinitions } from '@/lib/list-definitions'
-import { buildComparePairs } from '@/lib/compare'
 import { SITE_URL } from '@/lib/config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -18,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { route: '/ranking', priority: 0.9, freq: 'daily' },
     { route: '/industries', priority: 0.9, freq: 'weekly' },
     { route: '/featured', priority: 0.8, freq: 'weekly' },
-    { route: '/articles', priority: 0.8, freq: 'daily' },
+    { route: '/articles', priority: 0.95, freq: 'daily' },
     { route: '/lists', priority: 0.85, freq: 'weekly' },
     { route: '/simulator', priority: 0.8, freq: 'monthly' },
     { route: '/about', priority: 0.5, freq: 'monthly' },
@@ -35,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const companyRoutes: MetadataRoute.Sitemap = companies.map((company) => ({
     url: `${baseUrl}/companies/${company.id}`,
     changeFrequency: 'monthly' as const,
-    priority: 0.8,
+    priority: 0.9,
   }))
 
   // 業界別ページのルート
@@ -56,21 +55,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }))
 
-  // 企業比較ページのルート（同業界・初任給が近いペアを自動生成）
-  const compareRoutes: MetadataRoute.Sitemap = buildComparePairs(allCompanies).map((pair) => ({
-    url: `${baseUrl}/compare/${pair}`,
-    changeFrequency: 'monthly' as const,
-    priority: 0.7,
-  }))
+  // 【重要・クロールバジェット対策】企業比較ページ（/compare）はsitemapに含めない。
+  // 組み合わせで数百URL生成されるうえ検索需要が乏しく、新規ドメインの限られたクロール枠を
+  // 食い潰していた（GSC実測: 有効96ページ中42ページがcompare、一方で記事は0ページ）。
+  // ページ自体はnoindex+followで残し、ユーザーの回遊導線としては引き続き機能する。
 
   // 記事ページのルート（実際の公開日をlastModifiedとして使用）
+  // 記事は唯一の独自コンテンツのため最優先でクロールさせる
   const articles = await fetchArticleDataServer()
   const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${baseUrl}/articles/${article.id}`,
     lastModified: new Date(article.publishedAt),
     changeFrequency: 'weekly' as const,
-    priority: 0.9,
+    priority: 1.0,
   }))
 
-  return [...staticRoutes, ...industryRoutes, ...listRoutes, ...companyRoutes, ...compareRoutes, ...articleRoutes]
+  // 【クロール優先順位】記事 → 企業 → 業界 → 条件一覧 の順に並べる。
+  // sitemapの記載順もクロール順序のヒントになるため、価値の高いページを先頭に置く。
+  return [...staticRoutes, ...articleRoutes, ...companyRoutes, ...industryRoutes, ...listRoutes]
 }
