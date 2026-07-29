@@ -17,6 +17,7 @@ import { useFavorites } from "@/hooks/use-favorites"
 import { showToast } from "@/components/toaster"
 import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
+import { buildFinancialMetrics } from "@/lib/financials"
 import type { RankingSummary } from "@/lib/ranking-summary"
 import { FISCAL_YEAR } from "@/lib/config"
 
@@ -55,6 +56,10 @@ const CompanyCard = ({
 }: CompanyCardProps) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const isFav = company.id ? isFavorite(company.id, "company") : false;
+
+  // 財務指標（売上高・営業利益・営業利益率…）。スプシに列が無い企業では空配列になり、
+  // 下段の財務エリアごと非表示になる。指標を増やす場合も lib/financials.ts 側だけ触ればよい。
+  const financials = buildFinancialMetrics(company);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -142,32 +147,52 @@ const CompanyCard = ({
                 <p className="text-base font-semibold text-foreground">{typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}</p>
                 <p className="text-sm text-muted-foreground">設立: {company.founded}年</p>
               </div>
-              <div className="w-28 flex items-center justify-start md:justify-end">
-                <div className="flex w-full items-center gap-1.5">
-                  {company.id && (
-                    <Button asChild variant="outline" size="sm" className="bg-transparent flex-1">
-                      <Link href={`/companies/${company.id}`}>
-                        詳しく
-                      </Link>
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleFavoriteClick}
-                    className={`bg-transparent h-8 w-8 transition-colors shrink-0 ${
-                      isFav
-                        ? "text-primary border-primary dark:text-green-500 dark:border-green-500"
-                        : "text-muted-foreground hover:text-primary hover:border-primary dark:hover:text-green-500 dark:hover:border-green-500"
-                    }`}
-                  >
-                    <Star className="h-4 w-4" fill={isFav ? "currentColor" : "none"} />
+              {/* 詳細ページへの導線: 塗りつぶしボタンを幅いっぱいに置き、★は下段に分離。
+                  横並びで圧縮されていた従来より遷移が促進される。 */}
+              <div className="w-32 flex flex-col gap-1.5">
+                {company.id && (
+                  <Button asChild size="default" className="w-full font-semibold">
+                    <Link href={`/companies/${company.id}`}>
+                      詳しく見る
+                      <ArrowRightIcon className="ml-1 h-3.5 w-3.5" />
+                    </Link>
                   </Button>
-                </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFavoriteClick}
+                  className={`bg-transparent w-full transition-colors ${
+                    isFav
+                      ? "text-primary border-primary dark:text-green-500 dark:border-green-500"
+                      : "text-muted-foreground hover:text-primary hover:border-primary dark:hover:text-green-500 dark:hover:border-green-500"
+                  }`}
+                >
+                  <Star className="h-3.5 w-3.5 mr-1" fill={isFav ? "currentColor" : "none"} />
+                  <span className="text-xs">{isFav ? "保存済み" : "保存"}</span>
+                </Button>
               </div>
             </div>
           </div>
-          {/* --- 下段エリア --- */}
+          {/* --- 財務指標エリア（PC）---
+              指標は lib/financials.ts が返す配列をそのまま流し込む。
+              項目が3個→4個…と増えてもグリッドが自動で並べるためレイアウトは崩れない。
+              データが1つも無い企業では、この行ごと描画されない。
+
+              【配置順の注意】直後の説明文は position:absolute で高さを持たないため、
+              財務行を説明文より後ろに置くと説明文のテキストと重なる。必ず説明文より前に置くこと。 */}
+          {financials.length > 0 && (
+            <div className="mt-3 pt-3 border-t grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2">
+              {financials.map((m) => (
+                <div key={m.key} className="min-w-0">
+                  <p className="text-xs text-muted-foreground truncate">{m.label}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{m.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* --- 下段エリア（説明文・既存挙動のまま最後に置く）--- */}
           <div className="min-h-[0.8rem] relative mt-2 w-full">
             {company.description && (
               <p
@@ -227,25 +252,41 @@ const CompanyCard = ({
             </div>
           </div>
           {company.description && <p className="text-sm text-muted-foreground mt-1 leading-relaxed pl-[52px]">{company.description}</p>}
+
+          {/* --- 財務指標エリア（モバイル）---
+              狭い画面では2列固定。指標が増えても行が下に伸びるだけで横溢れしない。 */}
+          {financials.length > 0 && (
+            <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-x-6 gap-y-2 pl-[52px]">
+              {financials.map((m) => (
+                <div key={m.key} className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground truncate">{m.label}</p>
+                  <p className="text-xs font-semibold text-foreground truncate">{m.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         {company.id && (
-          <div className="mt-4 flex items-center gap-2">
-            <Button asChild variant="outline" size="xs" className="bg-transparent flex-1">
+          <div className="mt-4 flex flex-col gap-1.5">
+            {/* 詳細ページへの導線を塗りつぶし＋幅いっぱいにし、★は下段に分離 */}
+            <Button asChild size="sm" className="w-full font-semibold">
               <Link href={`/companies/${company.id}`}>
-                詳しく
+                詳しく見る
+                <ArrowRightIcon className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
             <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={handleFavoriteClick}
-              className={`bg-transparent h-7 w-7 transition-colors shrink-0 ${
+              className={`bg-transparent w-full transition-colors ${
                 isFav
                   ? "text-primary border-primary dark:text-green-500 dark:border-green-500"
                   : "text-muted-foreground hover:text-primary hover:border-primary dark:hover:text-green-500 dark:hover:border-green-500"
               }`}
             >
-              <Star className="h-4 w-4" fill={isFav ? "currentColor" : "none"} />
+              <Star className="h-3.5 w-3.5 mr-1" fill={isFav ? "currentColor" : "none"} />
+              <span className="text-xs">{isFav ? "保存済み" : "保存"}</span>
             </Button>
           </div>
         )}

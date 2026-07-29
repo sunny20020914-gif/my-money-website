@@ -19,6 +19,12 @@ export interface CompanyData {
   domain?: string
   logo?: string
   salaryUrl?: string // 給与関連のURL
+  // --- 財務指標（N列以降・任意）---
+  // スプシに列が無い／空欄の場合は undefined になり、UI側では自動的に非表示になる。
+  // 新しい指標を増やすときは、ここにフィールドを足して parse 行を1行追加するだけでよい。
+  revenue?: number | string | null // N列: 売上高
+  operatingProfit?: number | string | null // O列: 営業利益
+  operatingMargin?: number | string | null // P列: 営業利益率(%)
 }
 
 export interface ArticleData {
@@ -104,7 +110,10 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
 
   try {
     const sheetName = getSheetName(rankingType)
-    const range = `${sheetName}!A2:M1000` // M列(salaryUrl)まで取得
+    // M列(salaryUrl)までが従来の必須データ。N列以降は財務指標用に予約している。
+    // 将来 Q・R列に指標を足しても range を変えずに済むよう、余裕を持って R まで取得する。
+    // 列が存在しない場合、Sheets APIは単に短い配列を返すだけでエラーにはならない。
+    const range = `${sheetName}!A2:R1000`
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
 
     console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
@@ -174,6 +183,11 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
         // D列を想定年収、E列を初任給（月額）として固定で解釈する
         annualSalary: parseSalaryValue(row[3]),
         baseMonthly: parseSalaryValue(row[4]),
+        // 財務指標（N列以降）。列が未追加なら row[13] 等は undefined となり、
+        // parseSalaryValue が null を返すためUI側で自動的に非表示になる。
+        revenue: parseSalaryValue(row[13]), // N列: 売上高
+        operatingProfit: parseSalaryValue(row[14]), // O列: 営業利益
+        operatingMargin: parseSalaryValue(row[15]), // P列: 営業利益率(%)
       }
     })
 
