@@ -182,9 +182,13 @@ const CompanyCard = ({
               【配置順の注意】直後の説明文は position:absolute で高さを持たないため、
               財務行を説明文より後ろに置くと説明文のテキストと重なる。必ず説明文より前に置くこと。 */}
           {financials.length > 0 && (
-            <div className="mt-3 pt-3 border-t grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2">
+            /* 【配置】pl-[88px] は「順位バッジ(w-16=64px) + gap-6(24px)」の合計。
+               ロゴの左端と揃うため、カード左端からではなく順位番号の右隣から始まる。
+               grid で等幅に割ると画面幅いっぱいに間延びするため、flex で自然幅にして
+               項目同士を近づけている（指標が増えたら折り返す）。 */
+            <div className="mt-3 pt-3 border-t pl-[88px] flex flex-wrap items-start gap-x-10 gap-y-2">
               {financials.map((m) => (
-                <div key={m.key} className="min-w-0">
+                <div key={m.key} className="min-w-0 max-w-[13rem]">
                   <p className="text-xs text-muted-foreground truncate">{m.label}</p>
                   <p className="text-sm font-semibold text-foreground truncate">{m.value}</p>
                 </div>
@@ -256,9 +260,10 @@ const CompanyCard = ({
           {/* --- 財務指標エリア（モバイル）---
               狭い画面では2列固定。指標が増えても行が下に伸びるだけで横溢れしない。 */}
           {financials.length > 0 && (
-            <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-x-6 gap-y-2 pl-[52px]">
+            /* pl-[52px] は「順位バッジ(w-9=36px) + gap-4(16px)」。PC同様ロゴ左端に揃う。 */
+            <div className="mt-3 pt-3 border-t pl-[52px] flex flex-wrap items-start gap-x-8 gap-y-2">
               {financials.map((m) => (
-                <div key={m.key} className="min-w-0">
+                <div key={m.key} className="min-w-0 max-w-[9rem]">
                   <p className="text-[10px] text-muted-foreground truncate">{m.label}</p>
                   <p className="text-xs font-semibold text-foreground truncate">{m.value}</p>
                 </div>
