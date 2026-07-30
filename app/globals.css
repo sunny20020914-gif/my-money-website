@@ -31,7 +31,19 @@
     --input: 0.92 0.01 70;
     
     --ring: 0.65 0.15 200;
-    --radius: 0.5rem;
+    /* 角丸をわずかに大きくして今風の柔らかさを出す（要素のサイズは変わらない） */
+    --radius: 0.75rem;
+
+    /* 【質感レイヤー】色は変えず、影と動きの質だけを定義する。
+       影は「黒を薄く重ねる」のではなく背景のトーン(70)に寄せた色で作ると、
+       オフホワイト背景に濁らず馴染む。 */
+    --shadow-color: 30 25% 55%;
+    --shadow-card: 0 1px 2px -1px hsl(var(--shadow-color) / 0.10),
+                   0 2px 6px -2px hsl(var(--shadow-color) / 0.08);
+    --shadow-card-hover: 0 2px 4px -2px hsl(var(--shadow-color) / 0.12),
+                         0 8px 20px -6px hsl(var(--shadow-color) / 0.16);
+    /* 少しだけ跳ねる曲線。ホバーが機械的にならず「触れた感」が出る */
+    --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
   }
 
   .dark {
@@ -55,13 +67,126 @@
     --border: 0.28 0.02 240;
     --input: 0.28 0.02 240;
     --ring: 0.65 0.15 200;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* ダークモードでは影が見えにくいため、より濃い黒で落とす。
+       加えてカード上端のハイライト(after)で立体感を補う。 */
+    --shadow-color: 240 40% 4%;
+    --shadow-card: 0 1px 2px -1px hsl(var(--shadow-color) / 0.5),
+                   0 2px 6px -2px hsl(var(--shadow-color) / 0.4);
+    --shadow-card-hover: 0 2px 4px -2px hsl(var(--shadow-color) / 0.6),
+                         0 8px 20px -6px hsl(var(--shadow-color) / 0.55);
+    --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
   }
 
   * {
     @apply border-border;
     /* 🌟 Apple製品やWindowsで最も美しく読みやすい王道のフォントシステムを一括適用 */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+  }
+
+  /* ------------------------------------------------------------------
+     【質感の底上げ】ここから下は「見え方」だけを変える指定。
+     padding / font-size / width / height など寸法に関わる指定は一切書かない。
+     そのためランキングカード等のレイアウトとサイズは完全に維持される。
+     ------------------------------------------------------------------ */
+
+  body {
+    /* 文字の輪郭を滑らかにする。日本語の細い線が潰れず、密度感が上がって見える。
+       アンチエイリアスは字送り幅（advance width）を変えないため、
+       改行位置もカードの高さも一切変化しない。
+       ※ letter-spacing や text-rendering:optimizeLegibility は文字幅が変わり、
+         折り返し位置がずれてカード高さが変動する恐れがあるため意図的に使わない。 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 数字は等幅にすると、ランキングの金額が縦に揃って一気に「データサイト」らしくなる。
+     文字幅が変わらない tabular-nums のみを使うため、レイアウトはずれない */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 選択範囲をブランドカラーに。細部だが「作り込まれている」印象に効く */
+  ::selection {
+    background: oklch(var(--primary) / 0.18);
+    color: oklch(var(--foreground));
+  }
+
+  /* キーボード操作時のフォーカスを分かりやすく、かつ上品に。
+     マウス操作時には出ないので通常の見た目は変わらない */
+  :focus-visible {
+    outline: 2px solid oklch(var(--ring));
+    outline-offset: 2px;
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  /* スクロールバーを細く background に馴染ませる（Chrome/Edge/Safari） */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(var(--muted-foreground) / 0.25);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(var(--muted-foreground) / 0.45);
+    background-clip: content-box;
+  }
+
+  /* ページ内リンク移動を滑らかに（目次やアンカーの体験が良くなる） */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 動きを減らす設定の人には、アニメーションを無効化する */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* ------------------------------------------------------------------
+     カードの立体感。
+     影と transform のみを扱い、寸法（padding・サイズ）には触れない。
+     translateY(-2px) は要素の占有領域を変えないため、行の高さもずれない。
+     ------------------------------------------------------------------ */
+  [data-slot="card"] {
+    box-shadow: var(--shadow-card);
+    transition:
+      box-shadow 220ms var(--ease-out-soft),
+      transform 220ms var(--ease-out-soft),
+      border-color 220ms var(--ease-out-soft);
+  }
+
+  /* 既存クラスで hover:shadow-* を持つカードもあるため、
+     ホバー時の見え方をここで統一する */
+  [data-slot="card"]:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+    border-color: oklch(var(--border) / 0.7);
+  }
+
+  /* ボタン・リンクの反応を滑らかに。色以外は変化させない */
+  a, button, [role="button"] {
+    transition:
+      background-color 160ms var(--ease-out-soft),
+      color 160ms var(--ease-out-soft),
+      border-color 160ms var(--ease-out-soft),
+      box-shadow 160ms var(--ease-out-soft),
+      opacity 160ms var(--ease-out-soft);
   }
   @keyframes animate-gradient {
     0% {
