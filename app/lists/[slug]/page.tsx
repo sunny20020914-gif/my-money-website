@@ -158,7 +158,7 @@ export default async function ListPage({ params }: Props) {
                                 </h2>
                                 <div className="flex flex-wrap gap-1">
                                   {c.industry.split("/").filter(Boolean).slice(0, 3).map((ind, j) => (
-                                    <Badge key={j} variant="secondary" className="text-[10px] md:text-xs">{ind.trim()}</Badge>
+                                    <Badge key={j} variant="secondary" className="text-[11px] md:text-xs">{ind.trim()}</Badge>
                                   ))}
                                 </div>
                               </div>

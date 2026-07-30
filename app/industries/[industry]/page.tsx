@@ -288,7 +288,7 @@ export default async function IndustryPage({ params }: Props) {
                           <h2 className="text-base font-bold text-foreground truncate">{company.company}</h2>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {company.industry.split("/").map((ind, i) => (
-                              <Badge key={i} variant="secondary" className="text-[10px] px-1.5">{ind.trim()}</Badge>
+                              <Badge key={i} variant="secondary" className="text-[11px] px-1.5">{ind.trim()}</Badge>
                             ))}
                           </div>
                         </div>
