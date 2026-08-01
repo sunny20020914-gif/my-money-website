@@ -124,6 +124,30 @@ export default async function CompanyPage({ params }: Props) {
     return valueComponent;
   };
 
+  /**
+   * FAQのテキスト内に現れる企業名を <strong> で強調して返す。
+   * 【重要】この加工は「表示側」だけに適用する。FAQPageスキーマ（JSON-LD）には
+   * 加工前のプレーンテキストを渡すこと。構造化データにHTMLタグが混ざると
+   * リッチリザルトの判定に悪影響が出るため。
+   * dangerouslySetInnerHTML は使わず、配列を返してReactに描画させる（XSS耐性）。
+   */
+  const emphasizeCompanyName = (text: string, name: string): React.ReactNode[] => {
+    if (!name) return [text]
+    const parts = text.split(name)
+    // 企業名が含まれていなければそのまま返す
+    if (parts.length === 1) return [text]
+    return parts.flatMap((part, i) =>
+      i === 0
+        ? [part]
+        : [
+            <strong key={i} className="font-bold text-foreground">
+              {name}
+            </strong>,
+            part,
+          ],
+    )
+  }
+
   // 記事ページと同じ設定でMarkdownパーサーを初期化
   const md = new Remarkable({
     html: true, // HTMLタグを有効化
@@ -199,9 +223,14 @@ export default async function CompanyPage({ params }: Props) {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto space-y-8">
+        {/* 【スマホの並び替え】スマホでは企業概要に辿り着くまでのスクロールが長かったため、
+            order ユーティリティで「ヘッダー → 給与 → 企業概要 → …」の順に並べ替える。
+            md 以上では全要素を order-none(=0) に戻すので、PC表示はDOM順のまま変わらない。
+            ※ space-y-8 は「DOM順で」上マージンを付けるため並び替えと相性が悪い。
+              並び替え後の見た目の間隔が崩れないよう gap-8 に変更している。 */}
+        <div className="max-w-4xl mx-auto flex flex-col gap-8">
           {/* --- 企業ヘッダー --- */}
-          <section>
+          <section className="order-1 md:order-none">
             {/* 可視パンくず（業界ページへの回遊導線・BreadcrumbList JSON-LDと同一内容） */}
             <nav aria-label="パンくずリスト" className="text-xs text-muted-foreground mb-4">
               <Link href="/" className="hover:underline">ホーム</Link>
@@ -256,7 +285,7 @@ export default async function CompanyPage({ params }: Props) {
           </section>
 
           {/* --- 給与情報 --- */}
-          <section>
+          <section className="order-2 md:order-none">
             <Card className="py-0 gap-0">
               <CardContent className="p-4 md:p-6">
                 <div className="grid grid-cols-2 gap-4 md:flex md:flex-wrap md:justify-around md:items-center md:gap-x-8 md:gap-y-6">
@@ -311,7 +340,7 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- ランキング前後の企業＋比較導線（給与を見た直後の自然な次クリック） --- */}
           {(neighbors.prev || neighbors.next || compareCandidates.length > 0) && (
-            <section>
+            <section className="order-4 md:order-none">
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5 space-y-4">
                   {neighbors.rank !== null && (neighbors.prev || neighbors.next) && (
@@ -374,7 +403,7 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
           {industryComparisons.length > 0 && (
-            <section className="space-y-4">
+            <section className="space-y-4 order-5 md:order-none">
               <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 業界内での初任給の位置づけ
@@ -431,10 +460,12 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* 広告1/2: 給与・業界内比較を見た直後の自然な区切り（ページ上部で唯一の広告） */}
-          <DynamicAdBanner />
+          <div className="order-6 md:order-none">
+            <DynamicAdBanner />
+          </div>
 
-          {/* --- 企業概要 --- */}
-          <section className="space-y-7">
+          {/* --- 企業概要（スマホでは給与情報の直後に繰り上げる） --- */}
+          <section className="space-y-7 order-3 md:order-none">
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
               <div
@@ -488,15 +519,20 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
           {faq.length > 0 && (
-            <section className="space-y-4">
+            <section className="space-y-4 order-7 md:order-none">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 {company.company}に関するよくある質問
               </h2>
               <dl className="space-y-5">
                 {faq.map((item, i) => (
                   <div key={i} className="space-y-1.5">
-                    <dt className="font-bold text-[16px] md:text-lg">Q. {item.question}</dt>
-                    <dd className="text-[15px] md:text-base leading-relaxed text-muted-foreground">A. {item.answer}</dd>
+                    {/* 社名を太字にして視認性を上げる（JSON-LD側は加工前のプレーンテキスト） */}
+                    <dt className="font-bold text-[16px] md:text-lg">
+                      Q. {emphasizeCompanyName(item.question, company.company)}
+                    </dt>
+                    <dd className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                      A. {emphasizeCompanyName(item.answer, company.company)}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -504,11 +540,15 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* 広告2/2: 記事本文・FAQを読み終えた後、関連企業への回遊直前（上部広告との隣接を避けるため本文がある場合のみ） */}
-          {(faq.length > 0 || company.long_description || company.strength || company.future_potential || company.salary_details) && <DynamicAdBanner />}
+          {(faq.length > 0 || company.long_description || company.strength || company.future_potential || company.salary_details) && (
+            <div className="order-8 md:order-none">
+              <DynamicAdBanner />
+            </div>
+          )}
 
           {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (
-            <section className="space-y-4">
+            <section className="space-y-4 order-9 md:order-none">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 同じ業界の他の企業
               </h2>
@@ -554,16 +594,18 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* --- 閲覧履歴（localStorage・回遊導線） --- */}
-          <RecentlyViewed
-            current={{
-              id: company.id,
-              name: company.company,
-              monthly: typeof company.baseMonthly === "number" ? company.baseMonthly : null,
-            }}
-          />
+          <div className="order-10 md:order-none">
+            <RecentlyViewed
+              current={{
+                id: company.id,
+                name: company.company,
+                monthly: typeof company.baseMonthly === "number" ? company.baseMonthly : null,
+              }}
+            />
+          </div>
 
           {/* --- コメント欄 --- */}
-          <section className="mt-16 border-t pt-10">
+          <section className="mt-16 border-t pt-10 order-11 md:order-none">
             <CommentSection companyId={company.id} />
           </section>
         </div>

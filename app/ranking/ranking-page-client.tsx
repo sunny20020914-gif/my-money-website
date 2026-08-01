@@ -442,23 +442,45 @@ export function RankingPageClient({
             <Card className="mb-6">
               <CardContent className="pt-4 md:pt-5">
                 <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap gap-3">
-                    {rankingTypes.map((type) => (
-                      <Button
-                        key={type.id}
-                        variant={selectedRanking === type.id ? "default" : "outline"}
-                        size="sm"
-                        className={type.id === "base" ? "invisible pointer-events-none" : "px-5"}
-                        onClick={() => {
-                          // 既に選択されている場合は何もしない
-                          if (selectedRanking === type.id) return
-                          setSelectedIndustry(null)
-                          setSelectedRanking(type.id)
-                        }}
-                      >
-                        {type.label}
-                      </Button>
-                    ))}
+                  {/* 【意図】以前は小さなボタンが並ぶだけで「切り替えられる」ことに気づかれず、
+                      初期表示の初任給しか見られていなかった。
+                      枠で囲ったセグメント型トグルにし、見出しを添えて切り替えを明示する。 */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                      ランキングの種類を切り替え
+                    </p>
+                    <div
+                      role="tablist"
+                      aria-label="ランキングの種類"
+                      className="inline-flex w-full sm:w-auto rounded-lg border-2 border-primary/25 bg-muted/50 p-1 gap-1"
+                    >
+                      {rankingTypes
+                        .filter((type) => type.id !== "base")
+                        .map((type) => {
+                          const isSelected = selectedRanking === type.id
+                          return (
+                            <button
+                              key={type.id}
+                              type="button"
+                              role="tab"
+                              aria-selected={isSelected}
+                              className={`flex-1 sm:flex-none sm:px-8 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-primary hover:bg-background"
+                              }`}
+                              onClick={() => {
+                                // 既に選択されている場合は何もしない
+                                if (selectedRanking === type.id) return
+                                setSelectedIndustry(null)
+                                setSelectedRanking(type.id)
+                              }}
+                            >
+                              {type.label}
+                            </button>
+                          )
+                        })}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {rankingTypes.find((type) => type.id === selectedRanking)?.description}

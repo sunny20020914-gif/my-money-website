@@ -154,7 +154,11 @@ export default async function IndustriesPage() {
                 </h2>
                 <div className="rounded-xl border bg-card divide-y">
                   {ranked.map((a, i) => {
-                    const width = maxAvg > 0 ? Math.max(8, Math.round(((a.avgMonthly as number) / maxAvg) * 100)) : 0
+                    // ratio は実際の比率（ラベル表示用）。barWidth は細くなりすぎて
+                    // 棒に見えなくなるのを防ぐため下限8%を設けた描画専用の値。
+                    // 両者を分けないと「1位比 8%」のような実測と異なる表示になってしまう。
+                    const ratio = maxAvg > 0 ? Math.round(((a.avgMonthly as number) / maxAvg) * 100) : 0
+                    const barWidth = Math.max(8, ratio)
                     return (
                       <Link
                         key={a.industry}
@@ -172,8 +176,17 @@ export default async function IndustriesPage() {
                               ¥{(a.avgMonthly as number).toLocaleString()}
                             </span>
                           </div>
-                          <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full rounded-full bg-primary/80" style={{ width: `${width}%` }} />
+                          {/* 【意図】平均初任給の相対比較を示す棒グラフ。
+                              以前は全幅のグレーのトラックを敷いていたためスクロールバーに見えていた。
+                              トラックを外し「伸びている棒」だけにすることで、グラフだと直感的に伝わる。 */}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-1.5 rounded-sm bg-primary/70 group-hover:bg-primary transition-colors"
+                              style={{ width: `${barWidth}%` }}
+                            />
+                            <span className="text-[11px] text-muted-foreground shrink-0 tabular">
+                              1位比 {ratio}%
+                            </span>
                           </div>
                         </div>
                         <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -182,7 +195,8 @@ export default async function IndustriesPage() {
                   })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  ※各業界に掲載されている企業の初任給（月額）の平均値。数値は{FISCAL_YEAR}年度・当サイト調べ。
+                  ※棒の長さは、平均初任給が最も高い業界を100%としたときの相対比を表します。
+                  各業界に掲載されている企業の初任給（月額）の平均値で、数値は{FISCAL_YEAR}年度・当サイト調べ。
                 </p>
               </section>
             )}
