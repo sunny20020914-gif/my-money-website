@@ -214,8 +214,11 @@ export default async function ComparePage({ params }: Props) {
                 <span className="mx-1.5">›</span>
                 <span>{a.company} vs {b.company}</span>
               </nav>
+              {/* 社名2つを含み最も長くなる見出し。スマホでは社名の対比と
+                  見出し本体を明示的に改行し、社名の途中で割れないようにする */}
               <h1 className="text-xl md:text-3xl font-bold text-primary">
-                {a.company}と{b.company}の初任給・年収比較【{FISCAL_YEAR}年】
+                <span className="block md:inline">{a.company}と{b.company}の</span>
+                <span className="block md:inline">初任給・年収比較【{FISCAL_YEAR}年】</span>
               </h1>
               {leadSummary && (
                 <p className="mt-4 text-[15px] md:text-base leading-relaxed text-muted-foreground">

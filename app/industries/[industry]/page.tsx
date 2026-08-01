@@ -149,15 +149,20 @@ export default async function IndustryPage({ params }: Props) {
               <span className="text-foreground font-medium">{industry}業界</span>
             </nav>
 
-            {/* ヘッダー */}
-            <div className="mb-8">
+            {/* ヘッダー
+                スマホでは「○○業界」と「初任給ランキング」の間で必ず改行し中央揃えにする。
+                自動折り返しに任せると「初任給ランキ / ング 2026」のように
+                単語の途中で切れて不自然になるため、意味の切れ目で明示的に分割している。
+                md以上は1行に収まるので inline に戻して従来通り左揃え。 */}
+            <div className="mb-8 text-center md:text-left">
               <h1 className="text-2xl md:text-4xl font-bold text-primary mb-3">
-                {industry}業界 初任給ランキング 2026
+                <span className="block md:inline">{industry}業界</span>{" "}
+                <span className="block md:inline">初任給ランキング {FISCAL_YEAR}</span>
               </h1>
               <p className="text-muted-foreground text-base md:text-lg mb-4">
                 {industry}業界の新卒初任給・想定年収データ（{companies.length}社掲載）
               </p>
-              <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm">
                 <div className="bg-primary/10 text-primary rounded-lg px-4 py-2 font-medium">
                   掲載企業数：{companies.length}社
                 </div>
@@ -169,7 +174,7 @@ export default async function IndustryPage({ params }: Props) {
               </div>
               {/* 【SEO】業界×給与のクロス条件一覧への内部リンク */}
               {industryDefs.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
+                <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
                   {industryDefs
                     .sort((a, b) => a.threshold - b.threshold)
                     .map((d) => (
