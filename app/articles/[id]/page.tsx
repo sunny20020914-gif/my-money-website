@@ -25,8 +25,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await fetchArticleById(params.id)
 
   if (!article) {
+    // 【ソフト404対策】記事が存在しない場合は canonical を出さず noindex を明示する。
+    // 以前はルートlayoutの canonical:"/" を継承し「この404はホームの複製」と
+    // 宣言する形になっていたため、ソフト404と判定される一因になっていた。
     return {
       title: "記事が見つかりません",
+      robots: { index: false, follow: false },
     }
   }
 
@@ -39,7 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: article.title,
       description: article.excerpt,
-      images: [article.image || "/og-image.jpg"],
+      // 記事画像が無い場合は未指定にして、app/opengraph-image.tsx の
+      // 自動生成画像にフォールバックさせる（/og-image.jpg は存在せず404だった）
+      ...(article.image ? { images: [article.image] } : {}),
       type: "article",
       publishedTime: article.publishedAt,
       authors: [article.author],

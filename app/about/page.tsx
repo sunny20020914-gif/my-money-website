@@ -8,6 +8,8 @@ import { Target, Users, TrendingUp, Shield } from "lucide-react"
 export const metadata = {
   title: "サイトについて | My Money Web",
   description: "My Money Webサイトの目的、データソース、運営方針について詳しくご紹介します。",
+  // canonicalは必ず自ページを指す。未指定だとルートlayoutの値を継承してしまう
+  alternates: { canonical: "https://www.mymoneyweb.com/about" },
 }
 
 export default function AboutPage() {

@@ -62,7 +62,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${company.company}の初任給・年収・採用情報`,
       description,
-      images: [company.logo || "/og-image.jpg"],
+      // ロゴが無い場合は images を指定しない。
+      // 以前は存在しない /og-image.jpg にフォールバックして404になっていた。
+      // 未指定なら app/opengraph-image.tsx の自動生成画像が使われる。
+      ...(company.logo ? { images: [company.logo] } : {}),
     },
   }
 }

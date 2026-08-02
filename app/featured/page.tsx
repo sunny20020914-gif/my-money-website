@@ -16,6 +16,8 @@ export const metadata = {
   title: "注目の非公開企業ランキング | 初任給ランキング 2026",
   description:
     "公式な初任給データは非公開ではあるものの、業界水準や企業規模から高額な給与が期待される注目企業の一覧です。",
+  // canonicalは必ず自ページを指す。未指定だとルートlayoutの値を継承してしまう
+  alternates: { canonical: "https://www.mymoneyweb.com/featured" },
 }
 
 export default async function FeaturedPage() {

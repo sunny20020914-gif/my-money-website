@@ -4,6 +4,8 @@ import { Footer } from "@/components/footer"
 export const metadata = {
   title: "プライバシーポリシー",
   description: "当サイトのプライバシーポリシーに関するページです。",
+  // canonicalは必ず自ページを指す。未指定だとルートlayoutの値を継承してしまう
+  alternates: { canonical: "https://www.mymoneyweb.com/privacy" },
 }
 
 export default function PrivacyPolicyPage() {

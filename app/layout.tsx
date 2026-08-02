@@ -34,22 +34,20 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL("https://www.mymoneyweb.com"),
-  alternates: {
-    canonical: "/",
-  },
+  // 【重要・SEO】ここで alternates.canonical を設定してはいけない。
+  // ルートlayoutのmetadataは全ページのデフォルトとして継承されるため、
+  // canonicalを自前設定していないページ（/about・/featured・/privacy・/terms や
+  // notFound()時のエラーページ）が「ホームページが正規URL」と宣言してしまい、
+  // Googleにホームの複製と見なされてインデックスから外される。
+  // canonicalは各ページの generateMetadata / metadata で個別に指定すること。
   openGraph: {
     title: "初任給ランキング 2026 | 就活生のための給与情報サイト",
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
     url: "https://www.mymoneyweb.com",
     siteName: "初任給ランキング",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "初任給ランキング 2026 | 就活生のための給与情報サイト",
-      },
-    ],
+    // images は指定しない。app/opengraph-image.tsx が自動でOG画像を生成し
+    // og:image / twitter:image を挿入するため。
+    // （以前は存在しない /og-image.jpg を指しており404になっていた）
     locale: "ja_JP",
     type: "website",
   },
@@ -57,7 +55,6 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "初任給ランキング 2026 | 就活生のための給与情報サイト",
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
-    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
@@ -81,10 +78,11 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.jpg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
+        {/* 【404対策】以前ここで /favicon.ico・/favicon.jpg・/apple-touch-icon.png・
+            /manifest.json を参照していたが、public/ ディレクトリが存在せず
+            全ページで4件ずつ404が発生していた（実機で確認済み）。
+            faviconは App Router の規約により app/icon.png が自動で使われるため、
+            手書きの <link> は不要。manifestは app/manifest.ts が自動で <link> を挿入する。 */}
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fdfaf6" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020817" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
