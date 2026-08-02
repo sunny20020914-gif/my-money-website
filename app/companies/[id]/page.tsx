@@ -225,7 +225,10 @@ export default async function CompanyPage({ params }: Props) {
       )}
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto px-4 py-8 md:py-12">
+      {/* 【可読性】他ページは px-4 sm:px-6 lg:px-8 だが、ここは px-4 のみで
+          スマホだと本文が画面端ギリギリまで伸びて読みにくかった。
+          長文を扱うページなので、スマホの左右余白を 16px → 20px に広げる。 */}
+      <main className="container mx-auto px-5 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* 【スマホの並び替え】スマホでは企業概要に辿り着くまでのスクロールが長かったため、
             order ユーティリティで「ヘッダー → 給与 → 企業概要 → …」の順に並べ替える。
             md 以上では全要素を order-none(=0) に戻すので、PC表示はDOM順のまま変わらない。
@@ -472,7 +475,9 @@ export default async function CompanyPage({ params }: Props) {
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
               <div
-                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                /* max-w-none だとPCで1行が約900pxまで伸び、視線の戻り先を見失いやすい。
+                   スマホは画面幅どおり、PCのみ読みやすい行長(約42em)に制限する。 */
+                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none md:max-w-[42em] leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
               />
             </div>}
@@ -514,7 +519,7 @@ export default async function CompanyPage({ params }: Props) {
                 <DollarSign className="w-5 h-5" />給与に関する補足
               </h3>
               <div
-                className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none md:max-w-[42em] leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
               />
             </div>}
