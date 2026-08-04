@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { FISCAL_YEAR } from "@/lib/config"
 import { Button } from "@/components/ui/button"
 import { TrendingUpIcon, Building2Icon, ArrowRightIcon } from "lucide-react"
 import Image from "next/image"
@@ -31,7 +32,7 @@ export async function RankingPreview() {
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-balance mb-4">初任給・年収ランキング</h2>
           <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
-            2026年度の最新データに基づく、初任給と想定年収ランキング上位企業をご紹介します。
+            {FISCAL_YEAR}年度の最新データに基づく、初任給と想定年収ランキング上位企業をご紹介します。
           </p>
         </div>
 

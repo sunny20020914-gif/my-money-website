@@ -1,3 +1,4 @@
+import { FISCAL_YEAR } from "@/lib/config"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import {
@@ -13,7 +14,7 @@ import { fetchFeaturedCompaniesDataServer } from "@/lib/sheets"
 import { AdBanner } from "@/components/ad-banner"
 
 export const metadata = {
-  title: "注目の非公開企業ランキング | 初任給ランキング 2026",
+  title: `注目の非公開企業ランキング | 初任給ランキング ${FISCAL_YEAR}`,
   description:
     "公式な初任給データは非公開ではあるものの、業界水準や企業規模から高額な給与が期待される注目企業の一覧です。",
   // canonicalは必ず自ページを指す。未指定だとルートlayoutの値を継承してしまう

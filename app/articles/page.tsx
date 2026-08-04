@@ -1,3 +1,4 @@
+import { FISCAL_YEAR } from "@/lib/config"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +12,7 @@ import { buildAllListDefinitions } from "@/lib/list-definitions"
 import React from "react"
 
 export const metadata = {
-  title: "就活コラム・記事一覧 | 初任給ランキング 2026",
+  title: `就活コラム・記事一覧 | 初任給ランキング ${FISCAL_YEAR}`,
   description: "初任給・年収・企業選びに役立つ就活コラムを掲載。業界研究・面接対策・給与交渉まで、就職活動を成功に導く最新情報をお届けします。",
   alternates: {
     canonical: "https://www.mymoneyweb.com/articles",

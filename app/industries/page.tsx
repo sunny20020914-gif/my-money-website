@@ -17,7 +17,7 @@ import { AdBanner } from "@/components/ad-banner"
 export const revalidate = 3600
 
 export const metadata = {
-  title: "業界別 初任給ランキング・分析 2026 | 平均初任給を全業界で比較",
+  title: `業界別 初任給ランキング・分析 ${FISCAL_YEAR} | 平均初任給を全業界で比較`,
   description:
     "IT・金融・製造・商社など主要業界の初任給を自動集計。各業界の平均初任給・中央値・初任給レンジ・トップ企業を横断比較し、業界選択の参考になるデータを提供します。",
   alternates: {

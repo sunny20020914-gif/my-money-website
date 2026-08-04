@@ -1,4 +1,4 @@
-import { fetchAllUniqueCompanies, fetchArticleDataServer, fetchRankingDataServer } from '@/lib/sheets'
+import { fetchAllUniqueCompanies, fetchArticleDataServer } from '@/lib/sheets'
 import { SITE_URL, SITE_NAME, FISCAL_YEAR } from '@/lib/config'
 
 // 【AI SEO】llms.txt — AIクローラー向けのサイト案内（Markdown形式）。
@@ -14,13 +14,11 @@ export async function GET() {
     fetchArticleDataServer(),
   ])
 
-  // 【404対策】業界ページは "monthly"（初任給が数値の企業のみ）で生成され、
-  // 該当0件だと notFound() になる。全企業から業界名を集めると存在しないURLを
-  // AIクローラーに案内してしまうため、ページ側と同じ母集団から作る。
-  const monthlyCompanies = await fetchRankingDataServer('monthly')
+  // 【重要】業界ページの generateStaticParams と同じ母集団（全企業）から集める。
+  // ずれると存在しないURLをAIクローラーに案内してしまう。
   const industries = Array.from(
     new Set(
-      monthlyCompanies.flatMap((c) => c.industry.split('/').map((i) => i.trim())).filter(Boolean),
+      companies.flatMap((c) => c.industry.split('/').map((i) => i.trim())).filter(Boolean),
     ),
   ).sort()
 

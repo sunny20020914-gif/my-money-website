@@ -54,7 +54,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `${company.company}の${parts.join("、")}。業界：${company.industry.split("/")[0]}。事業内容・強み・将来性を解説。`
 
   return {
-    title: `${company.company}の初任給・年収・採用情報`,
+    // 【SEO】「企業名 初任給 手取り」は実測でCTR50%・6.5位を取れている勝ち筋。
+    // 大手就活サイトは手取りを扱わないため差別化でき、
+    // 「初任給」単体より競合が薄い。タイトルに手取りを明示して取りにいく。
+    // 【年度表記の注意】「${FISCAL_YEAR}年新卒」と書くと26卒向けサイトだと誤読される。
+    // FISCAL_YEARはデータの年度なので「年最新」と組み合わせ、卒業年度と切り離す。
+    title: netForMeta
+      ? `${company.company}の初任給と手取り【${FISCAL_YEAR}年最新】`
+      : `${company.company}の初任給・年収【${FISCAL_YEAR}年最新】`,
     description,
     alternates: {
       canonical: `https://www.mymoneyweb.com/companies/${params.id}`,
@@ -344,9 +351,103 @@ export default async function CompanyPage({ params }: Props) {
             </Card>
           </section>
 
+          {/* --- 手取りの内訳（「企業名 初任給 手取り」で流入を取るための中核セクション）---
+              大手就活サイトは額面しか載せないため、控除の内訳まで示せるのが差別化点。
+              実測でこの系統のクエリは6.5位・CTR50%を記録しており、伸ばす価値が高い。 */}
+          {netSalary && (
+            <section className="order-3 md:order-none space-y-3">
+              <h2 className="text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                {company.company}の初任給の手取りはいくら？
+              </h2>
+              <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                {company.company}の初任給（額面）は月額
+                <strong className="text-foreground">¥{netSalary.grossMonthly.toLocaleString()}</strong>
+                で、ここから社会保険料と所得税が差し引かれます。
+                新卒1年目の手取りは月額
+                <strong className="text-foreground">約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}</strong>
+                が目安です（独身・扶養なしの概算）。
+              </p>
+
+              <Card className="py-0 gap-0">
+                <CardContent className="p-4 md:p-5">
+                  <table className="w-full text-sm md:text-[15px]">
+                    <caption className="sr-only">
+                      {company.company}の初任給から差し引かれる控除の内訳
+                    </caption>
+                    <tbody>
+                      <tr className="border-b">
+                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                          額面（月額総支給）
+                        </th>
+                        <td className="py-2 text-right font-semibold">
+                          ¥{netSalary.grossMonthly.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr className="border-b">
+                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                          健康保険料
+                        </th>
+                        <td className="py-2 text-right">−¥{netSalary.healthInsurance.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                          厚生年金保険料
+                        </th>
+                        <td className="py-2 text-right">−¥{netSalary.pension.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                          雇用保険料
+                        </th>
+                        <td className="py-2 text-right">−¥{netSalary.employmentInsurance.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                          所得税
+                        </th>
+                        <td className="py-2 text-right">−¥{netSalary.incomeTaxMonthly.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b-2 border-primary/50">
+                        <th scope="row" className="py-2.5 text-left font-bold">
+                          手取り（1年目）
+                        </th>
+                        <td className="py-2.5 text-right text-lg font-bold text-primary">
+                          約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                          手取り（2年目以降・住民税込み）
+                        </th>
+                        <td className="py-2 text-right font-semibold">
+                          約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <p className="mt-3 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
+                    新卒1年目は前年の所得が無いため住民税がかかりません。2年目からは住民税（月約¥
+                    {netSalary.residentTaxMonthly.toLocaleString()}）が加わるため、手取りは1年目より少なくなります。
+                    賞与・残業代・各種手当は含まない月給ベースの概算です。
+                  </p>
+
+                  <p className="mt-3">
+                    <Link
+                      href={`/simulator?monthly=${netSalary.grossMonthly}&name=${encodeURIComponent(company.company)}`}
+                      className="text-sm font-semibold text-primary hover:underline"
+                    >
+                      扶養人数を変えて手取りを詳しく計算する →
+                    </Link>
+                  </p>
+                </CardContent>
+              </Card>
+            </section>
+          )}
+
           {/* --- ランキング前後の企業＋比較導線（給与を見た直後の自然な次クリック） --- */}
           {(neighbors.prev || neighbors.next || compareCandidates.length > 0) && (
-            <section className="order-4 md:order-none">
+            <section className="order-5 md:order-none">
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5 space-y-4">
                   {neighbors.rank !== null && (neighbors.prev || neighbors.next) && (
@@ -409,7 +510,7 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
           {industryComparisons.length > 0 && (
-            <section className="space-y-4 order-5 md:order-none">
+            <section className="space-y-4 order-6 md:order-none">
               <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 業界内での初任給の位置づけ
@@ -466,12 +567,12 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* 広告1/2: 給与・業界内比較を見た直後の自然な区切り（ページ上部で唯一の広告） */}
-          <div className="order-6 md:order-none">
+          <div className="order-7 md:order-none">
             <DynamicAdBanner />
           </div>
 
-          {/* --- 企業概要（スマホでは給与情報の直後に繰り上げる） --- */}
-          <section className="space-y-7 order-3 md:order-none">
+          {/* --- 企業概要（スマホでは手取りセクションの直後に繰り上げる） --- */}
+          <section className="space-y-7 order-4 md:order-none">
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
               <div
@@ -527,7 +628,7 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
           {faq.length > 0 && (
-            <section className="space-y-4 order-7 md:order-none">
+            <section className="space-y-4 order-8 md:order-none">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 {company.company}に関するよくある質問
               </h2>
@@ -549,14 +650,14 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* 広告2/2: 記事本文・FAQを読み終えた後、関連企業への回遊直前（上部広告との隣接を避けるため本文がある場合のみ） */}
           {(faq.length > 0 || company.long_description || company.strength || company.future_potential || company.salary_details) && (
-            <div className="order-8 md:order-none">
+            <div className="order-9 md:order-none">
               <DynamicAdBanner />
             </div>
           )}
 
           {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (
-            <section className="space-y-4 order-9 md:order-none">
+            <section className="space-y-4 order-10 md:order-none">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 同じ業界の他の企業
               </h2>
@@ -602,7 +703,7 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* --- 閲覧履歴（localStorage・回遊導線） --- */}
-          <div className="order-10 md:order-none">
+          <div className="order-11 md:order-none">
             <RecentlyViewed
               current={{
                 id: company.id,
@@ -613,7 +714,7 @@ export default async function CompanyPage({ params }: Props) {
           </div>
 
           {/* --- コメント欄 --- */}
-          <section className="mt-16 border-t pt-10 order-11 md:order-none">
+          <section className="mt-16 border-t pt-10 order-12 md:order-none">
             <CommentSection companyId={company.id} />
           </section>
         </div>

@@ -18,8 +18,8 @@ import { showToast } from "@/components/toaster"
 import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { buildFinancialMetrics } from "@/lib/financials"
-import type { RankingSummary } from "@/lib/ranking-summary"
-import { FISCAL_YEAR } from "@/lib/config"
+import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
+import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 
 type RankingType = "annual" | "monthly" | "base"
 
@@ -344,6 +344,12 @@ export function RankingPageClient({
   // クロス条件ページへのリンク（該当数の多い順に上位12件）
   const listLinks = useMemo(() => buildAllListDefinitions(initialData).slice(0, 12), [initialData])
 
+  // FAQ。サーバー側のFAQPage構造化データと同じ関数・同じ入力で生成するため内容が一致する
+  const rankingFaq = useMemo(
+    () => (summary ? buildRankingFaq(summary, FISCAL_YEAR) : []),
+    [summary],
+  )
+
   const currentError = initialError || error
 
   // 初期表示時にサーバーサイドでエラーが発生した場合
@@ -377,11 +383,18 @@ export function RankingPageClient({
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
             <div className="mb-8 text-center">
+              {/* 【SEO】検索クエリは「初任給ランキング 2026」。
+                  従来のH1は「初任給・年収ランキング」で年号が無く、
+                  「初任給ランキング」も中黒で分断されていた。
+                  クエリと同じ語順・表記をH1に含める。 */}
               <h1 className="text-2xl md:text-4xl font-bold text-balance mb-4 leading-tight text-primary">
-                初任給・年収ランキング
+                初任給ランキング {FISCAL_YEAR}
+                <span className="block text-lg md:text-2xl mt-1 text-foreground">
+                  新卒の初任給・想定年収を{summary?.withMonthly ?? ""}社比較
+                </span>
               </h1>
               <p className="text-base md:text-lg text-muted-foreground text-balance leading-relaxed">
-                27卒・28卒向けに、新卒の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
+                {TARGET_GRAD_LABEL}向けに、新卒の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
                 ランキングを切り替えて、あなたの目指すキャリアを見つけよう。
               </p>
             </div>
@@ -430,7 +443,7 @@ export function RankingPageClient({
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
                       出典: 各社の新卒採用情報をもとに当サイト編集部が集計（{FISCAL_YEAR}年度・掲載3社以上の業界のみ表示）。
-                      金額は固定残業代や諸手当を含む場合があります。初任給は多くの企業で前年同水準か引き上げ傾向のため、27卒・28卒の企業選びの目安としてご活用ください。
+                      金額は固定残業代や諸手当を含む場合があります。初任給は多くの企業で前年同水準か引き上げ傾向のため、{TARGET_GRAD_LABEL}の企業選びの目安としてご活用ください。
                       最終更新: {updatedLabel}（データは自動更新）
                     </p>
                   </details>
@@ -582,6 +595,27 @@ export function RankingPageClient({
                     もあわせてご活用ください。
                   </p>
                 </div>
+              </section>
+            )}
+
+            {/* 【SEO】よくある質問。FAQPage構造化データ（app/ranking/page.tsx）と
+                完全に同一の内容にすること。lib/ranking-summary.ts の同じ関数から
+                同じ入力で生成しているため自動的に一致する。 */}
+            {!loading && rankingFaq.length > 0 && (
+              <section className="mt-10 border-t pt-6 text-left space-y-4">
+                <h2 className="text-lg md:text-xl font-bold text-primary">
+                  初任給ランキングに関するよくある質問
+                </h2>
+                <dl className="space-y-5">
+                  {rankingFaq.map((item, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <dt className="font-bold text-[15px] md:text-base">Q. {item.question}</dt>
+                      <dd className="text-sm md:text-[15px] leading-relaxed text-muted-foreground">
+                        A. {item.answer}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </section>
             )}
 

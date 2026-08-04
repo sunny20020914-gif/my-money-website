@@ -1,3 +1,4 @@
+import { FISCAL_YEAR } from "@/lib/config"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { RankingPreview } from "@/components/ranking-preview"
@@ -29,16 +30,16 @@ export async function generateMetadata(): Promise<Metadata> {
     }).join("、");
 
     return {
-      title: "初任給ランキング 2026 | My Money Web",
-      description: `【2026年最新】初任給ランキング上位：${topCompaniesText}...。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。`,
+      title: `初任給ランキング ${FISCAL_YEAR} | My Money Web`,
+      description: `【${FISCAL_YEAR}年最新】初任給ランキング上位：${topCompaniesText}...。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。`,
       alternates: {
         canonical: "https://www.mymoneyweb.com/",
       },
     };
   } catch (error) {
     return {
-      title: "初任給ランキング 2026 | My Money Web",
-      description: "2026年度の最新初任給ランキング。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。",
+      title: `初任給ランキング ${FISCAL_YEAR} | My Money Web`,
+      description: `${FISCAL_YEAR}年度の最新初任給ランキング。上場企業の初任給データを網羅的に掲載。業界別、地域別のランキングも検索可能。就職・転職活動に役立つ情報を提供します。`,
       alternates: {
         canonical: "https://www.mymoneyweb.com/",
       },
@@ -55,7 +56,7 @@ export default function HomePage() {
           "@context": "https://schema.org",
           "@type": "WebSite",
           url: "https://www.mymoneyweb.com/",
-          name: "初任給ランキング 2026",
+          name: `初任給ランキング ${FISCAL_YEAR}`,
           potentialAction: {
             "@type": "SearchAction",
             target: "https://www.mymoneyweb.com/ranking?q={search_term_string}",

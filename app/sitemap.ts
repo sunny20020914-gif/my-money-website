@@ -38,14 +38,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // 業界別ページのルート
-  // 【404対策・重要】業界ページ（/industries/[industry]）は fetchRankingDataServer("monthly")
-  // ＝「初任給が数値で入っている企業だけ」に絞り込んだ上で、該当0件なら notFound() を返す。
-  // ここで 'annual'（全企業）から業界名を集めると、所属企業全員の初任給が未記載/「非公開」の業界が
-  // sitemapに載るのにページは404、という不整合が起きる。
-  // そのためページ側と同じ 'monthly' を使い、実在するURLだけをsitemapに載せる。
-  const monthlyCompanies = await fetchRankingDataServer('monthly')
+  // 【重要】業界ページ（/industries/[industry]）の generateStaticParams と
+  // 必ず同じ母集団（fetchAllUniqueCompanies）から業界名を集めること。
+  // 母集団がずれると「sitemapには載るがページは404」という不整合が起きる。
+  const allCompaniesForIndustries = await fetchAllUniqueCompanies()
   const industrySet = new Set(
-    monthlyCompanies.flatMap((c) => c.industry.split('/').map((i) => i.trim())).filter(Boolean)
+    allCompaniesForIndustries
+      .flatMap((c) => c.industry.split('/').map((i) => i.trim()))
+      .filter(Boolean)
   )
   const industryRoutes: MetadataRoute.Sitemap = Array.from(industrySet).map((industry) => ({
     url: `${baseUrl}/industries/${encodeURIComponent(industry)}`,

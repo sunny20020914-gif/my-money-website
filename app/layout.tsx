@@ -4,6 +4,7 @@ import "./globals.css"
 import Script from "next/script"
 import { Analytics } from "@vercel/analytics/react"
 import { Toaster } from "@/components/toaster"
+import { FISCAL_YEAR } from "@/lib/config"
 
 export const metadata: Metadata = {
   title: {
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
     template: "%s | My Money Web",
   },
   description:
-    "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。2026年最新データで企業選択をサポート。",
+    `大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。${FISCAL_YEAR}年最新データで企業選択をサポート。`,
   keywords: [
     "初任給",
     "ランキング",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     "年収",
     "企業比較",
     "就職活動",
-    "2026年",
+    `${FISCAL_YEAR}年`,
     "業界別",
     "職種別",
   ],
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
   // Googleにホームの複製と見なされてインデックスから外される。
   // canonicalは各ページの generateMetadata / metadata で個別に指定すること。
   openGraph: {
-    title: "初任給ランキング 2026 | 就活生のための給与情報サイト",
+    title: `初任給ランキング ${FISCAL_YEAR} | 就活生のための給与情報サイト`,
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
     url: "https://www.mymoneyweb.com",
     siteName: "初任給ランキング",
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "初任給ランキング 2026 | 就活生のための給与情報サイト",
+    title: `初任給ランキング ${FISCAL_YEAR} | 就活生のための給与情報サイト`,
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
   },
   robots: {

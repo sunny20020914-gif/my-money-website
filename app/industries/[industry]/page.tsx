@@ -1,4 +1,5 @@
-import { fetchRankingDataServer } from "@/lib/sheets"
+import { fetchAllUniqueCompanies } from "@/lib/sheets"
+import type { CompanyData } from "@/lib/sheets"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import {
   buildIndustryAnalyses,
@@ -26,12 +27,42 @@ type Props = { params: { industry: string } }
 
 export const revalidate = 3600
 
-// スプシの業界データから全業界を取得してページを静的生成
+/**
+ * 【404対策・重要】
+ * 以前は fetchRankingDataServer("monthly")（＝初任給が数値の企業のみ）を母集団にしていた。
+ * そのため「所属企業は居るが全員の初任給が未記載/『非公開』」という業界は
+ * 該当0件となり notFound() が呼ばれ、「業界が見つかりません」ページになっていた。
+ *
+ * 企業詳細ページは自社の業界へリンクを張っているため、この状態だと
+ * サイト内のリンクを辿っただけで404に着地してしまう（実際にアクセスが発生していた）。
+ *
+ * 母集団を全企業に変えることで、初任給が無い業界でも
+ * 想定年収や企業一覧を持つページとして成立させ、404を根本から無くす。
+ */
+const splitIndustries = (s: string) =>
+  (s || "").split("/").map((i) => i.trim()).filter(Boolean)
+
+/** 指定業界の企業を、初任給→想定年収の順で降順に並べて返す（データ無しは末尾） */
+function companiesInIndustry(all: CompanyData[], industry: string): CompanyData[] {
+  const num = (v: number | string | null | undefined) =>
+    typeof v === "number" && v > 0 ? v : null
+  return all
+    .filter((c) => splitIndustries(c.industry).includes(industry))
+    .sort((a, b) => {
+      const am = num(a.baseMonthly)
+      const bm = num(b.baseMonthly)
+      if (am !== null && bm !== null) return bm - am
+      if (am !== null) return -1 // 初任給がある企業を上に
+      if (bm !== null) return 1
+      // どちらも初任給が無い場合は想定年収で比較
+      return (num(b.annualSalary) ?? 0) - (num(a.annualSalary) ?? 0)
+    })
+}
+
+// 全業界のページを静的生成
 export async function generateStaticParams() {
-  const companies = await fetchRankingDataServer("monthly")
-  const industries = new Set(
-    companies.flatMap((c) => c.industry.split("/").map((i) => i.trim())).filter(Boolean)
-  )
+  const companies = await fetchAllUniqueCompanies()
+  const industries = new Set(companies.flatMap((c) => splitIndustries(c.industry)))
   // 【重要】生の値を返す（Next.jsがビルド時にエンコードするため、
   // encodeURIComponent済みの値を返すと二重エンコードになり日本語URLが404になる）
   return Array.from(industries).map((industry) => ({ industry }))
@@ -39,12 +70,12 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const industry = decodeURIComponent(params.industry)
-  const allCompanies = await fetchRankingDataServer("monthly")
-  const companies = allCompanies
-    .filter((c) => c.industry.split("/").map((i) => i.trim()).includes(industry))
-    .sort((a, b) => a.rank - b.rank)
+  const allCompanies = await fetchAllUniqueCompanies()
+  const companies = companiesInIndustry(allCompanies, industry)
 
-  if (companies.length === 0) return { title: "業界が見つかりません" }
+  if (companies.length === 0) {
+    return { title: "業界が見つかりません", robots: { index: false, follow: false } }
+  }
 
   const top = companies[0]
   const topSalary =
@@ -52,16 +83,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `¥${top.baseMonthly.toLocaleString()}`
       : String(top.baseMonthly)
 
-  const description = `【2026年最新】${industry}業界の初任給ランキング（${companies.length}社）。1位${top.company}（初任給${topSalary}/月）。各社の初任給・想定年収・従業員数を比較できます。`
+  const description = `【${FISCAL_YEAR}年最新】${industry}業界の初任給ランキング（${companies.length}社）。1位${top.company}（初任給${topSalary}/月）。各社の初任給・想定年収・従業員数を比較できます。`
 
   return {
-    title: `${industry}業界 初任給ランキング 2026【${companies.length}社】`,
+    title: `${industry}業界 初任給ランキング ${FISCAL_YEAR}【${companies.length}社】`,
     description,
     alternates: {
       canonical: `https://www.mymoneyweb.com/industries/${encodeURIComponent(industry)}`,
     },
     openGraph: {
-      title: `${industry}業界 初任給ランキング 2026`,
+      title: `${industry}業界 初任給ランキング ${FISCAL_YEAR}`,
       description,
     },
   }
@@ -69,11 +100,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function IndustryPage({ params }: Props) {
   const industry = decodeURIComponent(params.industry)
-  const allCompanies = await fetchRankingDataServer("monthly")
-  const companies = allCompanies
-    .filter((c) => c.industry.split("/").map((i) => i.trim()).includes(industry))
-    .sort((a, b) => a.rank - b.rank)
+  const allCompanies = await fetchAllUniqueCompanies()
+  const companies = companiesInIndustry(allCompanies, industry)
 
+  // 本当に1社も存在しない業界名（打ち間違い等）のみ404にする
   if (companies.length === 0) notFound()
 
   // この業界のクロス条件一覧ページ（業界×給与閾値）
@@ -99,7 +129,7 @@ export default async function IndustryPage({ params }: Props) {
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: `${industry}業界 初任給ランキング 2026`,
+    name: `${industry}業界 初任給ランキング ${FISCAL_YEAR}`,
     numberOfItems: companies.length,
     itemListElement: companies.map((c, i) => ({
       "@type": "ListItem",

@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import { FISCAL_YEAR } from '@/lib/config'
 
 // 【404対策 + OGP改善】
 // layout.tsx が /og-image.jpg を参照していたが public/ が無く404だった。
@@ -68,7 +69,7 @@ export default async function Image() {
             color: '#5b6b7f',
           }}
         >
-          Starting Salary Rankings 2026
+          Starting Salary Rankings {FISCAL_YEAR}
         </div>
       </div>
     ),

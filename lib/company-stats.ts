@@ -163,7 +163,8 @@ export function buildFaq(
     faq.push({ question: `${company.company}の初任給はいくらですか？`, answer })
   }
 
-  // 【SEO】「企業名 初任給 手取り」は検索需要が大きい。額面から計算した概算で回答する
+  // 【SEO】「企業名 初任給 手取り」は実測でCTR50%・平均6.5位を記録している主力クエリ。
+  // 検索結果のスニペットにそのまま答えが出るよう、金額を文頭付近に置く。
   const net = estimateNetSalary(monthly)
   if (net !== null) {
     faq.push({
