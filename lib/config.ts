@@ -16,9 +16,20 @@ export const SITE_NAME = "My Money Web"
 export const FISCAL_YEAR = 2026
 
 /**
- * 主な想定読者の卒業年度ラベル（例: "27卒・28卒"）。
+ * 主な想定読者の卒業年度（西暦下2桁の数値）。例: [27, 28]
+ *
  * FISCAL_YEAR年度に就職活動をしているのは、その翌年・翌々年に卒業する学生。
  * FISCAL_YEAR を変えるだけで自動的に繰り上がる。
+ *
+ * /grad/[grad] ページの generateStaticParams はこの配列を元に生成される。
+ * 対象学年を増やしたい場合は offsets に 3 を足すだけでページが増える。
  */
-const gradYear2 = (offset: number) => String((FISCAL_YEAR + offset) % 100).padStart(2, "0")
-export const TARGET_GRAD_LABEL = `${gradYear2(1)}卒・${gradYear2(2)}卒`
+const GRAD_OFFSETS = [1, 2] as const
+export const TARGET_GRADS: readonly number[] = GRAD_OFFSETS.map(
+  (offset) => (FISCAL_YEAR + offset) % 100,
+)
+
+/** 卒業年度の表示用ラベル（例: "27卒・28卒"）。TARGET_GRADS と必ず一致する */
+export const TARGET_GRAD_LABEL = TARGET_GRADS.map(
+  (g) => `${String(g).padStart(2, "0")}卒`,
+).join("・")

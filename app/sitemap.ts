@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { fetchRankingDataServer, fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
 import { buildAllListDefinitions } from '@/lib/list-definitions'
-import { SITE_URL } from '@/lib/config'
+import { SITE_URL, TARGET_GRADS } from '@/lib/config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL
@@ -76,7 +76,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 1.0,
   }))
 
+  // 卒年別まとめページ（/grad/27 等）。「27卒 初任給」系クエリの受け皿。
+  // TARGET_GRADS はページ側の generateStaticParams と同じ配列なので不整合が起きない。
+  const gradRoutes: MetadataRoute.Sitemap = TARGET_GRADS.map((g) => ({
+    url: `${baseUrl}/grad/${g}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.9,
+  }))
+
   // 【クロール優先順位】記事 → 企業 → 業界 → 条件一覧 の順に並べる。
   // sitemapの記載順もクロール順序のヒントになるため、価値の高いページを先頭に置く。
-  return [...staticRoutes, ...articleRoutes, ...companyRoutes, ...industryRoutes, ...listRoutes]
+  return [...staticRoutes, ...gradRoutes, ...articleRoutes, ...companyRoutes, ...industryRoutes, ...listRoutes]
 }
