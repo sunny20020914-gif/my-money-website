@@ -163,9 +163,21 @@ export default async function CompanyPage({ params }: Props) {
     html: true, // HTMLタグを有効化
   })
 
-  // 記事ページと同じ改行処理ルールを適用する関数
+  /**
+   * 【重要・折り返しの根本原因だった箇所】
+   * 以前は content.replace(/\n+/g, "\n\n") としており、
+   * 「単一の改行」まで段落区切りに変換していた。
+   * スプレッドシートのセル内で読みやすさのために手動改行していると、
+   * その1行ごとが独立した<p>になり、著者が改行した位置で必ず行が終わる。
+   * 結果、画面幅に関係なく右側が大きく空いた不自然な折り返しに見えていた。
+   *
+   * 標準のMarkdownの規則に戻す:
+   *   ・空行（\n\n）… 段落の区切り
+   *   ・単一の改行 …… 同じ段落内。ブラウザが画面幅に合わせて自然に折り返す
+   * \r\n はGoogle Sheets由来で混ざることがあるため \n に正規化しておく。
+   */
   const renderMarkdown = (content: string) => {
-    return md.render(content.replace(/\n+/g, "\n\n"))
+    return md.render(content.replace(/\r\n/g, "\n"))
   }
 
   const pageUrl = `https://www.mymoneyweb.com/companies/${company.id}`
@@ -576,9 +588,9 @@ export default async function CompanyPage({ params }: Props) {
             {company.long_description && <div className="space-y-3">
               <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
               <div
-                /* max-w-none だとPCで1行が約900pxまで伸び、視線の戻り先を見失いやすい。
-                   スマホは画面幅どおり、PCのみ読みやすい行長(約42em)に制限する。 */
-                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none md:max-w-[42em] leading-relaxed text-foreground"
+                /* 幅は制限しない。下の「強み」「将来性」カードと左右の位置を揃えるため、
+                   親要素の幅いっぱいに広げる（max-w-[42em]を入れると幅が揃わず不自然になる）。 */
+                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
               />
             </div>}
