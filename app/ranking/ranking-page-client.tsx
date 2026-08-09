@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, CSSProperties } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, Star } from "lucide-react"
+import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, Star, TrendingUpIcon } from "lucide-react"
 import { AdBanner } from "@/components/ad-banner"
 import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
@@ -17,7 +18,7 @@ import { useFavorites } from "@/hooks/use-favorites"
 import { showToast } from "@/components/toaster"
 import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
-import { buildFinancialMetrics } from "@/lib/financials"
+import { buildCardFinancialMetrics } from "@/lib/financials"
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 
@@ -27,13 +28,14 @@ const rankingTypes: { id: RankingType; label: string; description: string }[] = 
   {
     id: "monthly",
     label: "初任給",
-    description: "月々の給与額面（固定残業代や手当を含む）に基づいたランキングです。住宅手当などの固定手当を含んでいる場合があります。ランキングの種類は上のボタンで切り替え可能です",
+    description:
+      "月々の給与額面（固定残業代や手当を含む）に基づくランキングです。毎月の生活に直結する金額で、手取りの目安を知りたい方向け。住宅手当などの固定手当を含む場合があります。",
   },
   {
     id: "annual",
     label: "想定年収",
     description:
-      "新卒入社時の想定年収ランキングです。賞与や残業代を含んだ理論値であり、実際の支給額とは異なる場合があります。",
+      "賞与（ボーナス）や残業代まで含めた、新卒入社1年目の想定年収ランキングです。月額が同水準でも賞与で年収差が大きく開くため、初任給ランキングとは順位が入れ替わります。理論値のため実際の支給額とは異なる場合があります。",
   },
   { id: "base", label: "基本給", description: "各種手当を含まない、基本給の高さに基づいたランキングです。企業の安定性や給与体系の基礎を知る上での参考になります。" },
 ]
@@ -57,9 +59,9 @@ const CompanyCard = ({
   const { isFavorite, toggleFavorite } = useFavorites();
   const isFav = company.id ? isFavorite(company.id, "company") : false;
 
-  // 財務指標（売上高・営業利益・営業利益率…）。スプシに列が無い企業では空配列になり、
-  // 下段の財務エリアごと非表示になる。指標を増やす場合も lib/financials.ts 側だけ触ればよい。
-  const financials = buildFinancialMetrics(company);
+  // 財務指標。カードには onCard: true の3項目（売上高・営業利益率・一人当たり営業利益）だけを出す。
+  // スプシに列が無い企業では空配列になり、下段の財務エリアごと非表示になる。
+  const financials = buildCardFinancialMetrics(company);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -317,7 +319,27 @@ export function RankingPageClient({
   updatedLabel: string;
 }) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRanking, setSelectedRanking] = useState<RankingType>("monthly")
+  // 【重要】以前は状態のみで管理していたため、想定年収ランキングにURLが存在せず、
+  // 他ページからリンクを張ることも、共有・ブックマークすることもできなかった。
+  // ?type=annual を初期値として読むことで、外部からの誘導導線を張れるようにする。
+  const searchParams = useSearchParams()
+  const initialRanking: RankingType = searchParams.get("type") === "annual" ? "annual" : "monthly"
+  const [selectedRanking, setSelectedRanking] = useState<RankingType>(initialRanking)
+
+  /**
+   * ランキング種別を切り替える。
+   * history.replaceState でURLだけ書き換える（router.push を使うと
+   * サーバーへの再取得とスクロール位置のリセットが起きるため）。
+   */
+  const changeRanking = (id: RankingType) => {
+    if (selectedRanking === id) return
+    setSelectedIndustry(null)
+    setSelectedRanking(id)
+    if (typeof window !== "undefined") {
+      const url = id === "annual" ? "/ranking?type=annual" : "/ranking"
+      window.history.replaceState(null, "", url)
+    }
+  }
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
   const [isIndustryFilterOpen, setIsIndustryFilterOpen] = useState(false)
   const { data: companies, loading, error, refreshData } = useRankingData(selectedRanking, {
@@ -383,17 +405,24 @@ export function RankingPageClient({
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
             <div className="mb-8 text-center">
+              {/* データの鮮度と対象学年を最初に示すバッジ。
+                  業界別ページと同じ意匠に揃え、サイト全体で一貫させる */}
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
+                <TrendingUpIcon className="w-4 h-4 mr-2" />
+                {FISCAL_YEAR}年最新データ・{TARGET_GRAD_LABEL}向け
+              </div>
+
               {/* 【SEO】検索クエリは「初任給ランキング 2026」。
                   従来のH1は「初任給・年収ランキング」で年号が無く、
                   「初任給ランキング」も中黒で分断されていた。
                   クエリと同じ語順・表記をH1に含める。 */}
-              <h1 className="text-2xl md:text-4xl font-bold text-balance mb-4 leading-tight text-primary">
+              <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4 leading-tight text-primary">
                 初任給ランキング {FISCAL_YEAR}
-                <span className="block text-lg md:text-2xl mt-1 text-foreground">
+                <span className="block text-xl md:text-3xl mt-2 text-foreground">
                   新卒の初任給・想定年収を{summary?.withMonthly ?? ""}社比較
                 </span>
               </h1>
-              <p className="text-base md:text-lg text-muted-foreground text-balance leading-relaxed">
+              <p className="text-[17px] md:text-xl text-muted-foreground text-balance leading-relaxed max-w-3xl mx-auto">
                 {TARGET_GRAD_LABEL}向けに、新卒の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
                 ランキングを切り替えて、あなたの目指すキャリアを見つけよう。
               </p>
@@ -402,18 +431,52 @@ export function RankingPageClient({
             {/* 【SEO】集計サマリー: 結論の1文は常時表示、業種別表は折りたたみ
                 （details内のコンテンツも初期HTMLに含まれクローラーに読まれる） */}
             {summary && summary.avgMonthly !== null && (
-              <div className="mb-6 rounded-lg border bg-card p-4">
-                <p className="text-sm md:text-[15px] leading-relaxed text-muted-foreground">
+              <div className="mb-6 rounded-xl border bg-card p-4 md:p-5">
+                {/* 主要指標をカード化して一目で掴めるようにする。
+                    文章だけだと数字が埋もれ、データサイトとしての説得力が出ない。 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="rounded-lg bg-muted/50 p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">平均初任給</div>
+                    <div className="text-lg md:text-2xl font-bold text-primary tabular">
+                      ¥{summary.avgMonthly.toLocaleString()}
+                    </div>
+                  </div>
+                  {summary.medianMonthly !== null && (
+                    <div className="rounded-lg bg-muted/50 p-3 text-center">
+                      <div className="text-xs text-muted-foreground mb-1">中央値</div>
+                      <div className="text-lg md:text-2xl font-bold text-foreground tabular">
+                        ¥{summary.medianMonthly.toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+                  <div className="rounded-lg bg-muted/50 p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">掲載企業数</div>
+                    <div className="text-lg md:text-2xl font-bold text-foreground tabular">
+                      {summary.withMonthly}
+                      <span className="text-sm font-normal text-muted-foreground">社</span>
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">40万円以上</div>
+                    <div className="text-lg md:text-2xl font-bold text-foreground tabular">
+                      {summary.over40}
+                      <span className="text-sm font-normal text-muted-foreground">社</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 【SEO・AI検索】数値だけでなく文章でも自己完結させる（引用されやすくするため） */}
+                <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                   【{FISCAL_YEAR}年度】掲載{summary.withMonthly}社の平均初任給は月額{summary.avgMonthly.toLocaleString()}円
                   {summary.medianMonthly !== null && <>（中央値{summary.medianMonthly.toLocaleString()}円）</>}。
                   {summary.topCompany && summary.topMonthly !== null && (
                     <>最高は{summary.topCompany}の{summary.topMonthly.toLocaleString()}円。</>
                   )}
-                  40万円以上{summary.over40}社・35万円以上{summary.over35}社・30万円以上{summary.over30}社。
+                  35万円以上{summary.over35}社・30万円以上{summary.over30}社。
                 </p>
                 {summary.industryAverages.length > 0 && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-sm font-semibold text-primary hover:underline">
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-[15px] font-semibold text-primary hover:underline">
                       業種別の平均初任給・調査概要を見る
                     </summary>
                     <div className="overflow-x-auto mt-3">
@@ -459,13 +522,16 @@ export function RankingPageClient({
                       初期表示の初任給しか見られていなかった。
                       枠で囲ったセグメント型トグルにし、見出しを添えて切り替えを明示する。 */}
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                    <p className="text-sm font-semibold text-foreground mb-2">
                       ランキングの種類を切り替え
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        （2種類を比べると企業選びの精度が上がります）
+                      </span>
                     </p>
                     <div
                       role="tablist"
                       aria-label="ランキングの種類"
-                      className="inline-flex w-full sm:w-auto rounded-lg border-2 border-primary/25 bg-muted/50 p-1 gap-1"
+                      className="inline-flex w-full sm:w-auto rounded-xl border-2 border-primary/25 bg-muted/50 p-1.5 gap-1.5"
                     >
                       {rankingTypes
                         .filter((type) => type.id !== "base")
@@ -477,17 +543,12 @@ export function RankingPageClient({
                               type="button"
                               role="tab"
                               aria-selected={isSelected}
-                              className={`flex-1 sm:flex-none sm:px-8 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                              className={`flex-1 sm:flex-none sm:px-12 px-4 py-3 rounded-lg text-base md:text-lg font-bold transition-all ${
                                 isSelected
                                   ? "bg-primary text-primary-foreground shadow-sm"
                                   : "text-muted-foreground hover:text-primary hover:bg-background"
                               }`}
-                              onClick={() => {
-                                // 既に選択されている場合は何もしない
-                                if (selectedRanking === type.id) return
-                                setSelectedIndustry(null)
-                                setSelectedRanking(type.id)
-                              }}
+                              onClick={() => changeRanking(type.id)}
                             >
                               {type.label}
                             </button>
@@ -495,9 +556,29 @@ export function RankingPageClient({
                         })}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[15px] leading-relaxed text-muted-foreground">
                     {rankingTypes.find((type) => type.id === selectedRanking)?.description}
                   </p>
+
+                  {/* 【導線】未選択の方のランキングを明示的に薦める。
+                      タブを押せることに気づかない人にも、文章でもう一度機会を作る。 */}
+                  {selectedRanking === "monthly" ? (
+                    <button
+                      type="button"
+                      onClick={() => changeRanking("annual")}
+                      className="self-start text-[15px] font-semibold text-primary hover:underline text-left"
+                    >
+                      賞与を含めた「想定年収ランキング」も見る →
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => changeRanking("monthly")}
+                      className="self-start text-[15px] font-semibold text-primary hover:underline text-left"
+                    >
+                      毎月の手取りに直結する「初任給ランキング」も見る →
+                    </button>
+                  )}
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -585,6 +666,18 @@ export function RankingPageClient({
                     同じ30万円でも実質的な条件は企業によって大きく異なります。各企業の詳細ページで給与の内訳と
                     <Link href="/simulator" className="text-primary hover:underline mx-1">手取り額</Link>
                     まで確認するのがおすすめです。
+                  </p>
+                  <p>
+                    月額の初任給だけを見ていると、賞与の差を見落とします。同じ初任給30万円でも、
+                    年間賞与が4か月分の企業と2か月分の企業では年収に数十万円の開きが出ます。
+                    <button
+                      type="button"
+                      onClick={() => changeRanking("annual")}
+                      className="text-primary hover:underline font-semibold mx-1"
+                    >
+                      想定年収ランキング
+                    </button>
+                    に切り替えると、賞与を含めた実質的な年収で順位を確認できます。
                   </p>
                   <p>
                     また、初任給の水準は業界によって差があります。志望業界の

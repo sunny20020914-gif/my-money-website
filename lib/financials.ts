@@ -18,6 +18,80 @@ import type { CompanyData } from "./sheets"
 const num = (v: number | string | null | undefined): number | null =>
   typeof v === "number" && isFinite(v) && v > 0 ? v : null
 
+/** 赤字（マイナス）も有効な実態なので、0以外の数値を通す版 */
+const numAllowNegative = (v: number | string | null | undefined): number | null =>
+  typeof v === "number" && isFinite(v) && v !== 0 ? v : null
+
+// ------------------------------------------------------------------
+// 【単位換算】スプレッドシートには元データ（EDINET）の単位のまま入力する。
+// 桁を手で直すと入力ミスが起きるため、換算は必ずコード側で行う。
+//   百万円 → 円: ×1,000,000
+//   万円   → 円: ×10,000
+// ------------------------------------------------------------------
+const MILLION = 1_000_000
+const MAN = 10_000
+
+// ------------------------------------------------------------------
+// 【会計基準の注記】
+// 当初はIFRS企業の営業利益が誤って抽出されていたため会計基準で非表示にしていたが、
+// 「主要な経営指標等の推移」の事業利益を参照する方式に修正され、
+// 総合商社をはじめ正しい値が取得できるようになったため制限を解除した。
+// （三菱商事 −1,874億円 → 1兆961億円／伊藤忠 0.2% → 8.1% で改善を確認）
+//
+// ただしIFRSの「事業利益」と日本基準の「営業利益」は厳密には別概念のため、
+// 会計基準は注記の出し分けに使う（isIfrsLike）。
+// ------------------------------------------------------------------
+export const isIfrsLike = (c: CompanyData): boolean => {
+  const std = (c.accountingStandard ?? "").trim()
+  return std === "IFRS" || std === "米国基準"
+}
+
+/** 営業利益の項目名。IFRS系は「事業利益」と呼ぶため表示名を変える */
+const profitLabel = (c: CompanyData): string =>
+  isIfrsLike(c) ? "事業利益" : "営業利益"
+
+// ------------------------------------------------------------------
+// 【重要・持株会社の平均年収を除外する安全弁】
+// 平均年間給与は有報の「従業員の状況」に載る提出会社（単体）の値。
+// 持株会社形態だと単体には管理部門の数名〜数百名しか在籍しておらず、
+// グループ社員の実態を全く表さない。実データで確認した例:
+//   日本マクドナルド … 連結2,454人に対し単体2人（平均年収1,293万円）
+//   電通             … 連結67,454人に対し単体135人
+//   リクルート        … 連結45,586人に対し単体130人
+// 単体比率5%未満の21社は平均年収の中央値が1,171万円と、
+// 50%以上の企業（780万円）より明らかに高く出ており、幹部偏重が確認できる。
+// これを「その会社の平均年収」として出すと誤情報になるため非表示にする。
+// ------------------------------------------------------------------
+const PARENT_RATIO_MIN = 0.05
+
+const isAverageSalaryMeaningful = (c: CompanyData): boolean => {
+  const avg = num(c.averageAnnualSalary)
+  if (avg === null) return false
+  const parent = num(c.parentEmployees)
+  const consolidated = num(c.reportedEmployees)
+  // 判定材料が無い場合は表示する（大半の企業は持株会社ではないため）
+  if (parent === null || consolidated === null) return true
+  return parent / consolidated >= PARENT_RATIO_MIN
+}
+
+/** 平均年収を、実態を表していると判断できる場合のみ通す */
+export const meaningfulAverageSalary = (c: CompanyData): number | null =>
+  isAverageSalaryMeaningful(c) ? num(c.averageAnnualSalary) : null
+
+/** 百万円で入力された値を円に換算する（マイナス＝赤字も通す） */
+const fromMillionYen = (v: number | string | null | undefined): number | string | null => {
+  if (typeof v === "string") return v.trim() === "" ? null : v.trim()
+  const n = numAllowNegative(v)
+  return n === null ? null : n * MILLION
+}
+
+/** 万円で入力された値を円に換算する（マイナス＝赤字も通す） */
+const fromManYen = (v: number | string | null | undefined): number | string | null => {
+  if (typeof v === "string") return v.trim() === "" ? null : v.trim()
+  const n = numAllowNegative(v)
+  return n === null ? null : n * MAN
+}
+
 /**
  * 金額を日本語の単位で読みやすく整形する。
  * 例: 1_200_000_000_000 → "1.2兆円" / 85_000_000_000 → "850億円" / 5_000_000 → "500万円"
@@ -28,21 +102,25 @@ export function formatAmount(v: number | string | null | undefined): string | nu
     const t = v.trim()
     return t === "" ? null : t
   }
-  const n = num(v)
-  if (n === null) return null
+  const raw = numAllowNegative(v)
+  if (raw === null) return null
+
+  // 営業利益は赤字（マイナス）があり得る。符号を保ったまま桁を丸める。
+  const sign = raw < 0 ? "−" : ""
+  const n = Math.abs(raw)
 
   if (n >= 1_000_000_000_000) {
     const val = n / 1_000_000_000_000
-    return `${val >= 10 ? Math.round(val) : Math.round(val * 10) / 10}兆円`
+    return `${sign}${val >= 10 ? Math.round(val) : Math.round(val * 10) / 10}兆円`
   }
   if (n >= 100_000_000) {
     const val = n / 100_000_000
-    return `${val >= 10 ? Math.round(val) : Math.round(val * 10) / 10}億円`
+    return `${sign}${val >= 10 ? Math.round(val) : Math.round(val * 10) / 10}億円`
   }
   if (n >= 10_000) {
-    return `${Math.round(n / 10_000)}万円`
+    return `${sign}${Math.round(n / 10_000).toLocaleString()}万円`
   }
-  return `${n.toLocaleString()}円`
+  return `${sign}${n.toLocaleString()}円`
 }
 
 /** パーセント値の整形。数値なら "7.1%"、文字列ならそのまま */
@@ -54,7 +132,20 @@ export function formatPercent(v: number | string | null | undefined): string | n
   }
   const n = typeof v === "number" && isFinite(v) ? v : null
   if (n === null) return null
-  return `${Math.round(n * 10) / 10}%`
+  // 金額側（formatAmount）と同じ全角相当のマイナス記号に揃える。
+  // ハイフンだと数字に埋もれて赤字だと気づきにくい。
+  const sign = n < 0 ? "−" : ""
+  return `${sign}${Math.round(Math.abs(n) * 10) / 10}%`
+}
+
+/** 人数の整形（例: 12,784人）。金額と違い単位換算は不要 */
+export function formatHeadcount(v: number | string | null | undefined): string | null {
+  if (typeof v === "string") {
+    const t = v.trim()
+    return t === "" ? null : t
+  }
+  const n = num(v)
+  return n === null ? null : `${Math.round(n).toLocaleString()}人`
 }
 
 export interface FinancialMetric {
@@ -69,12 +160,75 @@ export interface FinancialMetric {
  */
 const METRIC_DEFS: {
   key: string
-  label: string
+  /** 表示名。会計基準で呼び方が変わる項目があるため関数で返す */
+  label: (c: CompanyData) => string
+  /** カードにも出すか（false は企業詳細ページのみ） */
+  onCard: boolean
   format: (c: CompanyData) => string | null
 }[] = [
-  { key: "revenue", label: "売上高", format: (c) => formatAmount(c.revenue) },
-  { key: "operatingProfit", label: "営業利益", format: (c) => formatAmount(c.operatingProfit) },
-  { key: "operatingMargin", label: "営業利益率", format: (c) => formatPercent(c.operatingMargin) },
+  {
+    // 全社員の平均年収。有報の実額なので精度が高く、就活生の関心も最も高い。
+    key: "averageAnnualSalary",
+    label: () => "平均年収（全社員）",
+    onCard: true,
+    // 持株会社では実態を表さないため安全弁を通す
+    format: (c) => formatAmount(fromManYen(meaningfulAverageSalary(c))),
+  },
+  {
+    key: "revenue",
+    label: () => "売上高",
+    onCard: true,
+    format: (c) => formatAmount(fromMillionYen(c.revenue)),
+  },
+  {
+    key: "operatingProfit",
+    label: (c) => profitLabel(c),
+    onCard: false,
+    format: (c) => formatAmount(fromMillionYen(c.operatingProfit)),
+  },
+  {
+    key: "operatingMargin",
+    label: (c) => `${profitLabel(c)}率`,
+    onCard: true,
+    format: (c) => formatPercent(c.operatingMargin),
+  },
+  {
+    // 一人当たり指標の分母がどの範囲かを読み手が判断できるよう、
+    // 連結・単体の両方を並べて出す。持株会社かどうかもここで見て取れる。
+    key: "employeesConsolidated",
+    label: () => "従業員数（連結）",
+    onCard: false,
+    format: (c) => formatHeadcount(c.reportedEmployees),
+  },
+  {
+    key: "employeesParent",
+    label: () => "従業員数（単体）",
+    onCard: false,
+    format: (c) => formatHeadcount(c.parentEmployees),
+  },
+  {
+    key: "salesPerEmployee",
+    label: () => "一人当たり売上高",
+    onCard: false,
+    format: (c) => formatAmount(fromManYen(c.salesPerEmployee)),
+  },
+  {
+    // 「社員1人がいくら稼いでいるか」＝給与の原資
+    key: "profitPerEmployee",
+    label: (c) => `一人当たり${profitLabel(c)}`,
+    onCard: false,
+    format: (c) => formatAmount(fromManYen(c.profitPerEmployee)),
+  },
+  {
+    // 設備の厚さ。装置産業か労働集約型かの判別に使う
+    key: "capitalPerEmployee",
+    label: () => "一人当たり設備額",
+    onCard: false,
+    format: (c) => formatAmount(fromManYen(c.capitalPerEmployee)),
+  },
+  // 【未使用】労働分配率は正確な人件費が用意できたら有効化する:
+  // { key: "laborShare", label: () => "労働分配率", onCard: false,
+  //   format: (c) => formatPercent(c.laborShare) },
 ]
 
 /**
@@ -86,8 +240,72 @@ export function buildFinancialMetrics(company: CompanyData): FinancialMetric[] {
   for (const def of METRIC_DEFS) {
     const value = def.format(company)
     if (value !== null) {
-      metrics.push({ key: def.key, label: def.label, value })
+      metrics.push({ key: def.key, label: def.label(company), value })
     }
   }
   return metrics
+}
+
+/**
+ * ランキングカード用（3項目まで）。
+ * 売上高・営業利益率・一人当たり営業利益に絞り、カードが縦に伸びるのを防ぐ。
+ */
+export function buildCardFinancialMetrics(company: CompanyData): FinancialMetric[] {
+  const metrics: FinancialMetric[] = []
+  for (const def of METRIC_DEFS) {
+    if (!def.onCard) continue
+    const value = def.format(company)
+    if (value !== null) {
+      metrics.push({ key: def.key, label: def.label(company), value })
+    }
+  }
+  return metrics
+}
+
+/**
+ * 一人当たり指標に添える注記を組み立てる。
+ *
+ * 一人当たり売上高・営業利益・設備額はすべて「連結」ベース（分子も分母もグループ全体）。
+ * ただしグループ構成によって意味合いが変わるため、断り書きを出す。
+ * 単体と連結の差が大きい企業では、その事実を具体的な人数とともに示して
+ * 「親会社だけの数字ではない」ことが伝わるようにする。
+ */
+export function buildPerEmployeeNote(c: CompanyData): string | null {
+  const hasPerEmployee =
+    num(c.salesPerEmployee) !== null ||
+    numAllowNegative(c.profitPerEmployee) !== null ||
+    num(c.capitalPerEmployee) !== null
+  if (!hasPerEmployee) return null
+
+  const base =
+    "一人当たりの数値は、グループ全体（連結）の売上高・利益・資産を連結従業員数で割ったものです。" +
+    "子会社を多く持つ企業やビジネスモデルによっては実感と異なる場合があります。"
+
+  const parent = num(c.parentEmployees)
+  const consolidated = num(c.reportedEmployees)
+  if (parent === null || consolidated === null || consolidated === 0) return base
+
+  const ratio = parent / consolidated
+  if (ratio < 0.2) {
+    return (
+      base +
+      `${c.company}は連結${Math.round(consolidated).toLocaleString()}人に対し単体（親会社）は${Math.round(parent).toLocaleString()}人で、` +
+      "グループ会社に人員の大半が在籍しています。上記はグループ全体を平均した数値である点にご注意ください。"
+    )
+  }
+  return base
+}
+
+/** 出典表示用のラベル（例: "EDINET／2025年8月期 有価証券報告書"） */
+export function buildSourceLabel(company: CompanyData): string | null {
+  const hasFinancials =
+    num(company.revenue) !== null ||
+    numAllowNegative(company.operatingProfit) !== null ||
+    num(company.averageAnnualSalary) !== null ||
+    num(company.salesPerEmployee) !== null
+  if (!hasFinancials) return null
+  const period = company.fiscalPeriod?.trim()
+  return period
+    ? `金融庁EDINET／${period} 有価証券報告書より当サイト集計`
+    : `金融庁EDINET／有価証券報告書より当サイト集計`
 }

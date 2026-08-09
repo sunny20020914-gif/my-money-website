@@ -20,11 +20,50 @@ export interface CompanyData {
   logo?: string
   salaryUrl?: string // 給与関連のURL
   // --- 財務指標（N列以降・任意）---
-  // スプシに列が無い／空欄の場合は undefined になり、UI側では自動的に非表示になる。
-  // 新しい指標を増やすときは、ここにフィールドを足して parse 行を1行追加するだけでよい。
-  revenue?: number | string | null // N列: 売上高
-  operatingProfit?: number | string | null // O列: 営業利益
+  // 出典: EDINET（金融庁）／有価証券報告書。スプシに列が無い／空欄なら undefined となり、
+  // UI側では該当項目が自動的に非表示になる。
+  //
+  // 【単位の注意】スプシには元データの単位のまま入力する（換算はコード側で行う）。
+  //   revenue / operatingProfit ……… 百万円
+  //   averageAnnualSalary / salesPerEmployee / profitPerEmployee / capitalPerEmployee … 万円
+  //   operatingMargin / laborShare … %
+  revenue?: number | string | null // N列: 売上高（百万円）
+  operatingProfit?: number | string | null // O列: 営業利益／事業利益（百万円）
   operatingMargin?: number | string | null // P列: 営業利益率(%)
+  /**
+   * Q列: 平均年間給与（万円）。有報「従業員の状況」に記載される提出会社（単体）の実額。
+   * 【重要】これは管理職・ベテランを含む全社員の平均であり、新卒の年収ではない。
+   * 表示時は必ず「全社員の平均」と明示し、初任給と誤読されないようにすること。
+   * 実際の公表値と一致することを検証済み（三菱商事2,112万円・キーエンス2,178万円など）。
+   */
+  averageAnnualSalary?: number | string | null
+  salesPerEmployee?: number | string | null // R列: 一人当たり売上高（万円）
+  profitPerEmployee?: number | string | null // S列: 一人当たり営業利益（万円）
+  capitalPerEmployee?: number | string | null // T列: 資本装備率（万円）
+  /**
+   * U列: 連結従業員数（名）。グループ全体の人数。
+   * 一人当たり売上高・営業利益・設備額はすべてこの連結従業員数で計算されている。
+   * 分子（売上高・営業利益・有形固定資産）が連結なので、分母も連結で揃える必要がある。
+   */
+  reportedEmployees?: number | string | null
+  /**
+   * V列: 単体従業員数（名）。提出会社（親会社）のみの人数。
+   * 平均年間給与はこの単体に対応する値なので、両方を並べて表示することで
+   * 「どの範囲の人数に対する平均年収なのか」が読み手に伝わる。
+   * 持株会社の判定（平均年収を表示してよいか）にも使う。
+   */
+  parentEmployees?: number | string | null
+  fiscalPeriod?: string // W列: 対象期（例「2025年8月期」）。出典表示に使う
+  /**
+   * X列: 会計基準（「日本基準」「IFRS」「米国基準」）。
+   * 営業利益の定義がIFRSと日本基準で異なるため、注記の出し分けに使う。
+   */
+  accountingStandard?: string
+  /**
+   * Y列: 労働分配率(%)。【現状は未使用・枠のみ確保】
+   * 正確な人件費（単体の売上総利益）が用意できた段階で表示を有効化する。
+   */
+  laborShare?: number | string | null
 }
 
 export interface ArticleData {
@@ -110,10 +149,10 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
 
   try {
     const sheetName = getSheetName(rankingType)
-    // M列(salaryUrl)までが従来の必須データ。N列以降は財務指標用に予約している。
-    // 将来 Q・R列に指標を足しても range を変えずに済むよう、余裕を持って R まで取得する。
+    // M列(salaryUrl)までが従来の必須データ。N〜V列が財務指標。
+    // 将来さらに指標を足しても range を変えずに済むよう、余裕を持って Z まで取得する。
     // 列が存在しない場合、Sheets APIは単に短い配列を返すだけでエラーにはならない。
-    const range = `${sheetName}!A2:R1000`
+    const range = `${sheetName}!A2:Z1000`
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
 
     console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
@@ -185,9 +224,19 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
         baseMonthly: parseSalaryValue(row[4]),
         // 財務指標（N列以降）。列が未追加なら row[13] 等は undefined となり、
         // parseSalaryValue が null を返すためUI側で自動的に非表示になる。
-        revenue: parseSalaryValue(row[13]), // N列: 売上高
-        operatingProfit: parseSalaryValue(row[14]), // O列: 営業利益
+        // 単位は元データのまま取り込み、表示側（lib/financials.ts）で換算する。
+        revenue: parseSalaryValue(row[13]), // N列: 売上高（百万円）
+        operatingProfit: parseSalaryValue(row[14]), // O列: 営業利益／事業利益（百万円）
         operatingMargin: parseSalaryValue(row[15]), // P列: 営業利益率(%)
+        averageAnnualSalary: parseSalaryValue(row[16]), // Q列: 平均年間給与（万円・全社員平均）
+        salesPerEmployee: parseSalaryValue(row[17]), // R列: 一人当たり売上高（万円）
+        profitPerEmployee: parseSalaryValue(row[18]), // S列: 一人当たり営業利益（万円）
+        capitalPerEmployee: parseSalaryValue(row[19]), // T列: 資本装備率（万円）
+        reportedEmployees: parseSalaryValue(row[20]), // U列: 連結従業員数（名）
+        parentEmployees: parseSalaryValue(row[21]), // V列: 単体従業員数（名）
+        fiscalPeriod: row[22] || undefined, // W列: 対象期
+        accountingStandard: row[23] || undefined, // X列: 会計基準
+        laborShare: parseSalaryValue(row[24]), // Y列: 労働分配率(%)（現状は表示しない）
       }
     })
 

@@ -19,6 +19,9 @@ import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries, getR
 import { pairSlug } from "@/lib/compare"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
+import { buildFinancialMetrics, buildSourceLabel, buildPerEmployeeNote } from "@/lib/financials"
+import { buildSalaryGrowth } from "@/lib/salary-growth"
+import { buildFinancialInsight, buildBusinessModelInsight } from "@/lib/financial-insight"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
@@ -51,17 +54,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `想定年収${fmtSalary(company.annualSalary)}/年`,
     `従業員数${typeof company.employees === "number" ? company.employees.toLocaleString() : company.employees}人`,
   ]
-  const description = `${company.company}の${parts.join("、")}。業界：${company.industry.split("/")[0]}。事業内容・強み・将来性を解説。`
+  // 【SEO】有報由来の平均年収があれば説明文の先頭付近に入れる。
+  // 「企業名 平均年収」は検索需要が非常に大きく、有報の実額なので精度でも勝負できる。
+  const avgSalaryMan =
+    typeof company.averageAnnualSalary === "number" && company.averageAnnualSalary > 0
+      ? Math.round(company.averageAnnualSalary)
+      : null
+
+  const description = avgSalaryMan
+    ? `${company.company}の${parts.join("、")}。平均年収${avgSalaryMan.toLocaleString()}万円（全社員平均・有価証券報告書）。初任給からの伸びや業績データも掲載。`
+    : `${company.company}の${parts.join("、")}。業界：${company.industry.split("/")[0]}。事業内容・強み・将来性を解説。`
 
   return {
     // 【SEO】「企業名 初任給 手取り」は実測でCTR50%・6.5位を取れている勝ち筋。
-    // 大手就活サイトは手取りを扱わないため差別化でき、
-    // 「初任給」単体より競合が薄い。タイトルに手取りを明示して取りにいく。
+    // そこに検索需要の大きい「平均年収」を重ねる。有報の実額を持っているため、
+    // 推定値しか出せない競合サイトに対して精度で優位に立てる。
     // 【年度表記の注意】「${FISCAL_YEAR}年新卒」と書くと26卒向けサイトだと誤読される。
     // FISCAL_YEARはデータの年度なので「年最新」と組み合わせ、卒業年度と切り離す。
-    title: netForMeta
-      ? `${company.company}の初任給と手取り【${FISCAL_YEAR}年最新】`
-      : `${company.company}の初任給・年収【${FISCAL_YEAR}年最新】`,
+    title: avgSalaryMan
+      ? `${company.company}の初任給・平均年収・手取り【${FISCAL_YEAR}年最新】`
+      : netForMeta
+        ? `${company.company}の初任給と手取り【${FISCAL_YEAR}年最新】`
+        : `${company.company}の初任給・年収【${FISCAL_YEAR}年最新】`,
     description,
     alternates: {
       canonical: `https://www.mymoneyweb.com/companies/${params.id}`,
@@ -102,7 +116,7 @@ export default async function CompanyPage({ params }: Props) {
   const stats = computeCompanyStats(allCompanies, company)
   const industryComparisons = rankedIndustries(stats)
   const leadSummary = buildLeadSummary(company, stats, FISCAL_YEAR)
-  const faq = buildFaq(company, stats, FISCAL_YEAR)
+  const baseFaq = buildFaq(company, stats, FISCAL_YEAR)
   const netSalary = estimateNetSalary(company.baseMonthly)
   // この企業が属する業界のクロス条件一覧ページ（内部リンク用）
   const industryListDefs = buildAllListDefinitions(allCompanies).filter(
@@ -113,6 +127,49 @@ export default async function CompanyPage({ params }: Props) {
   const compareCandidates = getCompareCandidates(allCompanies, company, 3)
   const primaryIndustry = company.industry.split("/")[0]?.trim() || null
   const lastUpdated = new Date() // ISR再生成のたびに更新される
+
+  // 有価証券報告書由来の財務データ（スプシN列以降）。未入力の企業では空/nullになり非表示。
+  const financialMetrics = buildFinancialMetrics(company)
+  const salaryGrowth = buildSalaryGrowth(allCompanies, company)
+  const financialInsight = buildFinancialInsight(allCompanies, company)
+  const businessModel = buildBusinessModelInsight(allCompanies, company)
+  const perEmployeeNote = buildPerEmployeeNote(company)
+  const financialSource = buildSourceLabel(company)
+  const hasFinancialSection =
+    financialMetrics.length > 0 ||
+    salaryGrowth !== null ||
+    financialInsight !== null ||
+    businessModel !== null
+
+  /**
+   * 【SEO】「企業名 平均年収」向けのFAQを追加する。
+   * 有報の実額を根拠にできるため、推定値しか出せない競合より精度で優位に立てる。
+   * 表示側とFAQPage構造化データの両方でこの配列を使うため内容は必ず一致する。
+   */
+  const faq = [...baseFaq]
+  if (salaryGrowth) {
+    const man = (yen: number) => `${Math.round(yen / 10_000).toLocaleString()}万円`
+    faq.push({
+      question: `${company.company}の平均年収はいくらですか？`,
+      answer:
+        `${company.company}の平均年収は${man(salaryGrowth.averageAnnual)}です` +
+        `（有価証券報告書に記載された提出会社の平均年間給与）。` +
+        `これは管理職やベテラン社員を含む全社員の平均であり、新卒入社時の年収とは異なります。` +
+        `初任給ベースの年収${man(salaryGrowth.starterAnnual)}と比べると${Math.round(salaryGrowth.ratio * 10) / 10}倍の水準です。`,
+    })
+    faq.push({
+      question: `${company.company}は入社後に給与が伸びますか？`,
+      answer:
+        `初任給ベースの年収${man(salaryGrowth.starterAnnual)}に対し、全社員の平均年収は${man(salaryGrowth.averageAnnual)}で${Math.round(salaryGrowth.ratio * 10) / 10}倍です。` +
+        `当サイト掲載${salaryGrowth.sampleCount}社の中央値は${Math.round(salaryGrowth.medianRatio * 10) / 10}倍のため、` +
+        (salaryGrowth.verdict === "high"
+          ? `平均より給与が伸びやすい企業といえます。`
+          : salaryGrowth.verdict === "low"
+            ? `初任給の時点で既に高水準に達しているタイプです。`
+            : `平均的な伸び方です。`) +
+        `ただし平均年収は全社員の平均のため、若手のうちからこの金額になるわけではありません。`,
+    })
+  }
 
   const SalaryDisplay = (props: { value: number | string | null | undefined, url?: string, isPrimary?: boolean }) => {
     const { value, url, isPrimary = false } = props;
@@ -344,6 +401,19 @@ export default async function CompanyPage({ params }: Props) {
                     <p className="text-lg font-semibold whitespace-nowrap">{typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}</p>
                   </div>
                 </div>
+
+                {/* 【導線】想定年収を見た直後に、年収基準のランキングへ送る。
+                    ?type=annual を付けることで年収ランキングが開いた状態で着地する。 */}
+                {typeof company.annualSalary === "number" && (
+                  <p className="mt-4 pt-3 border-t">
+                    <Link
+                      href="/ranking?type=annual"
+                      className="text-sm font-semibold text-primary hover:underline"
+                    >
+                      賞与込みの「想定年収ランキング」で{company.company}の順位を見る →
+                    </Link>
+                  </p>
+                )}
                 {netSalary && (
                   <>
                     <p className="mt-4 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
@@ -459,7 +529,7 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- ランキング前後の企業＋比較導線（給与を見た直後の自然な次クリック） --- */}
           {(neighbors.prev || neighbors.next || compareCandidates.length > 0) && (
-            <section className="order-5 md:order-none">
+            <section className="order-6 md:order-none">
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5 space-y-4">
                   {neighbors.rank !== null && (neighbors.prev || neighbors.next) && (
@@ -522,7 +592,7 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
           {industryComparisons.length > 0 && (
-            <section className="space-y-4 order-6 md:order-none">
+            <section className="space-y-4 order-7 md:order-none">
               <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 業界内での初任給の位置づけ
@@ -579,7 +649,7 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* 広告1/2: 給与・業界内比較を見た直後の自然な区切り（ページ上部で唯一の広告） */}
-          <div className="order-7 md:order-none">
+          <div className="order-8 md:order-none">
             <DynamicAdBanner />
           </div>
 
@@ -638,9 +708,131 @@ export default async function CompanyPage({ params }: Props) {
             </div>}
           </section>
 
+          {/* --- 有価証券報告書ベースの給与・業績データ ---
+              【配置】企業概要（order-4）の直後に置く。企業概要が下に押し下げられないよう、
+              このセクションより前には新しい要素を差し込まないこと。
+              大手就活サイトは初任給しか持たず、財務メディアは初任給を持たないため、
+              「入社後にどれだけ伸びるか」を示せるのは当サイトだけの強み。 */}
+          {hasFinancialSection && (
+            <section className="space-y-5 order-5 md:order-none">
+              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                {company.company}の平均年収と業績データ
+              </h2>
+
+              {/* 初任給 → 平均年収の伸び */}
+              {salaryGrowth && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-bold text-foreground">
+                    初任給から平均年収まで、給与はどれだけ伸びるか
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2 md:gap-3">
+                    <div className="rounded-xl border bg-card p-3 md:p-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">初任給ベース年収</p>
+                      <p className="text-base md:text-xl font-bold text-foreground tabular">
+                        {Math.round(salaryGrowth.starterAnnual / 10000).toLocaleString()}
+                        <span className="text-xs font-normal text-muted-foreground">万円</span>
+                      </p>
+                    </div>
+                    <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 md:p-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">伸び倍率</p>
+                      <p className="text-base md:text-xl font-bold text-primary tabular">
+                        {Math.round(salaryGrowth.ratio * 10) / 10}
+                        <span className="text-xs font-normal text-muted-foreground">倍</span>
+                      </p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-3 md:p-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">平均年収</p>
+                      <p className="text-base md:text-xl font-bold text-foreground tabular">
+                        {Math.round(salaryGrowth.averageAnnual / 10000).toLocaleString()}
+                        <span className="text-xs font-normal text-muted-foreground">万円</span>
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    {emphasizeCompanyName(salaryGrowth.summary, company.company)}
+                  </p>
+                </div>
+              )}
+
+              {/* 財務ハイライト */}
+              {financialMetrics.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-bold text-foreground">業績データ</h3>
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <table className="w-full text-sm md:text-[15px]">
+                        <caption className="sr-only">
+                          {company.company}の有価証券報告書ベースの業績データ
+                        </caption>
+                        <tbody>
+                          {financialMetrics.map((m, i) => (
+                            <tr
+                              key={m.key}
+                              className={i < financialMetrics.length - 1 ? "border-b" : ""}
+                            >
+                              <th
+                                scope="row"
+                                className="py-2.5 text-left font-normal text-muted-foreground"
+                              >
+                                {m.label}
+                              </th>
+                              <td className="py-2.5 text-right font-semibold tabular">
+                                {m.value}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {/* 一人当たり指標が何を分母にしているかを明示する。
+                          連結・単体の差が大きい企業では具体的な人数を添えて注意を促す。 */}
+                      {perEmployeeNote && (
+                        <p className="mt-3 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
+                          ※{perEmployeeNote}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* 収益性と給与の関係（当サイト独自の分析） */}
+              {financialInsight && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold text-foreground">
+                    稼ぐ力に対して、給与は高いのか
+                  </h3>
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    {emphasizeCompanyName(financialInsight.summary, company.company)}
+                  </p>
+                </div>
+              )}
+
+              {/* ビジネスモデルの型（資本装備率から判定） */}
+              {businessModel && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold text-foreground">
+                    設備で稼ぐ会社か、人で稼ぐ会社か
+                  </h3>
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    {emphasizeCompanyName(businessModel.summary, company.company)}
+                  </p>
+                </div>
+              )}
+
+              {/* 出典。有報が一次情報であることを明示し、YMYL領域での信頼性を担保する */}
+              {financialSource && (
+                <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t">
+                  出典: {financialSource}。平均年収は提出会社（単体）の全社員平均で、
+                  管理職・ベテラン社員を含みます。新卒入社時の年収とは異なります。
+                </p>
+              )}
+            </section>
+          )}
+
           {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
           {faq.length > 0 && (
-            <section className="space-y-4 order-8 md:order-none">
+            <section className="space-y-4 order-9 md:order-none">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 {company.company}に関するよくある質問
               </h2>
@@ -662,14 +854,14 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* 広告2/2: 記事本文・FAQを読み終えた後、関連企業への回遊直前（上部広告との隣接を避けるため本文がある場合のみ） */}
           {(faq.length > 0 || company.long_description || company.strength || company.future_potential || company.salary_details) && (
-            <div className="order-9 md:order-none">
+            <div className="order-10 md:order-none">
               <DynamicAdBanner />
             </div>
           )}
 
           {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (
-            <section className="space-y-4 order-10 md:order-none">
+            <section className="space-y-4 order-11 md:order-none">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 同じ業界の他の企業
               </h2>
@@ -715,7 +907,7 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* --- 閲覧履歴（localStorage・回遊導線） --- */}
-          <div className="order-11 md:order-none">
+          <div className="order-12 md:order-none">
             <RecentlyViewed
               current={{
                 id: company.id,
@@ -726,7 +918,7 @@ export default async function CompanyPage({ params }: Props) {
           </div>
 
           {/* --- コメント欄 --- */}
-          <section className="mt-16 border-t pt-10 order-12 md:order-none">
+          <section className="mt-16 border-t pt-10 order-13 md:order-none">
             <CommentSection companyId={company.id} />
           </section>
         </div>

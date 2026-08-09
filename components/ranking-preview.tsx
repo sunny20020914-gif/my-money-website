@@ -153,14 +153,25 @@ export async function RankingPreview() {
             </CardContent>
           </Card>
 
-          <div className="text-center mt-4">
-            <Button asChild size="lg" variant="outline" className="bg-transparent">
+          {/* 【導線】初任給と想定年収は順位が入れ替わるため、
+              入口の段階で2種類あることを示して両方見てもらう */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <Button asChild size="lg">
               <Link href="/ranking">
-                完全なランキングを見る
+                初任給ランキングを見る
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="bg-transparent">
+              <Link href="/ranking?type=annual">
+                想定年収ランキングを見る
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
+          <p className="text-center text-sm text-muted-foreground mt-3">
+            賞与を含めるかどうかで順位は大きく変わります。両方見比べるのがおすすめです。
+          </p>
         </div>
       </div>
     </section>

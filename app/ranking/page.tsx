@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { fetchRankingDataServer } from "@/lib/sheets"
 import { buildRankingSummary, buildRankingFaq } from "@/lib/ranking-summary"
 import { RankingPageClient } from "./ranking-page-client"
@@ -70,11 +71,21 @@ export default async function RankingPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
         {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
-        <RankingPageClient initialData={initialData} initialError={null} industryList={uniqueIndustries} summary={summary} updatedLabel={updatedLabel} />
+        {/* クライアント側で useSearchParams（?type=annual の読み取り）を使うため
+            Suspense で包む必要がある。これが無いとビルド時に
+            「useSearchParams should be wrapped in a suspense boundary」で失敗する。
+            包むことでページ自体は静的生成のまま維持できる。 */}
+        <Suspense fallback={null}>
+          <RankingPageClient initialData={initialData} initialError={null} industryList={uniqueIndustries} summary={summary} updatedLabel={updatedLabel} />
+        </Suspense>
       </>
     )
   } catch (error) {
     console.error("[v0] ランキングページデータの取得に失敗:", error)
-    return <RankingPageClient initialData={[]} initialError="データの取得に失敗しました。後でもう一度お試しください。" industryList={[]} summary={null} updatedLabel="" />
+    return (
+      <Suspense fallback={null}>
+        <RankingPageClient initialData={[]} initialError="データの取得に失敗しました。後でもう一度お試しください。" industryList={[]} summary={null} updatedLabel="" />
+      </Suspense>
+    )
   }
 }
