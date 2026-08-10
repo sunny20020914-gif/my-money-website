@@ -918,7 +918,10 @@ export default async function CompanyPage({ params }: Props) {
           </div>
 
           {/* --- コメント欄 --- */}
-          <section className="mt-16 border-t pt-10 order-13 md:order-none">
+          {/* 【重要】order-13 は Tailwind の標準スケール（order-1〜12）に存在せず、
+              CSSが生成されないため order:0 扱いになり、スマホで先頭に飛び出していた。
+              最後に置きたい要素は数値ではなく order-last（order:9999）を使うこと。 */}
+          <section className="mt-16 border-t pt-10 order-last md:order-none">
             <CommentSection companyId={company.id} />
           </section>
         </div>
