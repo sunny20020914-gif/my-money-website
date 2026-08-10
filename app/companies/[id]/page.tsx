@@ -403,11 +403,11 @@ export default async function CompanyPage({ params }: Props) {
                 </div>
 
                 {/* 【導線】想定年収を見た直後に、年収基準のランキングへ送る。
-                    ?type=annual を付けることで年収ランキングが開いた状態で着地する。 */}
+                    独立ページ（/ranking/annual）なので内部リンクとしても評価される。 */}
                 {typeof company.annualSalary === "number" && (
                   <p className="mt-4 pt-3 border-t">
                     <Link
-                      href="/ranking?type=annual"
+                      href="/ranking/annual"
                       className="text-sm font-semibold text-primary hover:underline"
                     >
                       賞与込みの「想定年収ランキング」で{company.company}の順位を見る →

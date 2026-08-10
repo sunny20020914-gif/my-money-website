@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useMemo, CSSProperties } from "react"
-import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
@@ -20,6 +19,7 @@ import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { buildCardFinancialMetrics } from "@/lib/financials"
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
+import { MARKET_BENCHMARK, buildMarketComparison } from "@/lib/market-benchmark"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 
 type RankingType = "annual" | "monthly" | "base"
@@ -311,35 +311,27 @@ export function RankingPageClient({
   industryList,
   summary,
   updatedLabel,
+  rankingType,
 }: {
   initialData: CompanyData[];
   initialError: string | null;
   industryList: string[];
   summary: RankingSummary | null;
   updatedLabel: string;
+  /**
+   * 【SEO・テーマ分散の解消】
+   * 以前は1つのURLでタブ切り替えしていたため、検索エンジンから見て
+   * 「初任給のページなのか年収のページなのか」が曖昧になっていた。
+   * ランキング種別をURL（ルート）ごとに固定し、
+   *   /ranking        … 初任給ランキング
+   *   /ranking/annual … 想定年収ランキング
+   * と独立させることで、それぞれが個別に検索評価を受けられるようにする。
+   */
+  rankingType: RankingType;
 }) {
   const [searchTerm, setSearchTerm] = useState("")
-  // 【重要】以前は状態のみで管理していたため、想定年収ランキングにURLが存在せず、
-  // 他ページからリンクを張ることも、共有・ブックマークすることもできなかった。
-  // ?type=annual を初期値として読むことで、外部からの誘導導線を張れるようにする。
-  const searchParams = useSearchParams()
-  const initialRanking: RankingType = searchParams.get("type") === "annual" ? "annual" : "monthly"
-  const [selectedRanking, setSelectedRanking] = useState<RankingType>(initialRanking)
-
-  /**
-   * ランキング種別を切り替える。
-   * history.replaceState でURLだけ書き換える（router.push を使うと
-   * サーバーへの再取得とスクロール位置のリセットが起きるため）。
-   */
-  const changeRanking = (id: RankingType) => {
-    if (selectedRanking === id) return
-    setSelectedIndustry(null)
-    setSelectedRanking(id)
-    if (typeof window !== "undefined") {
-      const url = id === "annual" ? "/ranking?type=annual" : "/ranking"
-      window.history.replaceState(null, "", url)
-    }
-  }
+  // 種別はURLで決まるため状態として持たない
+  const selectedRanking = rankingType
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
   const [isIndustryFilterOpen, setIsIndustryFilterOpen] = useState(false)
   const { data: companies, loading, error, refreshData } = useRankingData(selectedRanking, {
@@ -369,6 +361,12 @@ export function RankingPageClient({
   // FAQ。サーバー側のFAQPage構造化データと同じ関数・同じ入力で生成するため内容が一致する
   const rankingFaq = useMemo(
     () => (summary ? buildRankingFaq(summary, FISCAL_YEAR) : []),
+    [summary],
+  )
+
+  // 公的統計（厚労省）との比較文。掲載企業が高給側に偏っている事実を明示する
+  const marketComparison = useMemo(
+    () => (summary ? buildMarketComparison(summary.avgMonthly, summary.withMonthly) : null),
     [summary],
   )
 
@@ -416,15 +414,27 @@ export function RankingPageClient({
                   従来のH1は「初任給・年収ランキング」で年号が無く、
                   「初任給ランキング」も中黒で分断されていた。
                   クエリと同じ語順・表記をH1に含める。 */}
-              <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4 leading-tight text-primary">
-                初任給ランキング {FISCAL_YEAR}
-                <span className="block text-xl md:text-3xl mt-2 text-foreground">
-                  新卒の初任給・想定年収を{summary?.withMonthly ?? ""}社比較
-                </span>
-              </h1>
+              {/* 【SEO】H1は「初任給が高い企業」という明確な検索意図に寄せる。
+                  当サイトは高待遇企業に特化したデータセットなので、
+                  一般的な「初任給ランキング」より競合が薄く、意図も一致する。 */}
+              {selectedRanking === "annual" ? (
+                <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4 leading-tight text-primary">
+                  新卒の想定年収が高い企業ランキング {FISCAL_YEAR}
+                  <span className="block text-xl md:text-3xl mt-2 text-foreground">
+                    賞与を含めた1年目の年収で{summary?.withMonthly ?? ""}社を比較
+                  </span>
+                </h1>
+              ) : (
+                <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4 leading-tight text-primary">
+                  初任給が高い企業ランキング {FISCAL_YEAR}
+                  <span className="block text-xl md:text-3xl mt-2 text-foreground">
+                    月30万円超の高待遇企業を{summary?.withMonthly ?? ""}社掲載
+                  </span>
+                </h1>
+              )}
               <p className="text-[17px] md:text-xl text-muted-foreground text-balance leading-relaxed max-w-3xl mx-auto">
-                {TARGET_GRAD_LABEL}向けに、新卒の初任給・年収をリアルタイム検索。<br className="hidden md:inline" />
-                ランキングを切り替えて、あなたの目指すキャリアを見つけよう。
+                {TARGET_GRAD_LABEL}向けに、初任給の高い企業を厳選して掲載。<br className="hidden md:inline" />
+                手取り額や入社後の年収の伸びまで確認できます。
               </p>
             </div>
 
@@ -528,8 +538,10 @@ export function RankingPageClient({
                         （2種類を比べると企業選びの精度が上がります）
                       </span>
                     </p>
+                    {/* 【SEO】状態切り替えではなく実際のページ遷移にする。
+                        別URLの独立ページなので、検索エンジンにそれぞれ別テーマとして
+                        認識され、内部リンクとしても機能する。 */}
                     <div
-                      role="tablist"
                       aria-label="ランキングの種類"
                       className="inline-flex w-full sm:w-auto rounded-xl border-2 border-primary/25 bg-muted/50 p-1.5 gap-1.5"
                     >
@@ -537,21 +549,21 @@ export function RankingPageClient({
                         .filter((type) => type.id !== "base")
                         .map((type) => {
                           const isSelected = selectedRanking === type.id
-                          return (
-                            <button
-                              key={type.id}
-                              type="button"
-                              role="tab"
-                              aria-selected={isSelected}
-                              className={`flex-1 sm:flex-none sm:px-12 px-4 py-3 rounded-lg text-base md:text-lg font-bold transition-all ${
-                                isSelected
-                                  ? "bg-primary text-primary-foreground shadow-sm"
-                                  : "text-muted-foreground hover:text-primary hover:bg-background"
-                              }`}
-                              onClick={() => changeRanking(type.id)}
-                            >
+                          const href = type.id === "annual" ? "/ranking/annual" : "/ranking"
+                          const cls = `flex-1 sm:flex-none sm:px-12 px-4 py-3 rounded-lg text-base md:text-lg font-bold transition-all text-center ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-muted-foreground hover:text-primary hover:bg-background"
+                          }`
+                          // 選択中の項目はリンクにしない（自ページへの無意味なリンクを作らない）
+                          return isSelected ? (
+                            <span key={type.id} aria-current="page" className={cls}>
                               {type.label}
-                            </button>
+                            </span>
+                          ) : (
+                            <Link key={type.id} href={href} className={cls}>
+                              {type.label}
+                            </Link>
                           )
                         })}
                     </div>
@@ -560,24 +572,21 @@ export function RankingPageClient({
                     {rankingTypes.find((type) => type.id === selectedRanking)?.description}
                   </p>
 
-                  {/* 【導線】未選択の方のランキングを明示的に薦める。
-                      タブを押せることに気づかない人にも、文章でもう一度機会を作る。 */}
+                  {/* 【導線】もう一方のランキングへのテキストリンク */}
                   {selectedRanking === "monthly" ? (
-                    <button
-                      type="button"
-                      onClick={() => changeRanking("annual")}
+                    <Link
+                      href="/ranking/annual"
                       className="self-start text-[15px] font-semibold text-primary hover:underline text-left"
                     >
                       賞与を含めた「想定年収ランキング」も見る →
-                    </button>
+                    </Link>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => changeRanking("monthly")}
+                    <Link
+                      href="/ranking"
                       className="self-start text-[15px] font-semibold text-primary hover:underline text-left"
                     >
                       毎月の手取りに直結する「初任給ランキング」も見る →
-                    </button>
+                    </Link>
                   )}
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -656,37 +665,180 @@ export function RankingPageClient({
               </div>
             )}
 
-            {/* 【SEO】就活文脈の解説ブロック（「就活 初任給」系の複合クエリ対策 + 内部リンク） */}
+            {/* 【SEO・最重要】解説テキストコンテンツ。
+                データの一覧（ツール）だけではクローラーに「文章量の少ないページ」と
+                判定されるため、検索意図に答える解説を厚く置く。
+                見出し（h2/h3）で構造化し、読者の疑問に順番に答える構成にしている。 */}
             {!loading && companies.length > 0 && (
-              <section className="mt-10 border-t pt-6 space-y-3 text-left">
-                <h2 className="text-base md:text-lg font-bold">新卒の企業選びで初任給ランキングを活用するには</h2>
-                <div className="space-y-3 text-sm md:text-[15px] leading-relaxed text-muted-foreground">
-                  <p>
-                    新卒で入社する企業を比較するとき、初任給の額面だけで判断するのは危険です。金額に固定残業代や住宅手当が含まれている場合があるため、
-                    同じ30万円でも実質的な条件は企業によって大きく異なります。各企業の詳細ページで給与の内訳と
-                    <Link href="/simulator" className="text-primary hover:underline mx-1">手取り額</Link>
-                    まで確認するのがおすすめです。
-                  </p>
-                  <p>
-                    月額の初任給だけを見ていると、賞与の差を見落とします。同じ初任給30万円でも、
-                    年間賞与が4か月分の企業と2か月分の企業では年収に数十万円の開きが出ます。
-                    <button
-                      type="button"
-                      onClick={() => changeRanking("annual")}
-                      className="text-primary hover:underline font-semibold mx-1"
-                    >
-                      想定年収ランキング
-                    </button>
-                    に切り替えると、賞与を含めた実質的な年収で順位を確認できます。
-                  </p>
-                  <p>
-                    また、初任給の水準は業界によって差があります。志望業界の
-                    <Link href="/industries" className="text-primary hover:underline mx-1">業界別ランキング</Link>
-                    で平均と比較すると、その企業の給与水準が業界内でどの位置にあるかが分かります。
-                    エントリー前の企業研究には、面接対策や業界研究をまとめた
-                    <Link href="/articles" className="text-primary hover:underline mx-1">就活記事</Link>
-                    もあわせてご活用ください。
-                  </p>
+              <section className="mt-12 border-t pt-8 text-left space-y-8">
+
+                {/* ① 世間相場との比較。当サイトの母集団の偏りを正直に説明する */}
+                {marketComparison && (
+                  <div className="space-y-3">
+                    <h2 className="text-xl md:text-2xl font-bold text-primary">
+                      {FISCAL_YEAR}年の初任給の相場はいくら？
+                    </h2>
+                    <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                      {marketComparison}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl border bg-card p-4">
+                        <p className="text-xs text-muted-foreground mb-1">大学卒の全国平均</p>
+                        <p className="text-lg md:text-xl font-bold text-foreground tabular">
+                          ¥{MARKET_BENCHMARK.universityGraduate.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          前年比 +{MARKET_BENCHMARK.universityGraduateYoY}%
+                        </p>
+                      </div>
+                      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+                        <p className="text-xs text-muted-foreground mb-1">当サイト掲載企業の平均</p>
+                        <p className="text-lg md:text-xl font-bold text-primary tabular">
+                          ¥{summary?.avgMonthly?.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          高待遇企業を中心に{summary?.withMonthly}社を収録
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ② 引き上げが続く背景 */}
+                <div className="space-y-3">
+                  <h2 className="text-xl md:text-2xl font-bold text-primary">
+                    なぜ今、初任給の引き上げが相次いでいるのか
+                  </h2>
+                  <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    <p>
+                      大学卒の平均初任給は{MARKET_BENCHMARK.yearLabel}に前年比+{MARKET_BENCHMARK.universityGraduateYoY}%と大きく伸び、
+                      初めて26万円台に到達しました。背景には主に3つの要因があります。
+                    </p>
+                    <p>
+                      <strong className="text-foreground">1つ目は人手不足です。</strong>
+                      少子化により新卒の母数そのものが減り続けており、採用競争が激化しています。
+                      初任給は求職者が最初に目にする条件のため、他社より見劣りすると応募数に直結します。
+                    </p>
+                    <p>
+                      <strong className="text-foreground">2つ目は物価上昇です。</strong>
+                      生活コストが上がるなかで従来の水準を維持すると、実質的な待遇引き下げになってしまいます。
+                    </p>
+                    <p>
+                      <strong className="text-foreground">3つ目は初任給の「発信効果」です。</strong>
+                      初任給の引き上げは報道されやすく、採用広報として費用対効果が高いという側面があります。
+                      一方で、初任給だけを引き上げて中堅層の給与が据え置かれるケースもあるため、
+                      入社後の伸びまで確認することが重要です。
+                    </p>
+                  </div>
+                </div>
+
+                {/* ③ 業界別の傾向。実データから生成 */}
+                {summary && summary.industryAverages.length >= 3 && (
+                  <div className="space-y-3">
+                    <h2 className="text-xl md:text-2xl font-bold text-primary">
+                      初任給が高い業界とその理由
+                    </h2>
+                    <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                      <p>
+                        当サイトのデータでは、平均初任給が高いのは
+                        {summary.industryAverages.slice(0, 3).map((r, i) => (
+                          <span key={r.industry}>
+                            {i > 0 && "、"}
+                            <Link
+                              href={`/industries/${encodeURIComponent(r.industry)}`}
+                              className="text-primary hover:underline font-semibold"
+                            >
+                              {r.industry}
+                            </Link>
+                            （月額{r.avgMonthly.toLocaleString()}円）
+                          </span>
+                        ))}
+                        の順です。
+                      </p>
+                      <p>
+                        これらの業界に共通するのは<strong className="text-foreground">「一人あたりが生み出す利益が大きい」</strong>という点です。
+                        コンサルティングや不動産、外資系IT、金融などは、設備よりも人の働きが直接収益を生む構造のため、
+                        優秀な人材の確保が業績に直結します。結果として給与水準が高くなります。
+                      </p>
+                      <p>
+                        逆に、従業員数が多い大企業ほど初任給は横並びになりやすい傾向があります。
+                        全社員の給与体系との整合が必要で、新卒だけを大幅に優遇しにくいためです。
+                        業界ごとの水準は
+                        <Link href="/industries" className="text-primary hover:underline mx-1">業界別ランキング</Link>
+                        で比較できます。
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ④ 注意点。ここが最も検索意図に応える部分 */}
+                <div className="space-y-4">
+                  <h2 className="text-xl md:text-2xl font-bold text-primary">
+                    初任給ランキングを見るときの3つの注意点
+                  </h2>
+
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-foreground">
+                      ① 固定残業代（みなし残業）が含まれていないか
+                    </h3>
+                    <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                      提示額に固定残業代が含まれているかどうかで、実質的な条件は大きく変わります。
+                      たとえば月給30万円でも、うち5万円が「40時間分の固定残業代」であれば、
+                      基本給は25万円で、40時間働いて初めて30万円になる計算です。
+                      同じ金額でも残業代込みかどうかで時給換算は大きく異なるため、
+                      各社の求人票で内訳を必ず確認してください。
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-foreground">
+                      ② 住宅手当など固定手当が上乗せされていないか
+                    </h3>
+                    <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                      住宅手当や地域手当を含めた金額を初任給として提示している企業もあります。
+                      これらは実家暮らしでは支給されない、転勤で変動するなど条件付きの場合があり、
+                      全員が受け取れるとは限りません。
+                      また手当の多くは賞与の算定基礎に含まれないため、
+                      基本給が低いと年収ベースでは差が開くことがあります。
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-foreground">
+                      ③ 入社後の昇給率まで見えているか
+                    </h3>
+                    <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                      初任給が高くても、その後の伸びが緩やかであれば生涯賃金では逆転されることがあります。
+                      当サイトでは有価証券報告書をもとに全社員の平均年収を掲載しており、
+                      各企業の詳細ページで<strong className="text-foreground">初任給から平均年収までの伸び倍率</strong>を確認できます。
+                      初任給が控えめでも入社後に数倍まで伸びる企業もあれば、初任給の時点でほぼ頭打ちの企業もあります。
+                    </p>
+                  </div>
+                </div>
+
+                {/* ⑤ 実務的な使い方と内部リンク */}
+                <div className="space-y-3">
+                  <h2 className="text-xl md:text-2xl font-bold text-primary">
+                    新卒の企業選びでランキングを活用するには
+                  </h2>
+                  <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    <p>
+                      月額の初任給だけを見ていると、賞与の差を見落とします。同じ初任給30万円でも、
+                      年間賞与が4か月分の企業と2か月分の企業では年収に数十万円の開きが出ます。
+                      <Link href="/ranking/annual" className="text-primary hover:underline font-semibold mx-1">
+                        想定年収ランキング
+                      </Link>
+                      では、賞与を含めた実質的な年収で順位を確認できます。
+                    </p>
+                    <p>
+                      額面が同じでも、手取りは社会保険料と税金で1〜2割前後引かれます。
+                      実際に使える金額は
+                      <Link href="/simulator" className="text-primary hover:underline mx-1">手取り計算シミュレーター</Link>
+                      で確認できます。企業研究には
+                      <Link href="/articles" className="text-primary hover:underline mx-1">就活記事</Link>
+                      もあわせてご活用ください。
+                    </p>
+                  </div>
                 </div>
               </section>
             )}

@@ -163,7 +163,7 @@ export async function RankingPreview() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="bg-transparent">
-              <Link href="/ranking?type=annual">
+              <Link href="/ranking/annual">
                 想定年収ランキングを見る
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </Link>

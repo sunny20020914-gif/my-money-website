@@ -24,6 +24,14 @@ const nextConfig = {
         destination: "/industries",
         permanent: true,
       },
+      // 旧: /ranking?type=annual → 独立ページ /ranking/annual へ集約。
+      // クエリ付きURLが検索結果や外部リンクに残っていても正しく着地させる。
+      {
+        source: "/ranking",
+        has: [{ type: "query", key: "type", value: "annual" }],
+        destination: "/ranking/annual",
+        permanent: true,
+      },
     ]
   },
 }

@@ -15,6 +15,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { route: '/', priority: 1.0, freq: 'daily' },
     { route: '/ranking', priority: 0.9, freq: 'daily' },
+    // 想定年収ランキングは独立ページ。初任給とは別キーワードで評価を受ける
+    { route: '/ranking/annual', priority: 0.9, freq: 'daily' },
     { route: '/industries', priority: 0.9, freq: 'weekly' },
     { route: '/featured', priority: 0.8, freq: 'weekly' },
     { route: '/articles', priority: 0.95, freq: 'daily' },
