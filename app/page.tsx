@@ -68,7 +68,9 @@ export default function HomePage() {
           "@type": "WebSite",
           url: `${SITE_URL}/`,
           name: SITE_NAME,
-          alternateName: "マイマネーウェブ",
+          // alternateName は指定しない。Googleがこちらを採用して
+          // カタカナ表記が検索結果に出る可能性があるため。
+          // 表記ゆれを作らず SITE_NAME 1つに絞る方が認識も安定する。
           description:
             "就活生のための初任給・年収ランキングサイト。企業の初任給、手取り、平均年収、業績データを比較できます。",
           publisher: {

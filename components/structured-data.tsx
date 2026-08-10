@@ -1,4 +1,4 @@
-import { SITE_URL } from "@/lib/config"
+import { SITE_URL, SITE_NAME } from "@/lib/config"
 
 interface StructuredDataProps {
   type: "website" | "article" | "organization" | "breadcrumbs"
@@ -34,7 +34,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
           },
           publisher: {
             "@type": "Organization",
-            name: "初任給ランキング編集部",
+            name: `${SITE_NAME}編集部`,
             logo: {
               "@type": "ImageObject",
               url: `${SITE_URL}/logo.png`,
@@ -50,7 +50,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
         return {
           ...baseData,
           "@type": "Organization",
-          name: "初任給ランキング編集部",
+          name: SITE_NAME,
           url: SITE_URL,
           logo: `${SITE_URL}/logo.png`,
           description: "日本の大手企業の初任給情報を提供し、就活生のキャリア選択をサポートする情報サイトです。",

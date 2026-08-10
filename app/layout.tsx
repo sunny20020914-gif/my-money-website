@@ -26,9 +26,12 @@ export const metadata: Metadata = {
     "業界別",
     "職種別",
   ],
-  authors: [{ name: "初任給ランキング編集部" }],
-  creator: "初任給ランキング",
-  publisher: "初任給ランキング",
+  // 【サイト名シグナルの統一】creator/publisher もサイト運営者名としてクロールされる。
+  // ここが「初任給ランキング」だと og:site_name や WebSite構造化データと食い違い、
+  // Googleがサイト名を確定できずドメイン名にフォールバックする。
+  authors: [{ name: `${SITE_NAME}編集部` }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   formatDetection: {
     email: false,
     address: false,
