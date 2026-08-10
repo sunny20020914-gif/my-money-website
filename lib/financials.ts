@@ -152,6 +152,52 @@ export interface FinancialMetric {
   key: string
   label: string
   value: string
+  /** 掲載企業内での順位（1が最高値）。比較できる企業が少ない場合は undefined */
+  rank?: number
+  /** 順位の母数 */
+  total?: number
+  /** 上位10%以内か（赤字強調の判定に使う） */
+  isTop?: boolean
+}
+
+/** その指標の生値（順位計算用）。数値でなければ null */
+type RawGetter = (c: CompanyData) => number | null
+
+const RAW_GETTERS: Record<string, RawGetter> = {
+  averageAnnualSalary: (c) => meaningfulAverageSalary(c),
+  revenue: (c) => num(c.revenue),
+  operatingProfit: (c) => numAllowNegative(c.operatingProfit),
+  operatingMargin: (c) => numAllowNegative(c.operatingMargin),
+  salesPerEmployee: (c) => num(c.salesPerEmployee),
+  profitPerEmployee: (c) => numAllowNegative(c.profitPerEmployee),
+  capitalPerEmployee: (c) => num(c.capitalPerEmployee),
+}
+
+/**
+ * 指標ごとの順位を計算する。
+ * 「売上高965億円」だけでは高いのか低いのか伝わらないため、
+ * 掲載企業の中で何位かを添えて相対的な位置を示す。
+ */
+function computeRank(
+  all: CompanyData[],
+  company: CompanyData,
+  key: string,
+): { rank: number; total: number; isTop: boolean } | undefined {
+  const getter = RAW_GETTERS[key]
+  if (!getter) return undefined
+  const own = getter(company)
+  if (own === null) return undefined
+
+  const values = all.map(getter).filter((v): v is number => v !== null)
+  // 母数が少ないと順位に意味がないため10社未満なら出さない
+  if (values.length < 10) return undefined
+
+  const rank = values.filter((v) => v > own).length + 1
+  return {
+    rank,
+    total: values.length,
+    isTop: rank <= Math.max(1, Math.ceil(values.length * 0.1)),
+  }
 }
 
 /**
@@ -169,9 +215,12 @@ const METRIC_DEFS: {
   {
     // 全社員の平均年収。有報の実額なので精度が高く、就活生の関心も最も高い。
     key: "averageAnnualSalary",
-    label: () => "平均年収（全社員）",
+    // 【表記の正確性】有報の「平均年間給与」は提出会社（単体）の値であり、
+    // 連結ベースの平均年収という数値は有報に存在しない。
+    // そのため「（連結）」とは書けない。従業員数の表記（連結／単体）と揃えて「（単体）」とする。
+    // なお単体比率5%未満の持株会社は meaningfulAverageSalary で除外済み。
+    label: () => "平均年収（単体）",
     onCard: true,
-    // 持株会社では実態を表さないため安全弁を通す
     format: (c) => formatAmount(fromManYen(meaningfulAverageSalary(c))),
   },
   {
@@ -192,20 +241,8 @@ const METRIC_DEFS: {
     onCard: true,
     format: (c) => formatPercent(c.operatingMargin),
   },
-  {
-    // 一人当たり指標の分母がどの範囲かを読み手が判断できるよう、
-    // 連結・単体の両方を並べて出す。持株会社かどうかもここで見て取れる。
-    key: "employeesConsolidated",
-    label: () => "従業員数（連結）",
-    onCard: false,
-    format: (c) => formatHeadcount(c.reportedEmployees),
-  },
-  {
-    key: "employeesParent",
-    label: () => "従業員数（単体）",
-    onCard: false,
-    format: (c) => formatHeadcount(c.parentEmployees),
-  },
+  // 【非表示】従業員数は給与カード側に既に表示があり、業績データ表では冗長なため出さない。
+  // 一人当たり指標の分母がどの範囲かは buildPerEmployeeNote の注記で説明する。
   {
     key: "salesPerEmployee",
     label: () => "一人当たり売上高",
@@ -235,12 +272,25 @@ const METRIC_DEFS: {
  * その企業について表示可能な財務指標だけを配列で返す。
  * データが1つも無ければ空配列を返すので、表示側は length で行ごと出し分けできる。
  */
-export function buildFinancialMetrics(company: CompanyData): FinancialMetric[] {
+/**
+ * 企業詳細ページ用の全指標。
+ * @param all 掲載企業全体。渡すと各指標に順位が付く（省略時は順位なし）
+ */
+export function buildFinancialMetrics(
+  company: CompanyData,
+  all?: CompanyData[],
+): FinancialMetric[] {
   const metrics: FinancialMetric[] = []
   for (const def of METRIC_DEFS) {
     const value = def.format(company)
     if (value !== null) {
-      metrics.push({ key: def.key, label: def.label(company), value })
+      const ranking = all ? computeRank(all, company, def.key) : undefined
+      metrics.push({
+        key: def.key,
+        label: def.label(company),
+        value,
+        ...(ranking ?? {}),
+      })
     }
   }
   return metrics

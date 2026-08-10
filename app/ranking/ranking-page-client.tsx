@@ -183,34 +183,33 @@ const CompanyCard = ({
 
               【配置順の注意】直後の説明文は position:absolute で高さを持たないため、
               財務行を説明文より後ろに置くと説明文のテキストと重なる。必ず説明文より前に置くこと。 */}
-          {financials.length > 0 && (
-            /* 【配置】pl-[88px] は「順位バッジ(w-16=64px) + gap-6(24px)」の合計。
-               ロゴの左端と揃うため、カード左端からではなく順位番号の右隣から始まる。
-               grid で等幅に割ると画面幅いっぱいに間延びするため、flex で自然幅にして
-               項目同士を近づけている（指標が増えたら折り返す）。 */
-            <div className="mt-3 pt-3 border-t pl-[88px] flex flex-wrap items-start gap-x-10 gap-y-2">
-              {financials.map((m) => (
-                <div key={m.key} className="min-w-0 max-w-[13rem]">
-                  <p className="text-xs text-muted-foreground truncate">{m.label}</p>
-                  <p className="text-sm font-semibold text-foreground truncate">{m.value}</p>
+          {/* --- 下段エリア: 業績データと説明文を横一列に並べる ---
+              以前は業績データと説明文が別々の行にあり、説明文は absolute 配置で
+              高さを持たないため余白が読みにくかった。
+              両者の開始位置がほぼ揃っていたので1行にまとめ、カードの縦幅も詰めている。
+              pl-[88px] は「順位バッジ(w-16=64px) + gap-6(24px)」でロゴ左端と揃う位置。 */}
+          {(financials.length > 0 || company.description) && (
+            <div className="mt-3 pt-3 border-t pl-[88px] flex items-start justify-between gap-6">
+              {/* 左: 業績データ（指標が増えたら折り返す） */}
+              {financials.length > 0 && (
+                <div className="flex flex-wrap items-start gap-x-8 gap-y-2 shrink-0">
+                  {financials.map((m) => (
+                    <div key={m.key} className="min-w-0 max-w-[13rem]">
+                      <p className="text-xs text-muted-foreground truncate">{m.label}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{m.value}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {/* 右: 説明文。残り幅に収まるよう flex-1 + min-w-0 で制御する */}
+              {company.description && (
+                <p className="flex-1 min-w-0 text-sm text-muted-foreground leading-relaxed text-right self-center">
+                  {company.description}
+                </p>
+              )}
             </div>
           )}
-
-          {/* --- 下段エリア（説明文・既存挙動のまま最後に置く）--- */}
-          <div className="min-h-[0.8rem] relative mt-2 w-full">
-            {company.description && (
-              <p
-                className="text-sm text-muted-foreground leading-relaxed max-w-xl absolute"
-                style={{
-                  right: `${descriptionPosition}%`,
-                }}
-              >
-                {company.description}
-              </p>
-            )}
-          </div>
         </CardContent>
       </div>
       {/* スマホ・タブレット (lg未満) 用のレイアウト */}

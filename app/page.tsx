@@ -1,4 +1,4 @@
-import { FISCAL_YEAR } from "@/lib/config"
+import { FISCAL_YEAR, SITE_NAME, SITE_URL } from "@/lib/config"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { RankingPreview } from "@/components/ranking-preview"
@@ -50,16 +50,35 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function HomePage() {
   return (
     <>
+      {/* 【重要・検索結果のサイト名】
+          Googleは検索結果のドメイン部分に表示する「サイト名」を、
+          ホームページ(/)の WebSite 構造化データの name から判定する。
+
+          以前は name に `初任給ランキング 2026` のようにページタイトルを入れており、
+          さらに og:site_name は「初任給ランキング」、titleテンプレートは「My Money Web」と
+          3つのシグナルが食い違っていた。Googleは名称を確定できず、
+          フォールバックとしてドメイン名（mymoneyweb.com）を表示していた。
+
+          name には「サイトの名称」だけを入れ、他のシグナルとも完全に一致させる。
+          alternateName には別表記（日本語呼称）を入れておくと認識の助けになる。 */}
       <StructuredData
         type="website"
         data={{
           "@context": "https://schema.org",
           "@type": "WebSite",
-          url: "https://www.mymoneyweb.com/",
-          name: `初任給ランキング ${FISCAL_YEAR}`,
+          url: `${SITE_URL}/`,
+          name: SITE_NAME,
+          alternateName: "マイマネーウェブ",
+          description:
+            "就活生のための初任給・年収ランキングサイト。企業の初任給、手取り、平均年収、業績データを比較できます。",
+          publisher: {
+            "@type": "Organization",
+            name: SITE_NAME,
+            url: `${SITE_URL}/`,
+          },
           potentialAction: {
             "@type": "SearchAction",
-            target: "https://www.mymoneyweb.com/ranking?q={search_term_string}",
+            target: `${SITE_URL}/ranking?q={search_term_string}`,
             "query-input": "required name=search_term_string",
           },
         }}

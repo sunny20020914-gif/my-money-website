@@ -42,10 +42,13 @@ export const metadata: Metadata = {
   // Googleにホームの複製と見なされてインデックスから外される。
   // canonicalは各ページの generateMetadata / metadata で個別に指定すること。
   openGraph: {
-    title: `初任給ランキング ${FISCAL_YEAR} | 就活生のための給与情報サイト`,
+    title: `初任給ランキング ${FISCAL_YEAR} | ${SITE_NAME}`,
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
-    url: "https://www.mymoneyweb.com",
-    siteName: "初任給ランキング",
+    url: SITE_URL,
+    // 【重要】siteName は「サイトの名称」。ここにページタイトル（初任給ランキング）を
+    // 入れていたため、WebSite構造化データやtitleテンプレートと食い違い、
+    // Googleがサイト名を確定できずドメイン名を表示していた。
+    siteName: SITE_NAME,
     // images は指定しない。app/opengraph-image.tsx が自動でOG画像を生成し
     // og:image / twitter:image を挿入するため。
     // （以前は存在しない /og-image.jpg を指しており404になっていた）

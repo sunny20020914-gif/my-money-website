@@ -129,7 +129,8 @@ export default async function CompanyPage({ params }: Props) {
   const lastUpdated = new Date() // ISR再生成のたびに更新される
 
   // 有価証券報告書由来の財務データ（スプシN列以降）。未入力の企業では空/nullになり非表示。
-  const financialMetrics = buildFinancialMetrics(company)
+  // 第2引数に全企業を渡すと各指標に「◯社中◯位」が付く
+  const financialMetrics = buildFinancialMetrics(company, allCompanies)
   const salaryGrowth = buildSalaryGrowth(allCompanies, company)
   const financialInsight = buildFinancialInsight(allCompanies, company)
   const businessModel = buildBusinessModelInsight(allCompanies, company)
@@ -639,8 +640,23 @@ export default async function CompanyPage({ params }: Props) {
                               >
                                 {m.label}
                               </th>
-                              <td className="py-2.5 text-right font-semibold tabular">
+                              <td
+                                className={`py-2.5 text-right font-semibold tabular ${
+                                  m.isTop ? "text-red-600 dark:text-red-500" : ""
+                                }`}
+                              >
                                 {m.value}
+                              </td>
+                              {/* 【順位】金額だけでは高いか低いか伝わらないため、
+                                  掲載企業内での順位を添える。上位10%は赤字で強調。 */}
+                              <td
+                                className={`py-2.5 pl-3 text-right text-xs whitespace-nowrap ${
+                                  m.isTop
+                                    ? "text-red-600 dark:text-red-500 font-semibold"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {m.rank ? `${m.total}社中${m.rank}位` : ""}
                               </td>
                             </tr>
                           ))}
