@@ -305,14 +305,19 @@ export default async function CompanyPage({ params }: Props) {
           スマホだと本文が画面端ギリギリまで伸びて読みにくかった。
           長文を扱うページなので、スマホの左右余白を 16px → 20px に広げる。 */}
       <main className="container mx-auto px-5 sm:px-6 lg:px-8 py-8 md:py-12">
-        {/* 【スマホの並び替え】スマホでは企業概要に辿り着くまでのスクロールが長かったため、
-            order ユーティリティで「ヘッダー → 給与 → 企業概要 → …」の順に並べ替える。
-            md 以上では全要素を order-none(=0) に戻すので、PC表示はDOM順のまま変わらない。
-            ※ space-y-8 は「DOM順で」上マージンを付けるため並び替えと相性が悪い。
-              並び替え後の見た目の間隔が崩れないよう gap-8 に変更している。 */}
-        <div className="max-w-4xl mx-auto flex flex-col gap-8">
+        {/* 【重要】以前は CSS の order でスマホだけ並び替えていたが、
+            DOM順と表示順がずれると次の2つの問題が起きていた:
+              ・ブラウザのスクロールアンカリングが誤作動し、
+                ページを開いた瞬間に下方向へ自動スクロールする
+              ・PC表示（order 無効）とスマホ表示で並び順が食い違う
+            そのため order を全廃し、JSXの記述順＝表示順に統一した。
+            以後セクションを動かすときは、CSSではなくこのJSXの順序を入れ替えること。
+
+            セクション間は gap-10〜12 と広めに取り、解説記事のように
+            区切りが視覚的に分かるようにしている。 */}
+        <div className="max-w-4xl mx-auto flex flex-col gap-10 md:gap-14">
           {/* --- 企業ヘッダー --- */}
-          <section className="order-1 md:order-none">
+          <section>
             {/* 可視パンくず（業界ページへの回遊導線・BreadcrumbList JSON-LDと同一内容） */}
             <nav aria-label="パンくずリスト" className="text-xs text-muted-foreground mb-4">
               <Link href="/" className="hover:underline">ホーム</Link>
@@ -367,7 +372,7 @@ export default async function CompanyPage({ params }: Props) {
           </section>
 
           {/* --- 給与情報 --- */}
-          <section className="order-2 md:order-none">
+          <section>
             <Card className="py-0 gap-0">
               <CardContent className="p-4 md:p-6">
                 <div className="grid grid-cols-2 gap-4 md:flex md:flex-wrap md:justify-around md:items-center md:gap-x-8 md:gap-y-6">
@@ -437,7 +442,7 @@ export default async function CompanyPage({ params }: Props) {
               大手就活サイトは額面しか載せないため、控除の内訳まで示せるのが差別化点。
               実測でこの系統のクエリは6.5位・CTR50%を記録しており、伸ばす価値が高い。 */}
           {netSalary && (
-            <section className="order-3 md:order-none space-y-3">
+            <section className="space-y-3">
               <h2 className="text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 {company.company}の初任給の手取りはいくら？
               </h2>
@@ -527,9 +532,261 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
+          {/* --- 有価証券報告書ベースの給与・業績データ ---
+              【配置】給与情報の直後、企業概要より前に置く。ページで最も価値のあるデータのため。
+              大手就活サイトは初任給しか持たず、財務メディアは初任給を持たないため、
+              「入社後にどれだけ伸びるか」を示せるのは当サイトだけの強み。 */}
+          {hasFinancialSection && (
+            <section className="space-y-6">
+              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                {company.company}の平均年収と業績データ
+              </h2>
+
+              {/* 初任給 → 平均年収の伸び */}
+              {salaryGrowth && (
+                <div className="space-y-4">
+                  <h3 className="text-lg md:text-xl font-bold text-foreground">
+                    初任給から平均年収まで、給与はどれだけ伸びるか
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2 md:gap-3">
+                    <div className="rounded-xl border bg-card p-3 md:p-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">初任給ベース年収</p>
+                      <p className="text-base md:text-xl font-bold text-foreground tabular">
+                        {Math.round(salaryGrowth.starterAnnual / 10000).toLocaleString()}
+                        <span className="text-xs font-normal text-muted-foreground">万円</span>
+                      </p>
+                    </div>
+                    {/* 【強調】上位10%以内の数値は赤字にして一目で分かるようにする。
+                        色だけに頼らないよう「◯位」の表記も併記している（色覚多様性への配慮）。 */}
+                    <div
+                      className={`rounded-xl border-2 p-3 md:p-4 text-center ${
+                        salaryGrowth.isRatioTop
+                          ? "border-red-500/40 bg-red-500/5"
+                          : "border-primary/30 bg-primary/5"
+                      }`}
+                    >
+                      <p className="text-xs text-muted-foreground mb-1">伸び倍率</p>
+                      <p
+                        className={`text-base md:text-xl font-bold tabular ${
+                          salaryGrowth.isRatioTop ? "text-red-600 dark:text-red-500" : "text-primary"
+                        }`}
+                      >
+                        {Math.round(salaryGrowth.ratio * 10) / 10}
+                        <span className="text-xs font-normal text-muted-foreground">倍</span>
+                      </p>
+                      <p
+                        className={`text-[11px] mt-1 font-semibold ${
+                          salaryGrowth.isRatioTop
+                            ? "text-red-600 dark:text-red-500"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {salaryGrowth.sampleCount}社中{salaryGrowth.ratioRank}位
+                      </p>
+                    </div>
+                    <div
+                      className={`rounded-xl border p-3 md:p-4 text-center ${
+                        salaryGrowth.isAverageTop ? "border-red-500/40 bg-red-500/5" : "bg-card"
+                      }`}
+                    >
+                      <p className="text-xs text-muted-foreground mb-1">平均年収</p>
+                      <p
+                        className={`text-base md:text-xl font-bold tabular ${
+                          salaryGrowth.isAverageTop
+                            ? "text-red-600 dark:text-red-500"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {Math.round(salaryGrowth.averageAnnual / 10000).toLocaleString()}
+                        <span className="text-xs font-normal text-muted-foreground">万円</span>
+                      </p>
+                      <p
+                        className={`text-[11px] mt-1 font-semibold ${
+                          salaryGrowth.isAverageTop
+                            ? "text-red-600 dark:text-red-500"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {salaryGrowth.averageSampleCount}社中{salaryGrowth.averageRank}位
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    {emphasizeCompanyName(salaryGrowth.summary, company.company)}
+                  </p>
+                </div>
+              )}
+
+              {/* 財務ハイライト */}
+              {financialMetrics.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-bold text-foreground">業績データ</h3>
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <table className="w-full text-sm md:text-[15px]">
+                        <caption className="sr-only">
+                          {company.company}の有価証券報告書ベースの業績データ
+                        </caption>
+                        <tbody>
+                          {financialMetrics.map((m, i) => (
+                            <tr
+                              key={m.key}
+                              className={i < financialMetrics.length - 1 ? "border-b" : ""}
+                            >
+                              <th
+                                scope="row"
+                                className="py-2.5 text-left font-normal text-muted-foreground"
+                              >
+                                {m.label}
+                              </th>
+                              <td className="py-2.5 text-right font-semibold tabular">
+                                {m.value}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {/* 一人当たり指標が何を分母にしているかを明示する。
+                          連結・単体の差が大きい企業では具体的な人数を添えて注意を促す。 */}
+                      {perEmployeeNote && (
+                        <p className="mt-3 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
+                          ※{perEmployeeNote}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* 【当サイト独自の分析】ここが他サイトに無い価値なので、
+                  本文より一段大きい文字と広い行間で読ませる。
+                  左のアクセント罫と余白で「解説パート」であることを視覚的に示す。 */}
+              {financialInsight && (
+                <div className="pt-2">
+                  <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">
+                    稼ぐ力に対して、給与は高いのか
+                  </h3>
+                  <p className="text-[17px] md:text-lg leading-[2] text-foreground border-l-4 border-primary/30 pl-4 md:pl-5">
+                    {emphasizeCompanyName(financialInsight.summary, company.company)}
+                  </p>
+                </div>
+              )}
+
+              {/* ビジネスモデルの型（資本装備率から判定） */}
+              {businessModel && (
+                <div className="pt-2">
+                  <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">
+                    設備で稼ぐ会社か、人で稼ぐ会社か
+                  </h3>
+                  <p className="text-[17px] md:text-lg leading-[2] text-foreground border-l-4 border-primary/30 pl-4 md:pl-5">
+                    {emphasizeCompanyName(businessModel.summary, company.company)}
+                  </p>
+                </div>
+              )}
+
+              {/* 出典。有報が一次情報であることを明示し、YMYL領域での信頼性を担保する */}
+              {financialSource && (
+                <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t">
+                  出典: {financialSource}。平均年収は提出会社（単体）の全社員平均で、
+                  管理職・ベテラン社員を含みます。新卒入社時の年収とは異なります。
+                </p>
+              )}
+            </section>
+          )}
+
+          {/* --- 企業概要（スマホでは手取りセクションの直後に繰り上げる） --- */}
+          <section className="space-y-7">
+            {company.long_description && <div className="space-y-3">
+              <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
+              <div
+                /* 幅は制限しない。下の「強み」「将来性」カードと左右の位置を揃えるため、
+                   親要素の幅いっぱいに広げる（max-w-[42em]を入れると幅が揃わず不自然になる）。 */
+                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
+              />
+            </div>}
+
+            {/* 強み・将来性は短文のため2カラムのカード形式で表示（レイアウトの均等化） */}
+            {(company.strength || company.future_potential) && (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {company.strength && (
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
+                        <TrendingUp className="w-5 h-5" />強み
+                      </h3>
+                      <div
+                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                {company.future_potential && (
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
+                        <Sparkles className="w-5 h-5" />将来性
+                      </h3>
+                      <div
+                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {company.salary_details && <div className="space-y-3">
+              <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                <DollarSign className="w-5 h-5" />給与に関する補足
+              </h3>
+              <div
+                className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none md:max-w-[42em] leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
+              />
+            </div>}
+          </section>
+
+          {/* 広告1/2: 給与・業界内比較を見た直後の自然な区切り（ページ上部で唯一の広告） */}
+          <div>
+            <DynamicAdBanner />
+          </div>
+
+          {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
+          {faq.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                {company.company}に関するよくある質問
+              </h2>
+              <dl className="space-y-5">
+                {faq.map((item, i) => (
+                  <div key={i} className="space-y-1.5">
+                    {/* 社名を太字にして視認性を上げる（JSON-LD側は加工前のプレーンテキスト） */}
+                    <dt className="font-bold text-[16px] md:text-lg">
+                      Q. {emphasizeCompanyName(item.question, company.company)}
+                    </dt>
+                    <dd className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                      A. {emphasizeCompanyName(item.answer, company.company)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {/* 広告2/2: 記事本文・FAQを読み終えた後、関連企業への回遊直前（上部広告との隣接を避けるため本文がある場合のみ） */}
+          {(faq.length > 0 || company.long_description || company.strength || company.future_potential || company.salary_details) && (
+            <div>
+              <DynamicAdBanner />
+            </div>
+          )}
+
           {/* --- ランキング前後の企業＋比較導線（給与を見た直後の自然な次クリック） --- */}
           {(neighbors.prev || neighbors.next || compareCandidates.length > 0) && (
-            <section className="order-6 md:order-none">
+            <section>
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5 space-y-4">
                   {neighbors.rank !== null && (neighbors.prev || neighbors.next) && (
@@ -592,7 +849,7 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
           {industryComparisons.length > 0 && (
-            <section className="space-y-4 order-7 md:order-none">
+            <section className="space-y-4">
               <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 業界内での初任給の位置づけ
@@ -648,220 +905,9 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
-          {/* 広告1/2: 給与・業界内比較を見た直後の自然な区切り（ページ上部で唯一の広告） */}
-          <div className="order-8 md:order-none">
-            <DynamicAdBanner />
-          </div>
-
-          {/* --- 企業概要（スマホでは手取りセクションの直後に繰り上げる） --- */}
-          <section className="space-y-7 order-4 md:order-none">
-            {company.long_description && <div className="space-y-3">
-              <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
-              <div
-                /* 幅は制限しない。下の「強み」「将来性」カードと左右の位置を揃えるため、
-                   親要素の幅いっぱいに広げる（max-w-[42em]を入れると幅が揃わず不自然になる）。 */
-                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
-              />
-            </div>}
-
-            {/* 強み・将来性は短文のため2カラムのカード形式で表示（レイアウトの均等化） */}
-            {(company.strength || company.future_potential) && (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {company.strength && (
-                  <Card className="py-0 gap-0">
-                    <CardContent className="p-4 md:p-5">
-                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
-                        <TrendingUp className="w-5 h-5" />強み
-                      </h3>
-                      <div
-                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-                {company.future_potential && (
-                  <Card className="py-0 gap-0">
-                    <CardContent className="p-4 md:p-5">
-                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
-                        <Sparkles className="w-5 h-5" />将来性
-                      </h3>
-                      <div
-                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
-
-            {company.salary_details && <div className="space-y-3">
-              <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                <DollarSign className="w-5 h-5" />給与に関する補足
-              </h3>
-              <div
-                className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none md:max-w-[42em] leading-relaxed text-foreground"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
-              />
-            </div>}
-          </section>
-
-          {/* --- 有価証券報告書ベースの給与・業績データ ---
-              【配置】企業概要（order-4）の直後に置く。企業概要が下に押し下げられないよう、
-              このセクションより前には新しい要素を差し込まないこと。
-              大手就活サイトは初任給しか持たず、財務メディアは初任給を持たないため、
-              「入社後にどれだけ伸びるか」を示せるのは当サイトだけの強み。 */}
-          {hasFinancialSection && (
-            <section className="space-y-5 order-5 md:order-none">
-              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                {company.company}の平均年収と業績データ
-              </h2>
-
-              {/* 初任給 → 平均年収の伸び */}
-              {salaryGrowth && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-bold text-foreground">
-                    初任給から平均年収まで、給与はどれだけ伸びるか
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2 md:gap-3">
-                    <div className="rounded-xl border bg-card p-3 md:p-4 text-center">
-                      <p className="text-xs text-muted-foreground mb-1">初任給ベース年収</p>
-                      <p className="text-base md:text-xl font-bold text-foreground tabular">
-                        {Math.round(salaryGrowth.starterAnnual / 10000).toLocaleString()}
-                        <span className="text-xs font-normal text-muted-foreground">万円</span>
-                      </p>
-                    </div>
-                    <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 md:p-4 text-center">
-                      <p className="text-xs text-muted-foreground mb-1">伸び倍率</p>
-                      <p className="text-base md:text-xl font-bold text-primary tabular">
-                        {Math.round(salaryGrowth.ratio * 10) / 10}
-                        <span className="text-xs font-normal text-muted-foreground">倍</span>
-                      </p>
-                    </div>
-                    <div className="rounded-xl border bg-card p-3 md:p-4 text-center">
-                      <p className="text-xs text-muted-foreground mb-1">平均年収</p>
-                      <p className="text-base md:text-xl font-bold text-foreground tabular">
-                        {Math.round(salaryGrowth.averageAnnual / 10000).toLocaleString()}
-                        <span className="text-xs font-normal text-muted-foreground">万円</span>
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                    {emphasizeCompanyName(salaryGrowth.summary, company.company)}
-                  </p>
-                </div>
-              )}
-
-              {/* 財務ハイライト */}
-              {financialMetrics.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-bold text-foreground">業績データ</h3>
-                  <Card className="py-0 gap-0">
-                    <CardContent className="p-4 md:p-5">
-                      <table className="w-full text-sm md:text-[15px]">
-                        <caption className="sr-only">
-                          {company.company}の有価証券報告書ベースの業績データ
-                        </caption>
-                        <tbody>
-                          {financialMetrics.map((m, i) => (
-                            <tr
-                              key={m.key}
-                              className={i < financialMetrics.length - 1 ? "border-b" : ""}
-                            >
-                              <th
-                                scope="row"
-                                className="py-2.5 text-left font-normal text-muted-foreground"
-                              >
-                                {m.label}
-                              </th>
-                              <td className="py-2.5 text-right font-semibold tabular">
-                                {m.value}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-
-                      {/* 一人当たり指標が何を分母にしているかを明示する。
-                          連結・単体の差が大きい企業では具体的な人数を添えて注意を促す。 */}
-                      {perEmployeeNote && (
-                        <p className="mt-3 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
-                          ※{perEmployeeNote}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* 収益性と給与の関係（当サイト独自の分析） */}
-              {financialInsight && (
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-foreground">
-                    稼ぐ力に対して、給与は高いのか
-                  </h3>
-                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                    {emphasizeCompanyName(financialInsight.summary, company.company)}
-                  </p>
-                </div>
-              )}
-
-              {/* ビジネスモデルの型（資本装備率から判定） */}
-              {businessModel && (
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-foreground">
-                    設備で稼ぐ会社か、人で稼ぐ会社か
-                  </h3>
-                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                    {emphasizeCompanyName(businessModel.summary, company.company)}
-                  </p>
-                </div>
-              )}
-
-              {/* 出典。有報が一次情報であることを明示し、YMYL領域での信頼性を担保する */}
-              {financialSource && (
-                <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t">
-                  出典: {financialSource}。平均年収は提出会社（単体）の全社員平均で、
-                  管理職・ベテラン社員を含みます。新卒入社時の年収とは異なります。
-                </p>
-              )}
-            </section>
-          )}
-
-          {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
-          {faq.length > 0 && (
-            <section className="space-y-4 order-9 md:order-none">
-              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                {company.company}に関するよくある質問
-              </h2>
-              <dl className="space-y-5">
-                {faq.map((item, i) => (
-                  <div key={i} className="space-y-1.5">
-                    {/* 社名を太字にして視認性を上げる（JSON-LD側は加工前のプレーンテキスト） */}
-                    <dt className="font-bold text-[16px] md:text-lg">
-                      Q. {emphasizeCompanyName(item.question, company.company)}
-                    </dt>
-                    <dd className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                      A. {emphasizeCompanyName(item.answer, company.company)}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          )}
-
-          {/* 広告2/2: 記事本文・FAQを読み終えた後、関連企業への回遊直前（上部広告との隣接を避けるため本文がある場合のみ） */}
-          {(faq.length > 0 || company.long_description || company.strength || company.future_potential || company.salary_details) && (
-            <div className="order-10 md:order-none">
-              <DynamicAdBanner />
-            </div>
-          )}
-
           {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (
-            <section className="space-y-4 order-11 md:order-none">
+            <section className="space-y-4">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 同じ業界の他の企業
               </h2>
@@ -907,7 +953,7 @@ export default async function CompanyPage({ params }: Props) {
           )}
 
           {/* --- 閲覧履歴（localStorage・回遊導線） --- */}
-          <div className="order-12 md:order-none">
+          <div>
             <RecentlyViewed
               current={{
                 id: company.id,
@@ -917,11 +963,8 @@ export default async function CompanyPage({ params }: Props) {
             />
           </div>
 
-          {/* --- コメント欄 --- */}
-          {/* 【重要】order-13 は Tailwind の標準スケール（order-1〜12）に存在せず、
-              CSSが生成されないため order:0 扱いになり、スマホで先頭に飛び出していた。
-              最後に置きたい要素は数値ではなく order-last（order:9999）を使うこと。 */}
-          <section className="mt-16 border-t pt-10 order-last md:order-none">
+          {/* --- コメント欄（常に最後） --- */}
+          <section className="border-t pt-10">
             <CommentSection companyId={company.id} />
           </section>
         </div>

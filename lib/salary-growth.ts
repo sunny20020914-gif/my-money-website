@@ -67,9 +67,22 @@ export interface SalaryGrowth {
   sampleCount: number
   /** 中央値と比べた判定 */
   verdict: "high" | "similar" | "low"
+  /** 伸び倍率の順位（1が最も伸びる） */
+  ratioRank: number
+  /** 平均年収の順位（1が最も高い） */
+  averageRank: number
+  /** 平均年収の比較対象企業数（伸び倍率とは母数が異なる） */
+  averageSampleCount: number
+  /** 上位10%以内か（赤字強調の判定に使う） */
+  isRatioTop: boolean
+  isAverageTop: boolean
   /** 【AI SEO】そのまま引用できる自己完結型の解説文 */
   summary: string
 }
+
+/** 値の降順で何位かを返す（1始まり・同値は同順位） */
+const rankOf = (values: number[], target: number): number =>
+  values.filter((v) => v > target).length + 1
 
 /**
  * 初任給と平均年収から「入社後の伸び」を分析する。
@@ -85,17 +98,27 @@ export function buildSalaryGrowth(
 
   const ratio = averageAnnual / starterAnnual
 
-  // 掲載企業全体の伸び倍率の中央値を毎回計算する。
+  // 掲載企業全体の伸び倍率と平均年収を毎回集計する。
   // 定数で持つと企業が増えたときに古い基準で判定し続けてしまう。
   const ratios: number[] = []
+  const averages: number[] = []
   for (const c of all) {
-    const s = starterAnnualYen(c)
     const a = avgSalaryYen(c)
+    if (a !== null) averages.push(a)
+    const s = starterAnnualYen(c)
     if (s !== null && a !== null) ratios.push(a / s)
   }
   const medianRatio = median(ratios)
   // 母数が少ないと中央値が偶然に振れるため、10社未満なら判定しない
   if (medianRatio === null || ratios.length < 10) return null
+
+  // 順位。「2.2倍」だけでは高いのか低いのか伝わらないため、
+  // 掲載企業の中で何位かを示して相対的な位置を明確にする。
+  const ratioRank = rankOf(ratios, ratio)
+  const averageRank = rankOf(averages, averageAnnual)
+  // 上位10%以内なら特筆すべき数値として強調表示の対象にする
+  const isRatioTop = ratioRank <= Math.max(1, Math.ceil(ratios.length * 0.1))
+  const isAverageTop = averageRank <= Math.max(1, Math.ceil(averages.length * 0.1))
 
   // 中央値の±15%以内は「平均的」とみなす（倍率は企業差が大きいため広めに取る）
   const upper = medianRatio * 1.15
@@ -108,15 +131,15 @@ export function buildSalaryGrowth(
 
   const verdictText =
     verdict === "high"
-      ? `掲載企業の中央値（${r(medianRatio)}）を上回り、入社後に給与が大きく伸びるタイプです`
+      ? `掲載${ratios.length}社中${ratioRank}位で、中央値（${r(medianRatio)}）を上回ります。入社後に給与が大きく伸びるタイプです`
       : verdict === "low"
-        ? `掲載企業の中央値（${r(medianRatio)}）を下回り、初任給の時点で既に高い水準に達しているタイプです`
-        : `掲載企業の中央値（${r(medianRatio)}）と同程度の伸び方です`
+        ? `掲載${ratios.length}社中${ratioRank}位で、中央値（${r(medianRatio)}）を下回ります。初任給の時点で既に高い水準に達しているタイプです`
+        : `掲載${ratios.length}社中${ratioRank}位で、中央値（${r(medianRatio)}）と同程度の伸び方です`
 
   const summary =
     `${company.company}の初任給ベースの年収は${man(starterAnnual)}、` +
-    `全社員の平均年収は${man(averageAnnual)}で、その差は${r(ratio)}です。` +
-    `${verdictText}。` +
+    `全社員の平均年収は${man(averageAnnual)}（掲載${averages.length}社中${averageRank}位）で、その差は${r(ratio)}です。` +
+    `伸び倍率は${verdictText}。` +
     `平均年収には管理職やベテラン社員が含まれるため、若手のうちからこの金額になるわけではありません。`
 
   return {
@@ -126,6 +149,11 @@ export function buildSalaryGrowth(
     medianRatio,
     sampleCount: ratios.length,
     verdict,
+    ratioRank,
+    averageRank,
+    averageSampleCount: averages.length,
+    isRatioTop,
+    isAverageTop,
     summary,
   }
 }
