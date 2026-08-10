@@ -176,27 +176,21 @@ const CompanyCard = ({
               </div>
             </div>
           </div>
-          {/* --- 財務指標エリア（PC）---
-              指標は lib/financials.ts が返す配列をそのまま流し込む。
-              項目が3個→4個…と増えてもグリッドが自動で並べるためレイアウトは崩れない。
-              データが1つも無い企業では、この行ごと描画されない。
-
-              【配置順の注意】直後の説明文は position:absolute で高さを持たないため、
-              財務行を説明文より後ろに置くと説明文のテキストと重なる。必ず説明文より前に置くこと。 */}
           {/* --- 下段エリア: 業績データと説明文を横一列に並べる ---
-              以前は業績データと説明文が別々の行にあり、説明文は absolute 配置で
-              高さを持たないため余白が読みにくかった。
-              両者の開始位置がほぼ揃っていたので1行にまとめ、カードの縦幅も詰めている。
+              【重要】指標側を nowrap + 自然幅にしておくこと。
+              以前は各指標に max-w-[13rem] を付けていたため3項目で約700pxを占有し、
+              説明文が入りきらずに下の行へ折り返っていた。
+              指標は内容ぴったりの幅（w-fit）にし、余った幅を説明文に渡す。
               pl-[88px] は「順位バッジ(w-16=64px) + gap-6(24px)」でロゴ左端と揃う位置。 */}
           {(financials.length > 0 || company.description) && (
-            <div className="mt-3 pt-3 border-t pl-[88px] flex items-start justify-between gap-6">
-              {/* 左: 業績データ（指標が増えたら折り返す） */}
+            <div className="mt-3 pt-3 border-t pl-[88px] flex items-center justify-between gap-8">
+              {/* 左: 業績データ。折り返さず自然幅に収める */}
               {financials.length > 0 && (
-                <div className="flex flex-wrap items-start gap-x-8 gap-y-2 shrink-0">
+                <div className="flex items-start gap-x-7 shrink-0">
                   {financials.map((m) => (
-                    <div key={m.key} className="min-w-0 max-w-[13rem]">
-                      <p className="text-xs text-muted-foreground truncate">{m.label}</p>
-                      <p className="text-sm font-semibold text-foreground truncate">{m.value}</p>
+                    <div key={m.key} className="whitespace-nowrap">
+                      <p className="text-xs text-muted-foreground">{m.label}</p>
+                      <p className="text-sm font-semibold text-foreground">{m.value}</p>
                     </div>
                   ))}
                 </div>
@@ -204,7 +198,7 @@ const CompanyCard = ({
 
               {/* 右: 説明文。残り幅に収まるよう flex-1 + min-w-0 で制御する */}
               {company.description && (
-                <p className="flex-1 min-w-0 text-sm text-muted-foreground leading-relaxed text-right self-center">
+                <p className="flex-1 min-w-0 text-sm text-muted-foreground leading-relaxed text-right">
                   {company.description}
                 </p>
               )}
