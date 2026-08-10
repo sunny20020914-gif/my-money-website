@@ -4,7 +4,7 @@ import "./globals.css"
 import Script from "next/script"
 import { Analytics } from "@vercel/analytics/react"
 import { Toaster } from "@/components/toaster"
-import { FISCAL_YEAR } from "@/lib/config"
+import { FISCAL_YEAR, SITE_NAME, SITE_URL } from "@/lib/config"
 
 export const metadata: Metadata = {
   title: {
