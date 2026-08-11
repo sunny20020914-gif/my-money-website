@@ -75,7 +75,24 @@ function buildSegments(all: CompanyData[]): Segment[] {
   ]
 }
 
-/** 全ての有効なクロス条件ページの定義を生成する（該当数の多い順） */
+/**
+ * 全ての有効なクロス条件ページの定義を生成する（該当数の多い順）。
+ *
+ * 【重要・重複対策】1セグメントにつき1ページしか作らない。
+ *
+ * 以前は同じセグメントで30万/35万/40万の3ページを生成していたが、
+ * これらは「入れ子の部分集合」になる。実例:
+ *   上場--over-30man … 74社
+ *   上場--over-35man … 49社（74社の一部）
+ *   上場--over-40man … 23社（さらにその一部）
+ * 上位に並ぶ企業が3ページとも同じになるため、Google に
+ * 「重複しています。ユーザーにより、正規ページとして選択されていません」
+ * と判定されインデックスされなかった（実際にSearch Consoleで確認）。
+ *
+ * そこでセグメントごとに「最も分割として意味のある閾値」を1つだけ選ぶ。
+ * 母集団のちょうど半分前後が該当する閾値を採用することで、
+ * 「多すぎて絞れていない」「少なすぎて薄い」の両方を避けられる。
+ */
 export function buildAllListDefinitions(all: CompanyData[]): ListDefinition[] {
   const defs: ListDefinition[] = []
 
@@ -83,27 +100,36 @@ export function buildAllListDefinitions(all: CompanyData[]): ListDefinition[] {
     // 母集団: セグメントに属し、初任給が数値で入っている企業
     const base = all.filter((c) => seg.filter(c) && num(c.baseMonthly) !== null)
 
-    for (const t of THRESHOLDS) {
-      const matched = base.filter((c) => (num(c.baseMonthly) as number) >= t)
+    // 有効な閾値の候補を集める
+    const candidates = THRESHOLDS.map((t) => ({
+      t,
+      matched: base.filter((c) => (num(c.baseMonthly) as number) >= t).length,
+    })).filter(
       // 3社未満（薄い）または全社該当（業界ページと同じ内容）は作らない
-      if (matched.length < MIN_COMPANIES || matched.length >= base.length) continue
+      (c) => c.matched >= MIN_COMPANIES && c.matched < base.length,
+    )
+    if (candidates.length === 0) continue
 
-      const filter = (c: CompanyData) =>
-        seg.filter(c) && (num(c.baseMonthly) ?? 0) >= t
+    // 該当率が50%に最も近い閾値を1つだけ採用する
+    const best = candidates.reduce((a, b) =>
+      Math.abs(a.matched / base.length - 0.5) <= Math.abs(b.matched / base.length - 0.5) ? a : b,
+    )
 
-      defs.push({
-        slug: `${seg.key}--over-${t / 10_000}man`,
-        name: `${seg.label}で初任給${manUnit(t)}以上の企業一覧【${FISCAL_YEAR}年最新】`,
-        shortName: `${seg.shortLabel}×初任給${manUnit(t)}以上`,
-        description: `${FISCAL_YEAR}年度、${seg.label}の掲載${base.length}社中${matched.length}社が初任給月額${manUnit(t)}以上。該当企業の初任給・想定年収・手取り目安を一覧比較できます。`,
-        segmentLabel: seg.label,
-        industry: seg.industry,
-        threshold: t,
-        count: matched.length,
-        baseCount: base.length,
-        filter,
-      })
-    }
+    const t = best.t
+    const filter = (c: CompanyData) => seg.filter(c) && (num(c.baseMonthly) ?? 0) >= t
+
+    defs.push({
+      slug: `${seg.key}--over-${t / 10_000}man`,
+      name: `${seg.label}で初任給${manUnit(t)}以上の企業一覧【${FISCAL_YEAR}年最新】`,
+      shortName: `${seg.shortLabel}×初任給${manUnit(t)}以上`,
+      description: `${FISCAL_YEAR}年度、${seg.label}の掲載${base.length}社中${best.matched}社が初任給月額${manUnit(t)}以上。該当企業の初任給・想定年収・手取り目安を一覧比較できます。`,
+      segmentLabel: seg.label,
+      industry: seg.industry,
+      threshold: t,
+      count: best.matched,
+      baseCount: base.length,
+      filter,
+    })
   }
 
   return defs.sort((a, b) => b.count - a.count)

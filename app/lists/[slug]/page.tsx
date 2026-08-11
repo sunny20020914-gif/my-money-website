@@ -59,10 +59,12 @@ export default async function ListPage({ params }: Props) {
   const lastUpdated = new Date()
   const pageUrl = `${SITE_URL}/lists/${encodeURIComponent(def.slug)}`
 
-  // 関連条件: 同じセグメントの別閾値 + 同じ閾値の他セグメント（該当数の多い順に最大8件）
-  const sameSegment = allDefs.filter((d) => d.segmentLabel === def.segmentLabel && d.slug !== def.slug)
+  // 【重複対策後】1セグメント1ページにしたため「同じセグメントの別閾値」は存在しない。
+  // 空配列を渡して該当セクションを非表示にし、代わりに他セグメントへの導線を厚くする。
+  const sameSegment: typeof allDefs = []
+  // 関連条件: 他セグメントのページ（閾値は問わず、該当数の多い順に最大8件）
   const sameThreshold = allDefs
-    .filter((d) => d.threshold === def.threshold && d.segmentLabel !== def.segmentLabel)
+    .filter((d) => d.segmentLabel !== def.segmentLabel)
     .slice(0, 8)
 
   const itemListLd = {
@@ -224,7 +226,8 @@ export default async function ListPage({ params }: Props) {
               )}
               {sameThreshold.length > 0 && (
                 <div className="space-y-2">
-                  <h2 className="text-base md:text-lg font-bold">他の業界・セグメントで初任給{def.threshold / 10000}万円以上</h2>
+                  {/* 閾値はセグメントごとに異なるため、見出しに固定の金額は入れない */}
+                  <h2 className="text-base md:text-lg font-bold">他の業界・条件から探す</h2>
                   <div className="flex flex-wrap gap-2">
                     {sameThreshold.map((d) => (
                       <Button key={d.slug} asChild variant="outline" size="sm" className="bg-transparent">

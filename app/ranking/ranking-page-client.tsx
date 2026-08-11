@@ -40,6 +40,33 @@ const rankingTypes: { id: RankingType; label: string; description: string }[] = 
   { id: "base", label: "基本給", description: "各種手当を含まない、基本給の高さに基づいたランキングです。企業の安定性や給与体系の基礎を知る上での参考になります。" },
 ]
 
+/**
+ * リード文の中の数値（金額・％・社数）を強調表示に変換する。
+ *
+ * 【意図】競合の上位サイトはいずれも本文中の重要な数字を色や太字で立たせている。
+ * 自動生成の文章をそのまま流すと数字が地の文に埋もれ、
+ * データサイトとしての説得力が出ないため、描画時にハイライトする。
+ *
+ * dangerouslySetInnerHTML は使わず、Reactノードの配列を返す（XSS耐性）。
+ */
+const highlightNumbers = (text: string): React.ReactNode[] => {
+  // 「262,300円」「+5.6%」「157社」「約1.4倍」などにマッチ
+  const SPLIT = /([+＋]?[\d,]+(?:\.\d+)?(?:円|%|社|倍))/g
+  // 【注意】判定用は g フラグを付けない。
+  // g付き正規表現の .test() は lastIndex を保持するため、
+  // 同じインスタンスを繰り返し使うと結果が交互にずれる。
+  const IS_NUMBER = /^[+＋]?[\d,]+(?:\.\d+)?(?:円|%|社|倍)$/
+  return text.split(SPLIT).map((part, i) =>
+    IS_NUMBER.test(part) ? (
+      <strong key={i} className="font-bold text-foreground">
+        {part}
+      </strong>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  )
+}
+
 const calculateDescriptionPosition = (index: number, total: number) => {
   // 常に中央に配置するため、固定値50を返す。0に近いほど右、100に近いほど左に寄る。
   return 12.3;
@@ -419,10 +446,13 @@ export function RankingPageClient({
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="py-8 md:py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="mb-8 text-center">
+      <main className="pb-8 md:pb-12">
+        {/* 【ヒーロー】タイトル領域に背景を敷いて本文と明確に切り分ける。
+            以前は白地に文字が並ぶだけで、上位サイトと比べて視覚的な起点が無かった。
+            全幅の淡いグラデーション＋下端の罫線で「ここまでが導入」と伝わるようにする。 */}
+        <div className="bg-gradient-to-b from-primary/[0.07] via-primary/[0.03] to-transparent border-b border-border/60">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+            <div className="max-w-5xl mx-auto text-center">
               {/* データの鮮度と対象学年を最初に示すバッジ。
                   業界別ページと同じ意匠に揃え、サイト全体で一貫させる */}
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
@@ -456,24 +486,64 @@ export function RankingPageClient({
                 {TARGET_GRAD_LABEL}向けに、初任給の高い企業を厳選して掲載。<br className="hidden md:inline" />
                 手取り額や入社後の年収の伸びまで確認できます。
               </p>
+
+              {/* 【E-E-A-T】更新日・出典・掲載社数を横並びで明示する。
+                  上位サイト（GBase等）はいずれもタイトル直下にこの帯を置いており、
+                  「誰がいつ何を根拠に作ったか」が一目で伝わる。
+                  YMYL領域では信頼性の提示が検索評価にも直結する。 */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs md:text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  最終更新: {updatedLabel}
+                </span>
+                <span className="hidden sm:inline text-border">|</span>
+                <span>出典: 各社採用情報・有価証券報告書</span>
+                <span className="hidden sm:inline text-border">|</span>
+                <span>掲載 {summary?.withMonthly ?? "—"} 社</span>
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* --- ここから本文 --- */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-10">
+          <div className="max-w-5xl mx-auto">
 
             {/* 【SEO・最重要】記事型のリード文。
                 データの表だけのページは「文章量が少ない」と判定され順位が伸びない。
                 検索上位の就活メディアと同じく、表の前に
                 「相場 → このページのデータ → 高い企業の特徴 → 注意点」を置く。
-                全てスプシの集計値から自動生成しているため、企業が増減しても数字が追従する。 */}
+                全てスプシの集計値から自動生成しているため、企業が増減しても数字が追従する。
+
+                【デザイン】以前はタイトル直下に段落をベタ書きしていて壁のように見えた。
+                見出し付きのカードに入れ、最初の段落だけ大きくし、
+                本文中の数値をハイライトすることで読み進められる形にしている。 */}
             {leadParagraphs.length > 0 && (
-              <div className="mb-8 space-y-4 text-left">
-                {leadParagraphs.map((p, i) => (
-                  <p
-                    key={i}
-                    className="text-[15px] md:text-base leading-[1.9] text-muted-foreground"
-                  >
-                    {p}
-                  </p>
-                ))}
-              </div>
+              <section className="mb-8 rounded-2xl border bg-card overflow-hidden">
+                {/* カード見出し。左のアクセント帯で「まとめ」であることを示す */}
+                <div className="flex items-center gap-2 px-5 py-3 border-b bg-muted/40">
+                  <span className="w-1 h-5 rounded-full bg-primary" aria-hidden="true" />
+                  <h2 className="text-base md:text-lg font-bold text-foreground">
+                    このページの要点
+                  </h2>
+                </div>
+
+                <div className="p-5 md:p-6 space-y-4 text-left">
+                  {leadParagraphs.map((p, i) => (
+                    <p
+                      key={i}
+                      className={
+                        // 冒頭はリード段落として一段大きく見せる
+                        i === 0
+                          ? "text-[16px] md:text-lg leading-[1.95] text-foreground"
+                          : "text-[15px] md:text-base leading-[1.95] text-muted-foreground"
+                      }
+                    >
+                      {highlightNumbers(p)}
+                    </p>
+                  ))}
+                </div>
+              </section>
             )}
 
             {/* 【SEO】集計サマリー: 結論の1文は常時表示、業種別表は折りたたみ
