@@ -519,16 +519,13 @@ export function RankingPageClient({
                 見出し付きのカードに入れ、最初の段落だけ大きくし、
                 本文中の数値をハイライトすることで読み進められる形にしている。 */}
             {leadParagraphs.length > 0 && (
-              <section className="mb-8 rounded-2xl border bg-card overflow-hidden">
-                {/* カード見出し。左のアクセント帯で「まとめ」であることを示す */}
-                <div className="flex items-center gap-2 px-5 py-3 border-b bg-muted/40">
-                  <span className="w-1 h-5 rounded-full bg-primary" aria-hidden="true" />
-                  <h2 className="text-base md:text-lg font-bold text-foreground">
-                    このページの要点
-                  </h2>
-                </div>
-
-                <div className="p-5 md:p-6 space-y-4 text-left">
+              {/* 【見出しなし】タイトル直下の文章は読者にとって自明に導入なので、
+                  「このページの要点」のようなラベルは置かない。
+                  記事型の競合（日本人材ニュース・WhiteCareer）も同様にリードは無題。
+                  h2 を消費せず、下部の解説セクションの見出しと競合しない利点もある。
+                  左のアクセント罫だけで導入部であることを視覚的に示す。 */}
+              <section className="mb-8 rounded-2xl border bg-card p-5 md:p-7 border-l-4 border-l-primary/50">
+                <div className="space-y-4 text-left">
                   {leadParagraphs.map((p, i) => (
                     <p
                       key={i}
@@ -780,37 +777,43 @@ export function RankingPageClient({
             {!loading && companies.length > 0 && (
               <section className="mt-12 border-t pt-8 text-left space-y-8">
 
-                {/* ① 世間相場との比較。当サイトの母集団の偏りを正直に説明する */}
-                {marketComparison && (
-                  <div className="space-y-3">
-                    <h2 className="text-xl md:text-2xl font-bold text-primary">
-                      {FISCAL_YEAR}年の初任給の相場はいくら？
-                    </h2>
-                    <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                      {marketComparison}
+                {/* ① 企業規模による格差。
+                    冒頭のリード文では「全国平均」と「当サイト平均」の対比を扱っているため、
+                    ここでは重複を避けて「規模による差」という別の切り口に踏み込む。 */}
+                <div className="space-y-3">
+                  <h2 className="text-xl md:text-2xl font-bold text-primary">
+                    同じ大卒でも、企業規模で初任給は3万円変わる
+                  </h2>
+                  <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    <p>
+                      初任給は「大卒だからいくら」と一律に決まるものではありません。
+                      {MARKET_BENCHMARK.surveyName}を企業規模別に見ると、従業員1,000人以上では
+                      <strong className="text-foreground">{MARKET_BENCHMARK.largeCompany.toLocaleString()}円</strong>、
+                      10〜99人では
+                      <strong className="text-foreground">{MARKET_BENCHMARK.smallCompany.toLocaleString()}円</strong>で、
+                      その差は月額
+                      <strong className="text-foreground">
+                        {(MARKET_BENCHMARK.largeCompany - MARKET_BENCHMARK.smallCompany).toLocaleString()}円
+                      </strong>
+                      です。年間では約
+                      {Math.round(((MARKET_BENCHMARK.largeCompany - MARKET_BENCHMARK.smallCompany) * 12) / 10000)}
+                      万円の開きになります。
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl border bg-card p-4">
-                        <p className="text-xs text-muted-foreground mb-1">大学卒の全国平均</p>
-                        <p className="text-lg md:text-xl font-bold text-foreground tabular">
-                          ¥{MARKET_BENCHMARK.universityGraduate.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          前年比 +{MARKET_BENCHMARK.universityGraduateYoY}%
-                        </p>
-                      </div>
-                      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
-                        <p className="text-xs text-muted-foreground mb-1">当サイト掲載企業の平均</p>
-                        <p className="text-lg md:text-xl font-bold text-primary tabular">
-                          ¥{summary?.avgMonthly?.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          高待遇企業を中心に{summary?.withMonthly}社を収録
-                        </p>
-                      </div>
-                    </div>
+                    <p>
+                      ただし規模が大きいほど得とは限りません。大企業は給与テーブルが整備されているぶん
+                      初任給は安定していますが、同期入社の人数が多く、若手のうちは横並びになりやすい構造です。
+                      一方で中小・ベンチャーは初任給の幅が大きく、下は全国平均を下回る企業から、
+                      上は当ランキング上位のように月40万円を超える企業まで分かれます。
+                      <strong className="text-foreground">規模で決まるのではなく、その企業がどれだけ利益を上げているかで決まる</strong>
+                      と考えるほうが実態に近いといえます。
+                    </p>
+                    <p>
+                      なお学歴による差もあります。多くの企業で修士了（院卒）は学部卒より月2〜4万円高く設定されており、
+                      理系職を中心に初任給の起点そのものが変わります。募集要項では学部卒の金額だけが
+                      大きく表示されていることもあるため、自分に当てはまる区分の金額を確認してください。
+                    </p>
                   </div>
-                )}
+                </div>
 
                 {/* ② 引き上げが続く背景 */}
                 <div className="space-y-3">
@@ -843,37 +846,33 @@ export function RankingPageClient({
                 {/* ③ 業界別の傾向。実データから生成 */}
                 {summary && summary.industryAverages.length >= 3 && (
                   <div className="space-y-3">
+                    {/* 【独自コンテンツ】冒頭では「どの業界が高いか」を扱っているため、
+                        ここでは「初任給の高さと生涯賃金は一致しない」という、
+                        有報データを持つ当サイトだけが書ける踏み込んだ話にする。 */}
                     <h2 className="text-xl md:text-2xl font-bold text-primary">
-                      初任給が高い業界とその理由
+                      初任給が高い＝生涯賃金が高い、ではない
                     </h2>
                     <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
                       <p>
-                        当サイトのデータでは、平均初任給が高いのは
-                        {summary.industryAverages.slice(0, 3).map((r, i) => (
-                          <span key={r.industry}>
-                            {i > 0 && "、"}
-                            <Link
-                              href={`/industries/${encodeURIComponent(r.industry)}`}
-                              className="text-primary hover:underline font-semibold"
-                            >
-                              {r.industry}
-                            </Link>
-                            （月額{r.avgMonthly.toLocaleString()}円）
-                          </span>
-                        ))}
-                        の順です。
+                        当サイトでは有価証券報告書をもとに、掲載企業の
+                        <strong className="text-foreground">全社員の平均年収</strong>もあわせて収録しています。
+                        そこで初任給と平均年収の関係を集計したところ、
+                        両者の順位にはほとんど相関がありませんでした。
+                        <strong className="text-foreground">初任給が高い企業ほど生涯賃金も高い、とは言えない</strong>のが実態です。
                       </p>
                       <p>
-                        これらの業界に共通するのは<strong className="text-foreground">「一人あたりが生み出す利益が大きい」</strong>という点です。
-                        コンサルティングや不動産、外資系IT、金融などは、設備よりも人の働きが直接収益を生む構造のため、
-                        優秀な人材の確保が業績に直結します。結果として給与水準が高くなります。
+                        分かれ目は「入社後の伸び方」です。初任給ベースの年収から全社員の平均年収までの倍率を見ると、
+                        掲載企業の中央値はおよそ<strong className="text-foreground">2.2倍</strong>。
+                        しかし企業ごとの差は大きく、初任給を抑えるかわりに入社後6倍以上まで伸びる企業がある一方、
+                        初任給の時点で既に高く、平均年収との差が1.2倍程度にとどまる企業もあります。
                       </p>
                       <p>
-                        逆に、従業員数が多い大企業ほど初任給は横並びになりやすい傾向があります。
-                        全社員の給与体系との整合が必要で、新卒だけを大幅に優遇しにくいためです。
-                        業界ごとの水準は
-                        <Link href="/industries" className="text-primary hover:underline mx-1">業界別ランキング</Link>
-                        で比較できます。
+                        前者は年功や成果に応じて段階的に上げていく設計、後者は最初から高い水準を提示して
+                        人材を集める設計です。どちらが良いかは、
+                        <strong className="text-foreground">若いうちに稼ぎたいのか、長く働いて積み上げたいのか</strong>
+                        という自分の優先順位によって変わります。
+                        各企業の詳細ページでは、この伸び倍率と掲載企業内での順位を掲載しているので、
+                        気になる企業がどちらのタイプかを確認できます。
                       </p>
                     </div>
                   </div>
@@ -882,44 +881,54 @@ export function RankingPageClient({
                 {/* ④ 注意点。ここが最も検索意図に応える部分 */}
                 <div className="space-y-4">
                   <h2 className="text-xl md:text-2xl font-bold text-primary">
-                    初任給ランキングを見るときの3つの注意点
+                    求人票の初任給を正しく読み解く3つのポイント
                   </h2>
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    同じ「月30万円」でも、内訳次第で実際に手元に入る額も働き方も変わります。
+                    企業ごとの求人票を見るときに確認すべき箇所を、具体例で説明します。
+                  </p>
 
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-foreground">
-                      ① 固定残業代（みなし残業）が含まれていないか
+                      ① 固定残業代を除いた「基本給」はいくらか
                     </h3>
                     <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                      提示額に固定残業代が含まれているかどうかで、実質的な条件は大きく変わります。
-                      たとえば月給30万円でも、うち5万円が「40時間分の固定残業代」であれば、
-                      基本給は25万円で、40時間働いて初めて30万円になる計算です。
-                      同じ金額でも残業代込みかどうかで時給換算は大きく異なるため、
-                      各社の求人票で内訳を必ず確認してください。
+                      月給30万円のうち5万円が「40時間分の固定残業代」だとすると、基本給は25万円です。
+                      このとき時給換算は、残業なしの企業（月160時間）が1,875円なのに対し、
+                      40時間残業して30万円の企業は<strong className="text-foreground">1,500円</strong>となり、2割ほど低くなります。
+                      さらに基本給は賞与や退職金の算定基礎になることが多いため、
+                      <strong className="text-foreground">基本給が低いと年収ベースでは差がさらに開きます</strong>。
+                      求人票では「固定残業代◯時間分を含む」の記載と、その時間数を必ず確認してください。
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-foreground">
-                      ② 住宅手当など固定手当が上乗せされていないか
+                      ② 自分にも支給される手当かどうか
                     </h3>
                     <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                       住宅手当や地域手当を含めた金額を初任給として提示している企業もあります。
-                      これらは実家暮らしでは支給されない、転勤で変動するなど条件付きの場合があり、
-                      全員が受け取れるとは限りません。
-                      また手当の多くは賞与の算定基礎に含まれないため、
-                      基本給が低いと年収ベースでは差が開くことがあります。
+                      たとえば家賃補助が月10万円含まれている場合、実家から通う人には支給されず、
+                      提示額から10万円下がることになります。
+                      東京勤務を前提とした地域手当も、配属先によっては対象外です。
+                      <strong className="text-foreground">「全員が受け取れる金額」と「条件付きの金額」を分けて考える</strong>
+                      ことが重要です。
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-foreground">
-                      ③ 入社後の昇給率まで見えているか
+                      ③ 額面ではなく手取りで生活を想像できているか
                     </h3>
                     <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                      初任給が高くても、その後の伸びが緩やかであれば生涯賃金では逆転されることがあります。
-                      当サイトでは有価証券報告書をもとに全社員の平均年収を掲載しており、
-                      各企業の詳細ページで<strong className="text-foreground">初任給から平均年収までの伸び倍率</strong>を確認できます。
-                      初任給が控えめでも入社後に数倍まで伸びる企業もあれば、初任給の時点でほぼ頭打ちの企業もあります。
+                      額面から社会保険料と所得税が引かれるため、手取りはおおむね額面の8割前後になります。
+                      月30万円なら手取りは24万円台が目安です。
+                      さらに<strong className="text-foreground">2年目からは住民税が加わる</strong>点に注意が必要です。
+                      1年目は前年の所得がないため住民税がかかりませんが、2年目に月1〜2万円ほど引かれ、
+                      額面が変わらなくても手取りが減ったように感じます。
+                      当サイトの
+                      <Link href="/simulator" className="text-primary hover:underline mx-1">手取り計算シミュレーター</Link>
+                      では、1年目と2年目以降の両方を確認できます。
                     </p>
                   </div>
                 </div>
@@ -931,20 +940,30 @@ export function RankingPageClient({
                   </h2>
                   <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
                     <p>
-                      月額の初任給だけを見ていると、賞与の差を見落とします。同じ初任給30万円でも、
-                      年間賞与が4か月分の企業と2か月分の企業では年収に数十万円の開きが出ます。
+                      月額の初任給だけを見ていると、<strong className="text-foreground">賞与の差を見落とします</strong>。
+                      同じ初任給30万円でも、年間賞与が4か月分の企業と2か月分の企業では、
+                      年収にして60万円の開きが出ます。月額の順位と年収の順位が入れ替わるのはこのためです。
                       <Link href="/ranking/annual" className="text-primary hover:underline font-semibold mx-1">
                         想定年収ランキング
                       </Link>
-                      では、賞与を含めた実質的な年収で順位を確認できます。
+                      と見比べて、両方で上位に入る企業を探すのが効率的です。
                     </p>
                     <p>
-                      額面が同じでも、手取りは社会保険料と税金で1〜2割前後引かれます。
-                      実際に使える金額は
-                      <Link href="/simulator" className="text-primary hover:underline mx-1">手取り計算シミュレーター</Link>
-                      で確認できます。企業研究には
+                      次に、志望業界の中での位置を確認します。全体で20位でも、
+                      その業界の中では1位ということがあります。逆に全体で上位でも、
+                      その業界では平均的という場合もあります。
+                      応募先を絞る段階では全体順位より
+                      <Link href="/industries" className="text-primary hover:underline mx-1">業界内での順位</Link>
+                      のほうが判断材料になります。
+                    </p>
+                    <p>
+                      最後に、気になる企業が数社に絞れたら詳細ページで
+                      収益性と平均年収まで確認してください。
+                      面接で給与について聞かれた際も、
+                      業績の裏付けを持って話せると志望度の高さが伝わります。
+                      企業研究の進め方は
                       <Link href="/articles" className="text-primary hover:underline mx-1">就活記事</Link>
-                      もあわせてご活用ください。
+                      でも解説しています。
                     </p>
                   </div>
                 </div>
