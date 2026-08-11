@@ -63,6 +63,81 @@ export function buildMarketComparison(
 }
 
 /**
+ * ランキングページ冒頭のリード文（記事の導入部）を組み立てる。
+ *
+ * 【設計意図】
+ * 検索上位の競合（就活メディア）は、いずれも表の前に
+ *   ①世間の相場 → ②このページのデータ → ③高い企業の特徴 → ④読み方の注意
+ * という順で数段落の導入を置いている。データの列挙だけのページは
+ * 「文章量が少ない」と判定されて順位が伸びない。
+ *
+ * ここでは集計済みデータの穴埋めだけで同じ構成を再現する。
+ * 企業が増減しても数字が自動で追従し、手作業の更新は不要。
+ *
+ * @param opts 掲載データの集計値
+ */
+export function buildRankingLead(opts: {
+  listedCount: number
+  avgMonthly: number | null
+  medianMonthly: number | null
+  topCompany: string | null
+  topMonthly: number | null
+  over30: number
+  over40: number
+  topIndustries: { industry: string; avgMonthly: number }[]
+  fiscalYear: number
+  gradLabel: string
+}): string[] {
+  const b = MARKET_BENCHMARK
+  const paragraphs: string[] = []
+
+  // ① 世間の相場から入る（「初任給の相場を知りたい」層をまず受け止める）
+  paragraphs.push(
+    `${b.surveyName}によると、${b.yearLabel}の大学卒の平均初任給は${yen(b.universityGraduate)}でした。` +
+      `前年比+${b.universityGraduateYoY}%と大きく伸び、初めて26万円台に到達しています。` +
+      `企業規模による差も大きく、従業員1,000人以上では${yen(b.largeCompany)}、10〜99人では${yen(b.smallCompany)}です。`,
+  )
+
+  // ② このページが何のデータなのかを明示（母集団の偏りを隠さない）
+  if (opts.avgMonthly !== null) {
+    let p =
+      `このページでは、その水準を大きく上回る「初任給の高い企業」を${opts.listedCount}社掲載しています。` +
+      `掲載企業の平均は月額${yen(opts.avgMonthly)}`
+    if (opts.medianMonthly !== null) p += `（中央値${yen(opts.medianMonthly)}）`
+    p += `で、全国平均の約${Math.round((opts.avgMonthly / b.universityGraduate) * 10) / 10}倍にあたります。`
+    if (opts.topCompany && opts.topMonthly !== null) {
+      p += `最も高いのは${opts.topCompany}の${yen(opts.topMonthly)}です。`
+    }
+    p += `月30万円以上は${opts.over30}社、40万円以上は${opts.over40}社あります。`
+    paragraphs.push(p)
+  }
+
+  // ③ 高い企業に共通する特徴（就活生が最も知りたい「なぜ」に答える）
+  if (opts.topIndustries.length >= 2) {
+    const inds = opts.topIndustries
+      .slice(0, 3)
+      .map((r) => `${r.industry}（月額${yen(r.avgMonthly)}）`)
+      .join("、")
+    paragraphs.push(
+      `初任給が高い企業には共通点があります。当サイトのデータで平均が高いのは${inds}の順で、` +
+        `いずれも設備よりも人の働きが直接収益を生む業界です。社員一人あたりが生み出す利益が大きいため、` +
+        `優秀な人材の確保が業績に直結し、給与水準が高くなります。` +
+        `反対に従業員数の多い大企業は、全社員の給与体系との整合が必要で新卒だけを大幅に優遇しにくく、初任給は横並びになりやすい傾向があります。`,
+    )
+  }
+
+  // ④ 読み方の注意（額面と実態のギャップ＝離脱を防ぎ、滞在時間を伸ばす）
+  paragraphs.push(
+    `ただし、初任給の額面だけで比較するのは危険です。提示額に固定残業代や住宅手当が含まれていることがあり、` +
+      `同じ30万円でも実質的な条件は企業ごとに異なります。また初任給が高くても入社後の昇給が緩やかな企業もあります。` +
+      `当サイトでは有価証券報告書をもとに全社員の平均年収も掲載しているため、各企業の詳細ページで` +
+      `手取り額と入社後の伸びまで確認できます。${opts.gradLabel}の企業選びにご活用ください。`,
+  )
+
+  return paragraphs
+}
+
+/**
  * 個別企業の初任給が世間相場と比べてどうかを説明する文章。
  * 企業詳細ページで「この金額は高いのか」という疑問に直接答える。
  */

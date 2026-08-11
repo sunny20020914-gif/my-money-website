@@ -62,8 +62,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : null
 
   const description = avgSalaryMan
-    ? `${company.company}の${parts.join("、")}。平均年収${avgSalaryMan.toLocaleString()}万円（全社員平均・有価証券報告書）。初任給からの伸びや業績データも掲載。`
-    : `${company.company}の${parts.join("、")}。業界：${company.industry.split("/")[0]}。事業内容・強み・将来性を解説。`
+    ? `${company.company}の${parts.join("、")}。平均年収${avgSalaryMan.toLocaleString()}万円（全社員平均・有価証券報告書）。初任給からの伸びや業績データまで、企業研究に必要な情報をまとめています。`
+    : `${company.company}の${parts.join("、")}。業界：${company.industry.split("/")[0]}。事業内容・強み・将来性を解説し、企業研究に役立つ情報をまとめています。`
 
   return {
     // 【SEO】「企業名 初任給 手取り」は実測でCTR50%・6.5位を取れている勝ち筋。
@@ -71,11 +71,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // 推定値しか出せない競合サイトに対して精度で優位に立てる。
     // 【年度表記の注意】「${FISCAL_YEAR}年新卒」と書くと26卒向けサイトだと誤読される。
     // FISCAL_YEARはデータの年度なので「年最新」と組み合わせ、卒業年度と切り離す。
+    // 「企業名 企業研究」も就活生の検索需要が大きいため、タイトル末尾で拾う。
     title: avgSalaryMan
-      ? `${company.company}の初任給・平均年収・手取り【${FISCAL_YEAR}年最新】`
+      ? `${company.company}の初任給・平均年収・手取り｜企業研究【${FISCAL_YEAR}年最新】`
       : netForMeta
-        ? `${company.company}の初任給と手取り【${FISCAL_YEAR}年最新】`
-        : `${company.company}の初任給・年収【${FISCAL_YEAR}年最新】`,
+        ? `${company.company}の初任給と手取り｜企業研究【${FISCAL_YEAR}年最新】`
+        : `${company.company}の初任給・年収｜企業研究【${FISCAL_YEAR}年最新】`,
     description,
     alternates: {
       canonical: `https://www.mymoneyweb.com/companies/${params.id}`,
@@ -148,6 +149,17 @@ export default async function CompanyPage({ params }: Props) {
    * 表示側とFAQPage構造化データの両方でこの配列を使うため内容は必ず一致する。
    */
   const faq = [...baseFaq]
+
+  // 【SEO】「企業名 企業研究」向けの設問。就活生が実際に調べる観点を列挙し、
+  // 当ページのどこを見れば分かるかまで書いて回遊にもつなげる。
+  faq.push({
+    question: `${company.company}の企業研究では何を見ればよいですか？`,
+    answer:
+      `${company.company}の企業研究では、初任給の額面だけでなく「固定残業代や手当が含まれているか」「入社後に給与がどれだけ伸びるか」「収益性は業界内でどの位置か」の3点を確認するのがおすすめです。` +
+      `当ページでは初任給の手取り目安、有価証券報告書にもとづく全社員の平均年収、売上高・営業利益率などの業績データ、業界内での順位をまとめて掲載しています。` +
+      `事業内容や強み・将来性とあわせて確認することで、給与の背景にある収益構造まで理解できます。`,
+  })
+
   if (salaryGrowth) {
     const man = (yen: number) => `${Math.round(yen / 10_000).toLocaleString()}万円`
     faq.push({
@@ -358,10 +370,14 @@ export default async function CompanyPage({ params }: Props) {
                 </div>
               </div>
             </div>
-            {/* 【AI SEO】答えを先に書く自己完結型サマリー。AI検索がこの一文だけで引用できる */}
+            {/* 【AI SEO】答えを先に書く自己完結型サマリー。AI検索がこの一文だけで引用できる。
+                末尾に「企業研究」を自然な形で含め、
+                「企業名 企業研究」の検索需要も拾えるようにしている。 */}
             {leadSummary && (
               <p className="mt-4 text-[15px] md:text-base leading-relaxed text-muted-foreground">
                 {leadSummary}
+                このページでは初任給の手取り目安、全社員の平均年収、業績データまで、
+                {company.company}の企業研究に必要な情報をまとめています。
               </p>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
@@ -714,7 +730,8 @@ export default async function CompanyPage({ params }: Props) {
           {/* --- 企業概要（スマホでは手取りセクションの直後に繰り上げる） --- */}
           <section className="space-y-7">
             {company.long_description && <div className="space-y-3">
-              <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業概要</h3>
+              {/* 「企業名 企業研究」を拾うため、見出しにもキーワードを含める */}
+              <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業研究：{company.company}の事業内容</h3>
               <div
                 /* 幅は制限しない。下の「強み」「将来性」カードと左右の位置を揃えるため、
                    親要素の幅いっぱいに広げる（max-w-[42em]を入れると幅が揃わず不自然になる）。 */

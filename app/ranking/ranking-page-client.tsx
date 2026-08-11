@@ -19,7 +19,7 @@ import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { buildCardFinancialMetrics } from "@/lib/financials"
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
-import { MARKET_BENCHMARK, buildMarketComparison } from "@/lib/market-benchmark"
+import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead } from "@/lib/market-benchmark"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 
 type RankingType = "annual" | "monthly" | "base"
@@ -144,7 +144,9 @@ const CompanyCard = ({
                   {isNumberValue && <span className="ml-0 text-sm font-normal text-muted-foreground">/{unit}</span>}
                 </div>
               </div>
-              <div className="text-left md:text-right w-28">
+              {/* 従業員数・設立。ボタン列との間に余白を作るため pr-4 を入れる
+                  （以前は gap-x-1 のみで「詳しく見る」と接触して窮屈だった） */}
+              <div className="text-left md:text-right w-28 pr-4">
                 <p className="text-sm text-muted-foreground">従業員数</p>
                 <p className="text-base font-semibold text-foreground">{typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}</p>
                 <p className="text-sm text-muted-foreground">設立: {company.founded}年</p>
@@ -183,7 +185,10 @@ const CompanyCard = ({
               指標は内容ぴったりの幅（w-fit）にし、余った幅を説明文に渡す。
               pl-[88px] は「順位バッジ(w-16=64px) + gap-6(24px)」でロゴ左端と揃う位置。 */}
           {(financials.length > 0 || company.description) && (
-            <div className="mt-3 pt-3 border-t pl-[88px] flex items-center justify-between gap-8">
+            /* pr-[136px] は上段のボタン列の幅（w-32=128px）+ 余白8px。
+               これにより説明文の右端が「詳しく見る／保存」ボタンの左端で揃い、
+               ボタンの下に文字が潜り込んだような見え方にならない。 */
+            <div className="mt-3 pt-3 border-t pl-[88px] pr-[136px] flex items-center justify-between gap-8">
               {/* 左: 業績データ。折り返さず自然幅に収める */}
               {financials.length > 0 && (
                 <div className="flex items-start gap-x-7 shrink-0">
@@ -363,6 +368,28 @@ export function RankingPageClient({
     [summary],
   )
 
+  // 【SEO】記事型のリード文。検索上位の就活メディアはいずれも表の前に
+  // 「相場 → このページのデータ → 高い企業の特徴 → 注意点」の導入を置いている。
+  // 初任給ランキング（月額）でのみ表示し、年収ランキングでは文脈が変わるため出さない。
+  const leadParagraphs = useMemo(
+    () =>
+      summary && selectedRanking === "monthly"
+        ? buildRankingLead({
+            listedCount: summary.withMonthly,
+            avgMonthly: summary.avgMonthly,
+            medianMonthly: summary.medianMonthly,
+            topCompany: summary.topCompany,
+            topMonthly: summary.topMonthly,
+            over30: summary.over30,
+            over40: summary.over40,
+            topIndustries: summary.industryAverages.slice(0, 3),
+            fiscalYear: FISCAL_YEAR,
+            gradLabel: TARGET_GRAD_LABEL,
+          })
+        : [],
+    [summary, selectedRanking],
+  )
+
   const currentError = initialError || error
 
   // 初期表示時にサーバーサイドでエラーが発生した場合
@@ -430,6 +457,24 @@ export function RankingPageClient({
                 手取り額や入社後の年収の伸びまで確認できます。
               </p>
             </div>
+
+            {/* 【SEO・最重要】記事型のリード文。
+                データの表だけのページは「文章量が少ない」と判定され順位が伸びない。
+                検索上位の就活メディアと同じく、表の前に
+                「相場 → このページのデータ → 高い企業の特徴 → 注意点」を置く。
+                全てスプシの集計値から自動生成しているため、企業が増減しても数字が追従する。 */}
+            {leadParagraphs.length > 0 && (
+              <div className="mb-8 space-y-4 text-left">
+                {leadParagraphs.map((p, i) => (
+                  <p
+                    key={i}
+                    className="text-[15px] md:text-base leading-[1.9] text-muted-foreground"
+                  >
+                    {p}
+                  </p>
+                ))}
+              </div>
+            )}
 
             {/* 【SEO】集計サマリー: 結論の1文は常時表示、業種別表は折りたたみ
                 （details内のコンテンツも初期HTMLに含まれクローラーに読まれる） */}
