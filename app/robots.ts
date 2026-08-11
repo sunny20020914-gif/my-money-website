@@ -31,6 +31,13 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin', '/api/', '/saved'],
       })),
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    // 【sitemap分割後】generateSitemaps により /sitemap/0.xml 〜 /sitemap/3.xml が生成される。
+    // 種類別に列挙して、Googleが企業ページ用sitemapを個別に処理できるようにする。
+    sitemap: [
+      `${SITE_URL}/sitemap/0.xml`, // 主要ページ・卒年別
+      `${SITE_URL}/sitemap/1.xml`, // 企業詳細
+      `${SITE_URL}/sitemap/2.xml`, // 記事
+      `${SITE_URL}/sitemap/3.xml`, // 業界・条件一覧
+    ],
   }
 }

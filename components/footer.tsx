@@ -31,6 +31,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                {/* 全企業ページへのクロール導線。フッターは全ページに出るため、
+                    どのページからでも企業一覧に到達できる */}
+                <Link href="/companies" className="text-muted-foreground hover:text-foreground transition-colors">
+                  掲載企業一覧
+                </Link>
+              </li>
+              <li>
                 <Link href="/featured" className="text-muted-foreground hover:text-foreground transition-colors">
                   注目企業
                 </Link>
