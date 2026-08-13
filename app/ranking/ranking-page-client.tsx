@@ -482,8 +482,12 @@ export function RankingPageClient({
                   </span>
                 </h1>
               )}
-              <p className="text-[17px] md:text-xl text-muted-foreground text-balance leading-relaxed max-w-3xl mx-auto">
-                {TARGET_GRAD_LABEL}向けに、初任給の高い企業を厳選して掲載。<br className="hidden md:inline" />
+              {/* jp-lead で文節改行。以前は「初任給の高い企／業を」のように
+                  単語の途中で折り返されて読みにくかった。
+                  スマホでは2文を明示的に分けて、1文ずつ読める形にする。 */}
+              <p className="jp-lead text-[17px] md:text-xl text-muted-foreground leading-[1.85] max-w-3xl mx-auto">
+                {TARGET_GRAD_LABEL}向けに、初任給の高い企業を厳選して掲載。
+                <br />
                 手取り額や入社後の年収の伸びまで確認できます。
               </p>
 
@@ -523,17 +527,21 @@ export function RankingPageClient({
                 記事型の競合（日本人材ニュース・WhiteCareer）も同様にリードは無題。
                 h2 を消費せず、下部の解説セクションの見出しと競合しない利点もある。
                 左のアクセント罫だけで導入部であることを視覚的に示す。 */}
+            {/* 【可読性】スマホでの読みやすさを優先し、本文を17px・行間2.1に設定。
+                text-[17px] のような任意値は globals.css のスマホ用底上げ（text-base等）の
+                対象外になるため、ここで直接指定している。
+                段落間の余白（space-y-5）も広めに取り、文章の塊が見分けやすいようにする。 */}
             {leadParagraphs.length > 0 && (
               <section className="mb-8 rounded-2xl border bg-card p-5 md:p-7 border-l-4 border-l-primary/50">
-                <div className="space-y-4 text-left">
+                <div className="space-y-5 text-left">
                   {leadParagraphs.map((p, i) => (
                     <p
                       key={i}
                       className={
                         // 冒頭はリード段落として一段大きく見せる
                         i === 0
-                          ? "text-[16px] md:text-lg leading-[1.95] text-foreground"
-                          : "text-[15px] md:text-base leading-[1.95] text-muted-foreground"
+                          ? "text-[17px] md:text-lg leading-[2.1] text-foreground"
+                          : "text-[16px] md:text-base leading-[2.1] text-muted-foreground"
                       }
                     >
                       {highlightNumbers(p)}
