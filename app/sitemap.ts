@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { fetchRankingDataServer, fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
 import { buildAllListDefinitions } from '@/lib/list-definitions'
+import { availableMetricRankingPaths } from './ranking/render-metric-ranking'
 import { SITE_URL, TARGET_GRADS } from '@/lib/config'
 
 /**
@@ -62,7 +63,18 @@ export default async function sitemap({
       priority: 0.9,
     }))
 
-    return [...staticRoutes, ...gradRoutes]
+    // 【重要】指標別ランキング（伸び率・平均年収・一人当たり営業利益・営業利益率）は、
+    // スプレッドシートのN〜Y列にデータが入っていないと notFound() になる。
+    // ページ側とまったく同じ判定を通ったパスだけを載せることで、
+    // 「sitemapには載っているが404」という不整合が起きないようにする。
+    const metricPaths = await availableMetricRankingPaths()
+    const metricRoutes: MetadataRoute.Sitemap = metricPaths.map((path) => ({
+      url: `${baseUrl}${path}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
+    }))
+
+    return [...staticRoutes, ...gradRoutes, ...metricRoutes]
   }
 
   // ---- 1: 企業詳細ページ（最も数が多く、インデックスを最優先したい） ----

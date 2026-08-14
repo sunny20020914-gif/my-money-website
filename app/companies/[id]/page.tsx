@@ -639,6 +639,23 @@ export default async function CompanyPage({ params }: Props) {
                   <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                     {emphasizeCompanyName(salaryGrowth.summary, company.company)}
                   </p>
+                  {/* 【導線】ここで出している順位は、そのままランキングページの軸になっている。
+                      「◯社中◯位」を見た直後に全体像へ移動できるようにする。
+                      内部リンクとしても、指標ランキング側の評価を押し上げる。 */}
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href="/ranking/growth"
+                      className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                    >
+                      伸び率ランキング全{salaryGrowth.sampleCount}社を見る
+                    </Link>
+                    <Link
+                      href="/ranking/average"
+                      className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                    >
+                      平均年収ランキングを見る
+                    </Link>
+                  </div>
                 </div>
               )}
 
@@ -694,6 +711,23 @@ export default async function CompanyPage({ params }: Props) {
                           ※{perEmployeeNote}
                         </p>
                       )}
+
+                      {/* 【導線】表に出している順位は、それぞれ独立したランキングページの軸。
+                          「この会社は何位なのか」を見た読者を、その指標の全体像へ送る。 */}
+                      <div className="mt-3 pt-3 border-t flex flex-wrap gap-2">
+                        <Link
+                          href="/ranking/profit-per-employee"
+                          className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                        >
+                          一人当たり営業利益ランキング
+                        </Link>
+                        <Link
+                          href="/ranking/margin"
+                          className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                        >
+                          営業利益率ランキング
+                        </Link>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>

@@ -8,6 +8,8 @@ import {
   CalculatorIcon,
   BookOpenIcon,
   GraduationCapIcon,
+  TrendingUpIcon,
+  WalletIcon,
 } from "lucide-react"
 import { FISCAL_YEAR, TARGET_GRADS } from "@/lib/config"
 import { MARKET_BENCHMARK } from "@/lib/market-benchmark"
@@ -41,6 +43,18 @@ const ENTRIES = [
     icon: CoinsIcon,
     title: "想定年収ランキング",
     desc: "賞与を含めた年収ベース。初任給とは順位が大きく入れ替わります。",
+  },
+  {
+    href: "/ranking/growth",
+    icon: TrendingUpIcon,
+    title: "賃金の伸び率ランキング",
+    desc: "初任給から平均年収まで何倍に伸びるか。初任給だけでは見えない指標。",
+  },
+  {
+    href: "/ranking/average",
+    icon: WalletIcon,
+    title: "平均年収ランキング",
+    desc: "有価証券報告書に基づく全社員の平均年収。口コミではない実額。",
   },
   {
     href: "/industries",

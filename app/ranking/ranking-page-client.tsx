@@ -22,6 +22,9 @@ import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
 import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead } from "@/lib/market-benchmark"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 import { NO_DATA, isBlankValue, formatWithUnit, formatYear, splitValueAndUnit } from "@/lib/format"
+// 【バンドル削減】集計ロジックを含む lib/metric-rankings は import しない。
+// ここで必要なのはパスとラベルだけなので、軽量な定義ファイルだけを読む。
+import { METRIC_RANKING_LINKS } from "@/lib/metric-ranking-links"
 
 type RankingType = "annual" | "monthly" | "base"
 
@@ -768,6 +771,27 @@ export function RankingPageClient({
                       毎月の手取りに直結する「初任給ランキング」も見る →
                     </Link>
                   )}
+
+                  {/* 【導線】給与額以外の切り口で並べたランキングへ。
+                      初任給と平均年収の順位はほとんど連動しないため、
+                      「額面の順位」だけを見て終わる読者を減らしたい。 */}
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      金額以外の切り口で並べる
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {METRIC_RANKING_LINKS.map((link) => (
+                        <Link
+                          key={link.slug}
+                          href={link.path}
+                          className="inline-flex items-center rounded-full border bg-card px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                        >
+                          {link.shortLabel}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
