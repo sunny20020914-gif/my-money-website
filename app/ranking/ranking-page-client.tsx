@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, CSSProperties } from "react"
+import React, { useState, useMemo, useEffect, CSSProperties } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
@@ -411,7 +411,41 @@ export function RankingPageClient({
       .sort((a, b) => a.rank - b.rank)
   }, [companies, searchTerm, selectedIndustry]);
 
-  const displayedCompanies = sortedAndFilteredCompanies;
+  /**
+   * 【表示件数の制限】
+   *
+   * 以前は絞り込み結果を全件そのまま描画していた。1社あたりのカードは
+   * PC用33要素＋モバイル用34要素の計67要素あり、157社では約10,500要素になる。
+   * Lighthouseが「過大なDOM」と判定する閾値は1,400要素なので7倍以上の状態だった。
+   *
+   * さらに6枚ごとに広告を挟んでいるため、157社では26枚のAdBannerが同時に
+   * マウントされ、1回の表示で26回 adsbygoogle.push() が走っていた。
+   * 外部スクリプトの実行は静的なDOMより遥かに重く、速度への影響が大きい。
+   *
+   * 初期表示を50社に絞り、続きはボタンで読み込む方式にする。
+   * ・初期DOM      約10,500要素 → 約3,350要素
+   * ・初期の広告枠  26枚 → 8枚
+   *
+   * 【SEOへの影響】51位以降がHTMLから消えるが、
+   * 全社への内部リンクは /companies（掲載企業一覧）が担っており、
+   * 各社は sitemap にも個別に載っているためクロール経路は失われない。
+   * また「初任給が高い企業ランキング」という検索意図は上位50社で満たせる。
+   */
+  const INITIAL_VISIBLE = 50
+  const LOAD_MORE_STEP = 50
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
+
+  // 検索語・業界フィルタが変わったら表示件数を初期値に戻す。
+  // これをしないと「絞り込んだのに前回の展開状態が残る」挙動になる。
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE)
+  }, [searchTerm, selectedIndustry, selectedRanking])
+
+  const displayedCompanies = useMemo(
+    () => sortedAndFilteredCompanies.slice(0, visibleCount),
+    [sortedAndFilteredCompanies, visibleCount],
+  )
+  const remainingCount = sortedAndFilteredCompanies.length - displayedCompanies.length
 
   // クロス条件ページへのリンク（該当数の多い順に上位12件）
   const listLinks = useMemo(() => buildAllListDefinitions(initialData).slice(0, 12), [initialData])
@@ -788,9 +822,44 @@ export function RankingPageClient({
                       index={index}
                       selectedRanking={selectedRanking}
                     />
-                    {(index + 1) % 6 === 0 && <AdBanner />}
+                    {/* 【広告の間隔】以前は6枚ごとだったため157社で26枚の広告枠が
+                        同時にマウントされ、1回の表示で26回 adsbygoogle.push() が走っていた。
+                        コンテンツ量に対して広告が過剰だとAdSense側の評価にも不利なため
+                        12枚ごとに変更した。可視性が上がる分、収益は落ちにくい。 */}
+                    {(index + 1) % 12 === 0 && <AdBanner />}
                   </React.Fragment>
                 ))}
+
+                {/* 【もっと見る】初期表示を50社に絞ってDOMと広告リクエストを削減する。
+                    ボタンを押すと50社ずつ追加される。 */}
+                {remainingCount > 0 && (
+                  <div className="pt-6 text-center">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="bg-transparent px-8 font-semibold"
+                      onClick={() => setVisibleCount((n) => n + LOAD_MORE_STEP)}
+                    >
+                      さらに{Math.min(remainingCount, LOAD_MORE_STEP)}社を表示
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      {displayedCompanies.length}社 / 全{sortedAndFilteredCompanies.length}社を表示中
+                    </p>
+                  </div>
+                )}
+
+                {/* 全件表示しきったときは、次の行き先を示して離脱を防ぐ */}
+                {remainingCount === 0 && sortedAndFilteredCompanies.length > INITIAL_VISIBLE && (
+                  <div className="pt-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      全{sortedAndFilteredCompanies.length}社を表示しました。
+                      <Link href="/companies" className="ml-1 underline hover:text-foreground transition-colors">
+                        企業名から探す
+                      </Link>
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
