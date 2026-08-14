@@ -30,9 +30,14 @@ export async function RankingPreview() {
             <TrendingUpIcon className="w-4 h-4 mr-2" />
             最新ランキング
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-balance mb-4">初任給・年収ランキング</h2>
-          <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
-            {FISCAL_YEAR}年度の最新データに基づく、初任給と想定年収ランキング上位企業をご紹介します。
+          {/* 【カニバリゼーション対策】この見出しを「初任給ランキング」にすると
+              /ranking のh1と同じ主要語がトップページ内に立ってしまう。
+              あくまで抜粋であることが伝わる文言にして、本体は /ranking に譲る。 */}
+          <h2 className="text-xl md:text-3xl font-bold text-balance mb-4">
+            いま初任給が高い5社
+          </h2>
+          <p className="text-[15px] md:text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
+            {FISCAL_YEAR}年度データの上位5社を抜粋しています。全社の順位と手取り額は各ランキングページで確認できます。
           </p>
         </div>
 
