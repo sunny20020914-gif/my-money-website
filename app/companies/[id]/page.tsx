@@ -23,6 +23,7 @@ import { buildFinancialMetrics, buildSourceLabel, buildPerEmployeeNote } from "@
 import { buildSalaryGrowth } from "@/lib/salary-growth"
 import { buildFinancialInsight, buildBusinessModelInsight } from "@/lib/financial-insight"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { formatWithUnit, formatYear, isBlankValue } from "@/lib/format"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
@@ -52,7 +53,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `初任給${fmtSalary(monthly)}/月`,
     ...(netForMeta ? [`手取り目安¥${roundNet(netForMeta.netMonthlyFirstYear).toLocaleString()}`] : []),
     `想定年収${fmtSalary(company.annualSalary)}/年`,
-    `従業員数${typeof company.employees === "number" ? company.employees.toLocaleString() : company.employees}人`,
+    // 【メタ説明文】従業員数が空欄だと内部値は "?" になる。
+    // 画面上は "-" で良いが、検索結果に出る説明文に「従業員数-人」と書くのは
+    // 不自然なので、データが無い場合はこの項目ごと省く。
+    ...(isBlankValue(company.employees)
+      ? []
+      : [`従業員数${formatWithUnit(company.employees, "人")}`]),
   ]
   // 【SEO】有報由来の平均年収があれば説明文の先頭付近に入れる。
   // 「企業名 平均年収」は検索需要が非常に大きく、有報の実額なので精度でも勝負できる。
@@ -412,15 +418,17 @@ export default async function CompanyPage({ params }: Props) {
                       </p>
                     </div>
                   )}
-                  {/* 設立 */}
+                  {/* 設立・従業員数。
+                      スプシが空欄のとき設立年は 0、従業員数は "?" になるため、
+                      そのまま出すと「0年」「?人」という誤情報に見える。
+                      ランキングカードと同じ lib/format.ts のルールで "-" に統一する。 */}
                   <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">設立</p>
-                    <p className="text-lg font-semibold whitespace-nowrap">{company.founded}年</p>
+                    <p className="text-lg font-semibold whitespace-nowrap">{formatYear(company.founded)}</p>
                   </div>
-                  {/* 従業員数 */}
                   <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">従業員数</p>
-                    <p className="text-lg font-semibold whitespace-nowrap">{typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}</p>
+                    <p className="text-lg font-semibold whitespace-nowrap">{formatWithUnit(company.employees, "人")}</p>
                   </div>
                 </div>
 

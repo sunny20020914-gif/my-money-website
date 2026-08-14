@@ -21,6 +21,7 @@ import { buildCardFinancialMetrics } from "@/lib/financials"
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
 import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead } from "@/lib/market-benchmark"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
+import { NO_DATA, isBlankValue, formatWithUnit, formatYear, splitValueAndUnit } from "@/lib/format"
 
 type RankingType = "annual" | "monthly" | "base"
 
@@ -109,9 +110,26 @@ const CompanyCard = ({
 
   const unit = selectedRanking === "annual" ? "年" : "月"
 
-  const isNumberValue = typeof salaryValue === 'number';
+  const isNumberValue = typeof salaryValue === 'number' && Number.isFinite(salaryValue) && salaryValue > 0;
+  // スプシの賃金セルが空欄のとき parseSalaryValue は null を返す。
+  // 従来はそれをそのまま描画していたため、ラベルだけ残って値が消え、
+  // salaryUrl がある企業では「中身が空のリンク」になっていた。
+  const isSalaryBlank = isBlankValue(salaryValue);
 
   const SalaryDisplay = ({ isMobile = false }: { isMobile?: boolean }) => {
+    // データ無しは "-" を控えめな色で置く。単位（/月・/年）も呼び出し側で抑止する。
+    if (isSalaryBlank) {
+      return (
+        <span
+          className={
+            (isMobile ? "text-2xl" : "text-3xl") + " font-bold text-muted-foreground"
+          }
+        >
+          {NO_DATA}
+        </span>
+      );
+    }
+
     const valueComponent = (
       <span className={
         isNumberValue
@@ -175,8 +193,11 @@ const CompanyCard = ({
                   （以前は gap-x-1 のみで「詳しく見る」と接触して窮屈だった） */}
               <div className="text-left md:text-right w-28 pr-4">
                 <p className="text-sm text-muted-foreground">従業員数</p>
-                <p className="text-base font-semibold text-foreground">{typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : `${company.employees}人`}</p>
-                <p className="text-sm text-muted-foreground">設立: {company.founded}年</p>
+                {/* 【空欄の扱い】スプシが空だと従業員数は "?"、設立年は 0 になる。
+                    そのまま出すと「?人」「設立: 0年」という誤情報に見えるため、
+                    lib/format.ts で単位ごと "-" に置き換える。 */}
+                <p className="text-base font-semibold text-foreground">{formatWithUnit(company.employees, "人")}</p>
+                <p className="text-sm text-muted-foreground">設立: {formatYear(company.founded)}</p>
               </div>
               {/* 詳細ページへの導線: 塗りつぶしボタンを幅いっぱいに置き、★は下段に分離。
                   横並びで圧縮されていた従来より遷移が促進される。 */}
@@ -278,9 +299,21 @@ const CompanyCard = ({
                 <div>
                   <div>
                     <div className="text-[13px] text-muted-foreground">従業員数</div>
-                    <div className="text-sm font-semibold text-foreground">{company.employees.toLocaleString()}<span className="text-xs">人</span></div>
+                    {/* 単位「人」だけ小さい文字にしているため、単純な文字列連結ではなく
+                        値と単位を分けて受け取る。空欄なら単位が "" になり "-" だけが出る。 */}
+                    <div className="text-sm font-semibold text-foreground">
+                      {(() => {
+                        const { text, unit: u } = splitValueAndUnit(company.employees, "人")
+                        return (
+                          <>
+                            {text}
+                            {u && <span className="text-xs">{u}</span>}
+                          </>
+                        )
+                      })()}
+                    </div>
                   </div>
-                  <div className="text-[13px] text-muted-foreground mt-0.5">設立: {company.founded}年</div>
+                  <div className="text-[13px] text-muted-foreground mt-0.5">設立: {formatYear(company.founded)}</div>
                 </div>
               </div>
             </div>

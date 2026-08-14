@@ -6,6 +6,8 @@ import { TrendingUpIcon, Building2Icon, ArrowRightIcon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { fetchRankingDataServer } from "@/lib/sheets"
+// ランキングカードと同じ「空欄は - で表示する」ルールを共有する
+import { formatWithUnit, formatYear, formatYen } from "@/lib/format"
 
 async function getTopCompanies() {
   try {
@@ -83,13 +85,13 @@ export async function RankingPreview() {
                         <div className="mb-3">
                           <div className="text-sm text-muted-foreground mb-1">初任給（月額）</div>
                           <div className="text-3xl font-bold text-foreground">
-                            {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
+                            {formatYen(company.baseMonthly)}
                           </div>
                         </div>
                         <div className="mb-2">
                           <div className="text-sm text-muted-foreground mb-1">想定年収</div>
                           <div className="text-lg font-semibold text-muted-foreground">
-                            {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
+                            {formatYen(company.annualSalary)}
                           </div>
                         </div>
                       </div>
@@ -129,23 +131,25 @@ export async function RankingPreview() {
                             <div>
                               <div className="text-sm text-muted-foreground">初任給（月額）</div>
                               <div className="text-2xl font-bold text-primary">
-                                {typeof company.baseMonthly === 'number' ? `¥${company.baseMonthly.toLocaleString()}` : company.baseMonthly || '-'}
+                                {formatYen(company.baseMonthly)}
                               </div>
                               <div className="mt-4">
                                 <div className="text-xs text-muted-foreground">想定年収</div>
                                 <div className="text-xs font-semibold text-foreground">
-                                  {typeof company.annualSalary === 'number' ? `¥${company.annualSalary.toLocaleString()}` : company.annualSalary || '-'}
+                                  {formatYen(company.annualSalary)}
                                 </div>
                               </div>
                             </div>
                             <div>
                               <div>
                                 <div className="text-xs text-muted-foreground">従業員数</div>
+                                {/* 空欄時の内部値は従業員数が "?"、設立年が 0。
+                                    そのままだと「?」「設立: 0年」になるので "-" に寄せる */}
                                 <div className="text-xs font-semibold text-foreground">
-                                  {typeof company.employees === 'number' ? `${company.employees.toLocaleString()}人` : company.employees || '-'}
+                                  {formatWithUnit(company.employees, "人")}
                                 </div>
                               </div>
-                              <div className="text-xs text-muted-foreground mt-0.5">設立: {company.founded}年</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">設立: {formatYear(company.founded)}</div>
                             </div>
                           </div>
                         </div>
