@@ -15,6 +15,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Metadata } from "next"
 import React from "react"
+import { rankTier, RANK_BADGE, RANK_LOGO, RANK_NAME } from "@/lib/rank-tier"
 
 type Props = {
   params: { slug: string }
@@ -143,7 +144,11 @@ export default async function ListPage({ params }: Props) {
                       <Card className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4 md:p-5">
                           <div className="flex items-start gap-3 md:gap-4">
-                            <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-base flex-shrink-0">
+                            {/* 順位。上位ほど大きく見せる。サイズは lib/rank-tier.ts で
+                                一元管理し、他のランキング表示と揃えている。 */}
+                            <div
+                              className={`flex items-center justify-center rounded-full font-bold tabular flex-shrink-0 ${RANK_BADGE[rankTier(i + 1)]}`}
+                            >
                               {i + 1}
                             </div>
                             <CompanyLogo
@@ -151,11 +156,11 @@ export default async function ListPage({ params }: Props) {
                               domain={c.domain}
                               company={c.company}
                               size={48}
-                              className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-contain border bg-card flex-shrink-0"
+                              className={`rounded-lg object-contain border bg-card flex-shrink-0 ${RANK_LOGO[rankTier(i + 1)]}`}
                             />
                             <div className="flex-grow min-w-0">
                               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <h2 className="text-base md:text-lg font-bold leading-tight">
+                                <h2 className={`font-bold leading-tight ${RANK_NAME[rankTier(i + 1)]}`}>
                                   <Link href={`/companies/${c.id}`} className="hover:text-primary transition-colors">
                                     {c.company}
                                   </Link>

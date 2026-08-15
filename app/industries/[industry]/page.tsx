@@ -22,6 +22,7 @@ import Link from "next/link"
 import { Metadata } from "next"
 import { AdBanner } from "@/components/ad-banner"
 import { ChevronLeft, TrendingUp, Trophy } from "lucide-react"
+import { rankTier, RANK_BADGE, RANK_LOGO, RANK_NAME } from "@/lib/rank-tier"
 
 type Props = { params: { industry: string } }
 
@@ -304,8 +305,11 @@ export default async function IndustryPage({ params }: Props) {
                   <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 md:p-5">
                       <div className="flex items-center gap-4">
-                        {/* 順位 */}
-                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-base shrink-0">
+                        {/* 順位。上位ほど大きく見せる。サイズは lib/rank-tier.ts で
+                            一元管理し、指標別ランキングと見た目を揃えている。 */}
+                        <div
+                          className={`flex items-center justify-center rounded-full font-bold tabular shrink-0 ${RANK_BADGE[rankTier(index + 1)]}`}
+                        >
                           {index + 1}
                         </div>
 
@@ -314,13 +318,15 @@ export default async function IndustryPage({ params }: Props) {
                           logo={company.logo}
                           domain={company.domain}
                           company={company.company}
-                          size={44}
-                          className="w-11 h-11 rounded-lg object-contain shrink-0"
+                          size={48}
+                          className={`rounded-lg object-contain shrink-0 ${RANK_LOGO[rankTier(index + 1)]}`}
                         />
 
                         {/* 企業名・業界 */}
                         <div className="flex-1 min-w-0">
-                          <h2 className="text-base font-bold text-foreground truncate">{company.company}</h2>
+                          <h2 className={`font-bold text-foreground truncate ${RANK_NAME[rankTier(index + 1)]}`}>
+                            {company.company}
+                          </h2>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {company.industry.split("/").map((ind, i) => (
                               <Badge key={i} variant="secondary" className="text-[11px] px-1.5">{ind.trim()}</Badge>

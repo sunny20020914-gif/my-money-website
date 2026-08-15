@@ -10,6 +10,7 @@ import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 import { updatedAt } from "@/lib/updated-at"
 import { getMetricCopy } from "@/lib/metric-ranking-copy"
 import { METRIC_RANKING_LINKS } from "@/lib/metric-ranking-links"
+import { rankTier, RANK_BADGE, RANK_LOGO, RANK_NAME, RANK_VALUE, RANK_CARD } from "@/lib/rank-tier"
 import type { MetricRanking } from "@/lib/metric-rankings"
 
 /**
@@ -200,24 +201,13 @@ export function MetricRankingView({
                 <li>
                   <Link
                     href={`/companies/${e.company.id}`}
-                    className={`group block rounded-2xl border transition-colors hover:bg-accent hover:border-primary/40 ${
-                      // 上位10社はカードを大きく、枠も強めにして目立たせる
-                      e.rank <= 10
-                        ? "bg-card p-5 md:p-6 border-primary/25 shadow-sm"
-                        : "bg-card p-4 md:p-5"
-                    }`}
+                    className={`group block rounded-2xl border bg-card transition-colors hover:bg-accent hover:border-primary/40 ${RANK_CARD[rankTier(e.rank)]}`}
                   >
-                  <span className="flex items-center gap-3 md:gap-5">
-                    {/* 【順位】上位ほど大きく見せる。
-                        1〜3位は塗りつぶし、4〜10位は淡い塗り、それ以降は控えめ。 */}
+                  <span className="flex items-center gap-3 md:gap-4">
+                    {/* 【順位】上位ほど大きく見せる。サイズは lib/rank-tier.ts で一元管理し、
+                        業界別ページ・条件別一覧とも見た目を揃えている。 */}
                     <span
-                      className={`flex shrink-0 items-center justify-center rounded-full font-bold tabular ${
-                        e.rank <= 3
-                          ? "h-14 w-14 md:h-16 md:w-16 text-2xl md:text-3xl bg-primary text-primary-foreground shadow"
-                          : e.rank <= 10
-                            ? "h-12 w-12 md:h-14 md:w-14 text-lg md:text-2xl bg-primary/15 text-primary"
-                            : "h-9 w-9 md:h-11 md:w-11 text-sm md:text-lg bg-muted text-muted-foreground"
-                      }`}
+                      className={`flex shrink-0 items-center justify-center rounded-full font-bold tabular ${RANK_BADGE[rankTier(e.rank)]}`}
                     >
                       {e.rank}
                     </span>
@@ -225,18 +215,14 @@ export function MetricRankingView({
                       logo={e.company.logo}
                       domain={e.company.domain}
                       company={e.company.company}
-                      size={56}
-                      className={`shrink-0 rounded-lg object-contain ${
-                        e.rank <= 10 ? "h-12 w-12 md:h-14 md:w-14" : "h-9 w-9 md:h-12 md:w-12"
-                      }`}
+                      size={48}
+                      className={`shrink-0 rounded-lg object-contain ${RANK_LOGO[rankTier(e.rank)]}`}
                     />
 
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 min-w-0">
                         <span
-                          className={`truncate font-bold text-foreground ${
-                            e.rank <= 10 ? "text-lg md:text-2xl" : "text-[15px] md:text-lg"
-                          }`}
+                          className={`truncate font-bold text-foreground ${RANK_NAME[rankTier(e.rank)]}`}
                         >
                           {e.company.company}
                         </span>
@@ -284,9 +270,7 @@ export function MetricRankingView({
                           {def.valueLabel}
                         </span>
                         <span
-                          className={`block font-bold text-primary tabular ${
-                            e.rank <= 10 ? "text-2xl md:text-3xl" : "text-lg md:text-2xl"
-                          }`}
+                          className={`block font-bold text-primary tabular ${RANK_VALUE[rankTier(e.rank)]}`}
                         >
                           {e.display}
                         </span>
@@ -306,9 +290,7 @@ export function MetricRankingView({
                             {p.label}
                           </span>
                           <span
-                            className={`block font-bold text-primary tabular ${
-                              e.rank <= 10 ? "text-2xl md:text-4xl" : "text-xl md:text-2xl"
-                            }`}
+                            className={`block font-bold text-primary tabular ${RANK_VALUE[rankTier(e.rank)]}`}
                           >
                             {p.value}
                           </span>
