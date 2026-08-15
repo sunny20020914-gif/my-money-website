@@ -273,7 +273,7 @@ export function MetricRankingView({
                           {def.valueLabel}
                         </span>
                         <span
-                          className="block text-lg md:text-2xl font-bold text-primary tabular"
+                          className="block text-lg md:text-xl font-bold text-primary tabular"
                         >
                           {e.display}
                         </span>
@@ -293,7 +293,7 @@ export function MetricRankingView({
                             {p.label}
                           </span>
                           <span
-                            className="block text-2xl md:text-3xl font-bold text-primary tabular"
+                            className="block text-xl md:text-2xl font-bold text-primary tabular"
                           >
                             {p.value}
                           </span>

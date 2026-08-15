@@ -43,6 +43,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                {/* 額面別の手取りページ41本への入口。全ページのフッターに置くことで
+                    どこからでも到達でき、クローラーにも発見されやすくなる */}
+                <Link href="/take-home" className="text-muted-foreground hover:text-foreground transition-colors">
+                  手取り早見表
+                </Link>
+              </li>
+              <li>
                 <Link href="/articles" className="text-muted-foreground hover:text-foreground transition-colors">
                   就活記事
                 </Link>

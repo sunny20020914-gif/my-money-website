@@ -4,6 +4,7 @@ import "./globals.css"
 import Script from "next/script"
 import { Analytics } from "@vercel/analytics/react"
 import { Toaster } from "@/components/toaster"
+import { AnchorAd } from "@/components/anchor-ad"
 import { FISCAL_YEAR, SITE_NAME, SITE_URL } from "@/lib/config"
 
 export const metadata: Metadata = {
@@ -119,6 +120,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          {/* 【視認可能率】画面下部固定のアンカー広告。
+              スクロール位置に関係なく見えるため視認可能率がほぼ100%になり、
+              サイト全体の平均インプレッション単価を押し上げる。
+              閉じるボタン付き・本文と重ならない実装にしている（ポリシー要件）。 */}
+          <AnchorAd />
           <Toaster />
         </ThemeProvider>
         <Analytics />

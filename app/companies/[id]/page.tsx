@@ -41,6 +41,7 @@ import { buildFinancialInsight, buildBusinessModelInsight } from "@/lib/financia
 import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { updatedAt } from "@/lib/updated-at"
 import { formatWithUnit, formatYear, isBlankValue } from "@/lib/format"
+import { nearestTakeHomeAmount, manLabel } from "@/lib/take-home"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
@@ -149,6 +150,9 @@ export default async function CompanyPage({ params }: Props) {
   const neighbors = getRankNeighbors(allCompanies, company)
   const compareCandidates = getCompareCandidates(allCompanies, company, 3)
   const primaryIndustry = company.industry.split("/")[0]?.trim() || null
+  // 額面別の手取りページのうち、この企業の初任給に最も近いもの。
+  // 該当が無ければ（20万未満・60万超）リンクを出さない。
+  const nearestTakeHome = nearestTakeHomeAmount(company.baseMonthly)
   // 【ISR課金】日単位に丸めることで、同じ日のうちは再生成しても出力が
   // 完全に一致し、キャッシュ書き込みが発生しない（lib/updated-at.ts 参照）
   const lastUpdated = updatedAt()
@@ -562,14 +566,25 @@ export default async function CompanyPage({ params }: Props) {
                     賞与・残業代・各種手当は含まない月給ベースの概算です。
                   </p>
 
-                  <p className="mt-3">
+                  <div className="mt-3 flex flex-col gap-2">
+                    {/* 【内部リンク】額面が近い手取りページへ送る。
+                        「初任給30万 手取り」系の検索需要を受け止めるページで、
+                        金融ジャンルとして広告単価も高い。 */}
+                    {nearestTakeHome !== null && (
+                      <Link
+                        href={`/take-home/${nearestTakeHome}`}
+                        className="text-sm font-semibold text-primary hover:underline"
+                      >
+                        額面{manLabel(nearestTakeHome)}の手取りをもっと詳しく見る →
+                      </Link>
+                    )}
                     <Link
                       href={`/simulator?monthly=${netSalary.grossMonthly}&name=${encodeURIComponent(company.company)}`}
                       className="text-sm font-semibold text-primary hover:underline"
                     >
                       扶養人数を変えて手取りを詳しく計算する →
                     </Link>
-                  </p>
+                  </div>
                 </CardContent>
               </Card>
             </section>
@@ -582,14 +597,14 @@ export default async function CompanyPage({ params }: Props) {
           {hasFinancialSection && (
             <section className="space-y-6">
               <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                {company.company}の平均年収と業績データ
+                {company.company}の平均年収はいくら？
               </h2>
 
               {/* 初任給 → 平均年収の伸び */}
               {salaryGrowth && (
                 <div className="space-y-4">
-                  <h3 className="text-lg md:text-xl font-bold text-foreground">
-                    初任給から平均年収まで、給与はどれだけ伸びるか
+                  <h3 className="jp-heading text-lg md:text-xl font-bold text-foreground">
+                    {company.company}の給料はどれくらい上がる？
                   </h3>
                   <div className="grid grid-cols-3 gap-2 md:gap-3">
                     <div className="rounded-xl border bg-card p-3 md:p-4 text-center">
@@ -688,7 +703,9 @@ export default async function CompanyPage({ params }: Props) {
               {/* 財務ハイライト */}
               {financialMetrics.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-bold text-foreground">業績データ</h3>
+                  <h3 className="jp-heading text-lg font-bold text-foreground">
+                    {company.company}の業績は？売上高と利益率
+                  </h3>
                   <Card className="py-0 gap-0">
                     <CardContent className="p-4 md:p-5">
                       <table className="w-full text-sm md:text-[15px]">

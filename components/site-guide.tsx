@@ -83,10 +83,16 @@ const ENTRIES = [
     desc: "月30万円以上、平均年収1,000万円超など、条件別のまとめ。",
   },
   {
-    href: "/simulator",
+    href: "/take-home",
     icon: CalculatorIcon,
+    title: "手取り早見表",
+    desc: "額面20万〜60万円の手取りを1万円刻みで一覧。内訳も確認できます。",
+  },
+  {
+    href: "/simulator",
+    icon: SlidersHorizontalIcon,
     title: "手取りシミュレーター",
-    desc: "額面の初任給から、税金・社会保険料を引いた手取りを計算。",
+    desc: "扶養人数など条件を変えて、自分に合わせた手取りを計算。",
   },
   {
     href: "/articles",

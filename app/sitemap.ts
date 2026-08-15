@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 import { fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
 import { buildAllListDefinitions } from '@/lib/list-definitions'
 import { availableMetricRankingPaths } from './ranking/render-metric-ranking'
+import { TAKE_HOME_AMOUNTS } from '@/lib/take-home'
 import { SITE_URL, TARGET_GRADS } from '@/lib/config'
 
 /**
@@ -47,6 +48,8 @@ export default async function sitemap({
       { route: '/articles', priority: 0.95, freq: 'daily' },
       { route: '/lists', priority: 0.85, freq: 'weekly' },
       { route: '/simulator', priority: 0.8, freq: 'monthly' },
+      // 【ロングテール】「初任給30万 手取り」系の検索を受け止めるハブ
+      { route: '/take-home', priority: 0.9, freq: 'monthly' },
       { route: '/about', priority: 0.5, freq: 'monthly' },
       { route: '/privacy', priority: 0.3, freq: 'monthly' },
       { route: '/terms', priority: 0.3, freq: 'monthly' },
@@ -87,15 +90,27 @@ export default async function sitemap({
     }))
   }
 
-  // ---- 2: 記事ページ（唯一の独自コンテンツ・実際の公開日を持つ） ----
+  // ---- 2: 記事ページ＋額面別の手取りページ ----
   if (id === 2) {
     const articles = await fetchArticleDataServer()
-    return articles.map((article) => ({
+    const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
       url: `${baseUrl}/articles/${article.id}`,
       lastModified: new Date(article.publishedAt),
       changeFrequency: 'weekly' as const,
       priority: 1.0,
     }))
+
+    // 【ロングテール】額面1万円刻みの手取りページ（20万〜60万＝41本）。
+    // 「初任給30万 手取り」のような検索は数が多く、金融ジャンルなので
+    // 広告単価も高い。計算結果は税率が変わらない限り同じなので
+    // changeFrequency は monthly で十分。
+    const takeHomeRoutes: MetadataRoute.Sitemap = TAKE_HOME_AMOUNTS.map((amount) => ({
+      url: `${baseUrl}/take-home/${amount}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    }))
+
+    return [...articleRoutes, ...takeHomeRoutes]
   }
 
   // ---- 3: 業界ページ・条件一覧ページ ----
