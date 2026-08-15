@@ -949,6 +949,15 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
+          {/* 広告3/3: 前後の企業を見た後、業界内比較に進む前の区切り。
+              広告1（給与の直後）・広告2（FAQの直後）とは十分に離れており、
+              本文を分断しない位置。ここまで読む読者は関心が高く可視性も見込める。 */}
+          {industryComparisons.length > 0 && (
+            <div>
+              <DynamicAdBanner />
+            </div>
+          )}
+
           {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
           {industryComparisons.length > 0 && (
             <section className="space-y-4">

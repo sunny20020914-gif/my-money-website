@@ -1,5 +1,6 @@
+import React from "react"
 import Link from "next/link"
-import { ChevronRightIcon, ArrowRightIcon } from "lucide-react"
+import { ChevronRightIcon } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { CompanyLogo } from "@/components/company-logo"
@@ -176,7 +177,16 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
                 項目を1つ増やしても横に伸びるだけでレイアウトは崩れない。 */}
             <ol className="space-y-2.5">
               {entries.map((e, i) => (
-                <li key={`${e.company.id}-${i}`}>
+                <React.Fragment key={`${e.company.id}-${i}`}>
+                {/* 【広告】15社ごとに1枚。順位を追って読み進める動線の途中に置くため
+                    可視性が高い。71社なら4枚で、本文の流れを断ち切る密度ではない。
+                    ol の直下は li である必要があるため li で包んでいる。 */}
+                {i > 0 && i % 15 === 0 && (
+                  <li className="list-none py-2">
+                    <AdBanner />
+                  </li>
+                )}
+                <li>
                   <Link
                     href={`/companies/${e.company.id}`}
                     className="group flex items-center gap-3 md:gap-5 rounded-2xl border bg-card p-4 md:p-5 hover:bg-accent hover:border-primary/40 transition-colors"
@@ -238,6 +248,7 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
                     <ChevronRightIcon className="hidden md:block h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                   </Link>
                 </li>
+                </React.Fragment>
               ))}
             </ol>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">{def.note}</p>
@@ -313,6 +324,11 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
               </div>
             </section>
           )}
+
+          {/* 【広告】解説とFAQを読み終えた区切り。本文を分断しない位置に置く */}
+          <div className="mt-10">
+            <AdBanner />
+          </div>
 
           {/* --- 関連リンク --- */}
           <section className="mt-10 border-t pt-6">

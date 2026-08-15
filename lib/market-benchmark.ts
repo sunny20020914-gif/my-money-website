@@ -76,6 +76,12 @@ export function buildMarketComparison(
  *
  * @param opts 掲載データの集計値
  */
+/** リード文の1ブロック。小見出しと本文の対で返す */
+export interface LeadBlock {
+  heading: string
+  body: string
+}
+
 export function buildRankingLead(opts: {
   listedCount: number
   avgMonthly: number | null
@@ -87,54 +93,65 @@ export function buildRankingLead(opts: {
   topIndustries: { industry: string; avgMonthly: number }[]
   fiscalYear: number
   gradLabel: string
-}): string[] {
+}): LeadBlock[] {
   const b = MARKET_BENCHMARK
-  const paragraphs: string[] = []
+  const blocks: LeadBlock[] = []
+
+  // 【構成】小見出しを付けて、読み飛ばしても要点が拾えるようにする。
+  // 文章だけを並べると長さに圧倒されて読まれない。
+  // 見出しに結論を書き、本文は補足に徹する形にした。
+  // また各段落は以前より2〜3割短くしている（合計約720字→約500字）。
 
   // ① 世間の相場から入る（「初任給の相場を知りたい」層をまず受け止める）
-  paragraphs.push(
-    `${b.surveyName}によると、${b.yearLabel}の大学卒の平均初任給は${yen(b.universityGraduate)}でした。` +
-      `前年比+${b.universityGraduateYoY}%と大きく伸び、初めて26万円台に到達しています。` +
+  blocks.push({
+    heading: `大卒の平均初任給は${yen(b.universityGraduate)}`,
+    body:
+      `${b.surveyName}によると、${b.yearLabel}の大学卒の平均初任給は前年比+${b.universityGraduateYoY}%と大きく伸び、初めて26万円台に到達しました。` +
       `企業規模による差も大きく、従業員1,000人以上では${yen(b.largeCompany)}、10〜99人では${yen(b.smallCompany)}です。`,
-  )
+  })
 
   // ② このページが何のデータなのかを明示（母集団の偏りを隠さない）
   if (opts.avgMonthly !== null) {
-    let p =
-      `このページでは、その水準を大きく上回る「初任給の高い企業」を${opts.listedCount}社掲載しています。` +
-      `掲載企業の平均は月額${yen(opts.avgMonthly)}`
-    if (opts.medianMonthly !== null) p += `（中央値${yen(opts.medianMonthly)}）`
-    p += `で、全国平均の約${Math.round((opts.avgMonthly / b.universityGraduate) * 10) / 10}倍にあたります。`
+    const ratio = Math.round((opts.avgMonthly / b.universityGraduate) * 10) / 10
+    let body =
+      `掲載${opts.listedCount}社の平均は月額${yen(opts.avgMonthly)}`
+    if (opts.medianMonthly !== null) body += `（中央値${yen(opts.medianMonthly)}）`
+    body += `で、全国平均の約${ratio}倍にあたります。`
     if (opts.topCompany && opts.topMonthly !== null) {
-      p += `最も高いのは${opts.topCompany}の${yen(opts.topMonthly)}です。`
+      body += `最高額は${opts.topCompany}の${yen(opts.topMonthly)}。`
     }
-    p += `月30万円以上は${opts.over30}社、40万円以上は${opts.over40}社あります。`
-    paragraphs.push(p)
+    body += `月30万円以上が${opts.over30}社、40万円以上が${opts.over40}社です。`
+    blocks.push({
+      heading: `このページは「初任給が高い企業」に絞ったデータ`,
+      body,
+    })
   }
 
   // ③ 高い企業に共通する特徴（就活生が最も知りたい「なぜ」に答える）
   if (opts.topIndustries.length >= 2) {
     const inds = opts.topIndustries
       .slice(0, 3)
-      .map((r) => `${r.industry}（月額${yen(r.avgMonthly)}）`)
+      .map((r) => `${r.industry}（${yen(r.avgMonthly)}）`)
       .join("、")
-    paragraphs.push(
-      `初任給が高い企業には共通点があります。当サイトのデータで平均が高いのは${inds}の順で、` +
-        `いずれも設備よりも人の働きが直接収益を生む業界です。社員一人あたりが生み出す利益が大きいため、` +
-        `優秀な人材の確保が業績に直結し、給与水準が高くなります。` +
-        `反対に従業員数の多い大企業は、全社員の給与体系との整合が必要で新卒だけを大幅に優遇しにくく、初任給は横並びになりやすい傾向があります。`,
-    )
+    blocks.push({
+      heading: "初任給が高いのは、人が直接稼ぐ業界",
+      body:
+        `平均が高いのは${inds}の順です。いずれも設備より人の働きが収益を生む業界で、` +
+        `社員一人あたりの利益が大きいぶん、人材確保が業績に直結します。` +
+        `逆に従業員数の多い大企業は全社員の給与体系との整合が必要で、新卒だけを優遇しにくく横並びになりがちです。`,
+    })
   }
 
   // ④ 読み方の注意（額面と実態のギャップ＝離脱を防ぎ、滞在時間を伸ばす）
-  paragraphs.push(
-    `ただし、初任給の額面だけで比較するのは危険です。提示額に固定残業代や住宅手当が含まれていることがあり、` +
-      `同じ30万円でも実質的な条件は企業ごとに異なります。また初任給が高くても入社後の昇給が緩やかな企業もあります。` +
-      `当サイトでは有価証券報告書をもとに全社員の平均年収も掲載しているため、各企業の詳細ページで` +
-      `手取り額と入社後の伸びまで確認できます。${opts.gradLabel}の企業選びにご活用ください。`,
-  )
+  blocks.push({
+    heading: "額面だけで比べると判断を誤る",
+    body:
+      `提示額に固定残業代や住宅手当が含まれることがあり、同じ30万円でも実質的な条件は異なります。` +
+      `初任給が高くても昇給が緩やかな企業もあります。` +
+      `当サイトは有価証券報告書をもとに全社員の平均年収も掲載しているため、各企業のページで手取りと入社後の伸びまで確認できます。`,
+  })
 
-  return paragraphs
+  return blocks
 }
 
 /**

@@ -468,7 +468,7 @@ export function RankingPageClient({
   // 【SEO】記事型のリード文。検索上位の就活メディアはいずれも表の前に
   // 「相場 → このページのデータ → 高い企業の特徴 → 注意点」の導入を置いている。
   // 初任給ランキング（月額）でのみ表示し、年収ランキングでは文脈が変わるため出さない。
-  const leadParagraphs = useMemo(
+  const leadBlocks = useMemo(
     () =>
       summary && selectedRanking === "monthly"
         ? buildRankingLead({
@@ -552,13 +552,15 @@ export function RankingPageClient({
                   </span>
                 </h1>
               )}
-              {/* jp-lead で文節改行。以前は「初任給の高い企／業を」のように
-                  単語の途中で折り返されて読みにくかった。
-                  スマホでは2文を明示的に分けて、1文ずつ読める形にする。 */}
+              {/* 【行数】以前は無条件の <br /> で2文を分けたうえに
+                  text-wrap: balance が両方の塊を均等割りしていたため、
+                  スマホで4行になり折り返しが多すぎた。
+                  <br /> をPC専用にし、スマホでは端まで詰めて3行に収める。
+                  文言も「手取り額」→「手取り」等でわずかに短縮している。 */}
               <p className="jp-lead text-[17px] md:text-xl text-muted-foreground leading-[1.85] max-w-3xl mx-auto">
                 {TARGET_GRAD_LABEL}向けに、初任給の高い企業を厳選して掲載。
-                <br />
-                手取り額や入社後の年収の伸びまで確認できます。
+                <br className="hidden md:inline" />
+                手取りや入社後の年収の伸びまで確認できます。
               </p>
 
               {/* 【E-E-A-T】更新日・出典・掲載社数を横並びで明示する。
@@ -601,21 +603,21 @@ export function RankingPageClient({
                 text-[17px] のような任意値は globals.css のスマホ用底上げ（text-base等）の
                 対象外になるため、ここで直接指定している。
                 段落間の余白（space-y-5）も広めに取り、文章の塊が見分けやすいようにする。 */}
-            {leadParagraphs.length > 0 && (
+            {leadBlocks.length > 0 && (
               <section className="mb-8 rounded-2xl border bg-card p-5 md:p-7 border-l-4 border-l-primary/50">
-                <div className="space-y-5 text-left">
-                  {leadParagraphs.map((p, i) => (
-                    <p
-                      key={i}
-                      className={
-                        // 冒頭はリード段落として一段大きく見せる
-                        i === 0
-                          ? "text-[17px] md:text-lg leading-[2.1] text-foreground"
-                          : "text-[16px] md:text-base leading-[2.1] text-muted-foreground"
-                      }
-                    >
-                      {highlightNumbers(p)}
-                    </p>
+                <div className="space-y-6 text-left">
+                  {leadBlocks.map((block, i) => (
+                    <div key={i}>
+                      {/* 小見出しに結論を書き、本文は補足に徹する。
+                          文章だけを並べると長さに圧倒されて読まれないため、
+                          読み飛ばしても要点が拾える構成にしている。 */}
+                      <h2 className="text-[17px] md:text-lg font-bold text-foreground mb-2 leading-snug">
+                        {highlightNumbers(block.heading)}
+                      </h2>
+                      <p className="text-[16px] md:text-base leading-[2.05] text-muted-foreground">
+                        {highlightNumbers(block.body)}
+                      </p>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -854,11 +856,12 @@ export function RankingPageClient({
                       index={index}
                       selectedRanking={selectedRanking}
                     />
-                    {/* 【広告の間隔】以前は6枚ごとだったため157社で26枚の広告枠が
-                        同時にマウントされ、1回の表示で26回 adsbygoogle.push() が走っていた。
-                        コンテンツ量に対して広告が過剰だとAdSense側の評価にも不利なため
-                        12枚ごとに変更した。可視性が上がる分、収益は落ちにくい。 */}
-                    {(index + 1) % 12 === 0 && <AdBanner />}
+                    {/* 【広告の間隔】6枚ごと（157社で26枚）→ 12枚ごと と絞りすぎたため
+                        収益が落ちた。8枚ごとに戻す。
+                        初期表示は50社なので広告は6枚。全件展開しても20枚で、
+                        26枚だった頃より軽い。「もっと見る」で追加された分にも
+                        同じ間隔で入るので、読み進めた読者ほど広告に触れる。 */}
+                    {(index + 1) % 8 === 0 && <AdBanner />}
                   </React.Fragment>
                 ))}
 
