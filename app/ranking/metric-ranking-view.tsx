@@ -363,11 +363,12 @@ export function MetricRankingView({
               <Button asChild variant="outline" className="bg-transparent">
                 <Link href="/ranking/annual">想定年収ランキング</Link>
               </Button>
-              {METRIC_RANKING_ORDER.filter((s) => s !== def.slug).map((slug) => (
-                <Button key={slug} asChild variant="outline" className="bg-transparent">
-                  <Link href={METRIC_RANKINGS[slug].path}>
-                    {METRIC_RANKINGS[slug].shortLabel}ランキング
-                  </Link>
+              {/* 上のナビと同じく軽量なリンク定義だけを見る。
+                  集計ロジックを持つ METRIC_RANKINGS は参照しない
+                  （balanced のように専用ロジックで作るページを引けないため）。 */}
+              {METRIC_RANKING_LINKS.filter((l) => l.slug !== def.slug).map((l) => (
+                <Button key={l.slug} asChild variant="outline" className="bg-transparent">
+                  <Link href={l.path}>{l.shortLabel}ランキング</Link>
                 </Button>
               ))}
               <Button asChild variant="outline" className="bg-transparent">
