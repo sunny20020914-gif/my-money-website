@@ -10,7 +10,7 @@ import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 import { updatedAt } from "@/lib/updated-at"
 import { getMetricCopy } from "@/lib/metric-ranking-copy"
 import { METRIC_RANKING_LINKS } from "@/lib/metric-ranking-links"
-import { rankTier, RANK_BADGE, RANK_LOGO, RANK_NAME, RANK_VALUE, RANK_CARD } from "@/lib/rank-tier"
+import { rankTier, RANK_BADGE } from "@/lib/rank-tier"
 import type { MetricRanking } from "@/lib/metric-rankings"
 
 /**
@@ -181,9 +181,12 @@ export function MetricRankingView({
             <h2 className="text-xl md:text-2xl font-bold mb-4">
               {def.valueLabel}ランキング（{count}社）
             </h2>
-            {/* 【カードの余白と情報量】
-                PC版で行が詰まって見えたため、パディング・順位バッジ・ロゴ・
-                社名・数値をすべて一段大きくした。
+            {/* 【カードの大きさは一定にする】
+                順位に応じて変えるのは順位バッジだけ。
+                一時期カードの余白やロゴ・社名まで順位に連動させたが、
+                11位以降が小さくなって余白が詰まり窮屈な見た目になった。
+                上位を目立たせたいのであって、下位を貧相に見せたいわけではない。
+
                 補助データはスマホでは1行のテキスト、PCでは項目ごとに
                 ラベルと値を縦に積んだ塊として並べる。
                 項目を1つ増やしても横に伸びるだけでレイアウトは崩れない。 */}
@@ -201,7 +204,7 @@ export function MetricRankingView({
                 <li>
                   <Link
                     href={`/companies/${e.company.id}`}
-                    className={`group block rounded-2xl border bg-card transition-colors hover:bg-accent hover:border-primary/40 ${RANK_CARD[rankTier(e.rank)]}`}
+                    className="group block rounded-2xl border bg-card p-4 md:p-5 transition-colors hover:bg-accent hover:border-primary/40"
                   >
                   <span className="flex items-center gap-3 md:gap-4">
                     {/* 【順位】上位ほど大きく見せる。サイズは lib/rank-tier.ts で一元管理し、
@@ -216,13 +219,13 @@ export function MetricRankingView({
                       domain={e.company.domain}
                       company={e.company.company}
                       size={48}
-                      className={`shrink-0 rounded-lg object-contain ${RANK_LOGO[rankTier(e.rank)]}`}
+                      className="h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-lg object-contain"
                     />
 
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 min-w-0">
                         <span
-                          className={`truncate font-bold text-foreground ${RANK_NAME[rankTier(e.rank)]}`}
+                          className="truncate text-base md:text-lg font-bold text-foreground"
                         >
                           {e.company.company}
                         </span>
@@ -270,7 +273,7 @@ export function MetricRankingView({
                           {def.valueLabel}
                         </span>
                         <span
-                          className={`block font-bold text-primary tabular ${RANK_VALUE[rankTier(e.rank)]}`}
+                          className="block text-lg md:text-2xl font-bold text-primary tabular"
                         >
                           {e.display}
                         </span>
@@ -290,7 +293,7 @@ export function MetricRankingView({
                             {p.label}
                           </span>
                           <span
-                            className={`block font-bold text-primary tabular ${RANK_VALUE[rankTier(e.rank)]}`}
+                            className="block text-2xl md:text-3xl font-bold text-primary tabular"
                           >
                             {p.value}
                           </span>

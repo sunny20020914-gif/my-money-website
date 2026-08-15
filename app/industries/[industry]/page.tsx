@@ -22,7 +22,7 @@ import Link from "next/link"
 import { Metadata } from "next"
 import { AdBanner } from "@/components/ad-banner"
 import { ChevronLeft, TrendingUp, Trophy } from "lucide-react"
-import { rankTier, RANK_BADGE, RANK_LOGO, RANK_NAME } from "@/lib/rank-tier"
+import { rankTier, RANK_BADGE } from "@/lib/rank-tier"
 
 type Props = { params: { industry: string } }
 
@@ -319,12 +319,12 @@ export default async function IndustryPage({ params }: Props) {
                           domain={company.domain}
                           company={company.company}
                           size={48}
-                          className={`rounded-lg object-contain shrink-0 ${RANK_LOGO[rankTier(index + 1)]}`}
+                          className="w-11 h-11 rounded-lg object-contain shrink-0"
                         />
 
                         {/* 企業名・業界 */}
                         <div className="flex-1 min-w-0">
-                          <h2 className={`font-bold text-foreground truncate ${RANK_NAME[rankTier(index + 1)]}`}>
+                          <h2 className="text-base font-bold text-foreground truncate">
                             {company.company}
                           </h2>
                           <div className="flex flex-wrap gap-1 mt-1">

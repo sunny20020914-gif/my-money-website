@@ -15,7 +15,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Metadata } from "next"
 import React from "react"
-import { rankTier, RANK_BADGE, RANK_LOGO, RANK_NAME } from "@/lib/rank-tier"
+import { rankTier, RANK_BADGE } from "@/lib/rank-tier"
 
 type Props = {
   params: { slug: string }
@@ -156,11 +156,11 @@ export default async function ListPage({ params }: Props) {
                               domain={c.domain}
                               company={c.company}
                               size={48}
-                              className={`rounded-lg object-contain border bg-card flex-shrink-0 ${RANK_LOGO[rankTier(i + 1)]}`}
+                              className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-contain border bg-card flex-shrink-0"
                             />
                             <div className="flex-grow min-w-0">
                               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <h2 className={`font-bold leading-tight ${RANK_NAME[rankTier(i + 1)]}`}>
+                                <h2 className="text-base md:text-lg font-bold leading-tight">
                                   <Link href={`/companies/${c.id}`} className="hover:text-primary transition-colors">
                                     {c.company}
                                   </Link>
