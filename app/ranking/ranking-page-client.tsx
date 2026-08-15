@@ -611,7 +611,10 @@ export function RankingPageClient({
                       {/* 小見出しに結論を書き、本文は補足に徹する。
                           文章だけを並べると長さに圧倒されて読まれないため、
                           読み飛ばしても要点が拾える構成にしている。 */}
-                      <h2 className="text-[17px] md:text-lg font-bold text-foreground mb-2 leading-snug">
+                      {/* jp-heading: スマホでは端まで詰めて折り返す。
+                          h2の既定（text-wrap: balance）のままだと1行の文字数が
+                          削られ、鉤括弧の途中で割れて読みにくくなる。 */}
+                      <h2 className="jp-heading text-[17px] md:text-lg font-bold text-foreground mb-2 leading-snug">
                         {highlightNumbers(block.heading)}
                       </h2>
                       <p className="text-[16px] md:text-base leading-[2.05] text-muted-foreground">

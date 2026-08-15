@@ -193,17 +193,22 @@ export function buildBalancedRanking(all: CompanyData[]): BalancedRanking | null
   const values = scored.map((s) => s.score)
   const rankOf = (v: number) => values.filter((x) => x > v).length + 1
 
+  // 【表示の主役】両立スコアは当サイト独自の指標で検索需要がない。
+  // 読者が実際に知りたいのは金額そのものなので、初任給と平均年収を
+  // 大きく出し、スコアは小さく添えるだけにする（primary を使う）。
   const entries: RankedCompany[] = scored.map((s) => ({
     rank: rankOf(s.score),
     company: s.company,
     value: s.score,
     display: `${Math.round(s.score)}`,
-    extras: [
+    primary: [
       {
         label: "初任給（月額）",
         value: positive(s.company.baseMonthly) ? yen(s.company.baseMonthly as number) : "-",
       },
       { label: "平均年収", value: manYen(s.average / MAN) },
+    ],
+    extras: [
       {
         label: "上位％（初任給／年収）",
         value: `${Math.round(100 - s.starterPct)}％／${Math.round(100 - s.averagePct)}％`,

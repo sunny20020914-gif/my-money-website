@@ -200,13 +200,23 @@ export function MetricRankingView({
                 <li>
                   <Link
                     href={`/companies/${e.company.id}`}
-                    className="group flex items-center gap-3 md:gap-5 rounded-2xl border bg-card p-4 md:p-5 hover:bg-accent hover:border-primary/40 transition-colors"
+                    className={`group block rounded-2xl border transition-colors hover:bg-accent hover:border-primary/40 ${
+                      // 上位10社はカードを大きく、枠も強めにして目立たせる
+                      e.rank <= 10
+                        ? "bg-card p-5 md:p-6 border-primary/25 shadow-sm"
+                        : "bg-card p-4 md:p-5"
+                    }`}
                   >
+                  <span className="flex items-center gap-3 md:gap-5">
+                    {/* 【順位】上位ほど大きく見せる。
+                        1〜3位は塗りつぶし、4〜10位は淡い塗り、それ以降は控えめ。 */}
                     <span
-                      className={`flex h-9 w-9 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-full text-sm md:text-lg font-bold ${
+                      className={`flex shrink-0 items-center justify-center rounded-full font-bold tabular ${
                         e.rank <= 3
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
+                          ? "h-14 w-14 md:h-16 md:w-16 text-2xl md:text-3xl bg-primary text-primary-foreground shadow"
+                          : e.rank <= 10
+                            ? "h-12 w-12 md:h-14 md:w-14 text-lg md:text-2xl bg-primary/15 text-primary"
+                            : "h-9 w-9 md:h-11 md:w-11 text-sm md:text-lg bg-muted text-muted-foreground"
                       }`}
                     >
                       {e.rank}
@@ -215,13 +225,19 @@ export function MetricRankingView({
                       logo={e.company.logo}
                       domain={e.company.domain}
                       company={e.company.company}
-                      size={48}
-                      className="h-9 w-9 md:h-12 md:w-12 shrink-0 rounded-lg object-contain"
+                      size={56}
+                      className={`shrink-0 rounded-lg object-contain ${
+                        e.rank <= 10 ? "h-12 w-12 md:h-14 md:w-14" : "h-9 w-9 md:h-12 md:w-12"
+                      }`}
                     />
 
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="truncate text-[15px] md:text-lg font-bold text-foreground">
+                        <span
+                          className={`truncate font-bold text-foreground ${
+                            e.rank <= 10 ? "text-lg md:text-2xl" : "text-[15px] md:text-lg"
+                          }`}
+                        >
                           {e.company.company}
                         </span>
                         {/* 特筆すべき性質を持つ企業に付くラベル。
@@ -239,33 +255,77 @@ export function MetricRankingView({
                           {e.company.industry.split("/").map((s) => s.trim()).filter(Boolean).join("・")}
                         </span>
                       )}
-                      {/* スマホ用: 補助データを1行に畳む */}
-                      <span className="mt-1 block truncate text-xs text-muted-foreground md:hidden">
-                        {e.extras.map((x) => `${x.label} ${x.value}`).join(" ／ ")}
-                      </span>
+                      {/* スマホ用: 補助データを1行に畳む（primaryがある場合は下段に出すので不要） */}
+                      {!e.primary && (
+                        <span className="mt-1 block truncate text-xs text-muted-foreground md:hidden">
+                          {e.extras.map((x) => `${x.label} ${x.value}`).join(" ／ ")}
+                        </span>
+                      )}
                     </span>
 
                     {/* PC用: 補助データを項目ごとに縦積みで並べる */}
-                    <span className="hidden md:flex shrink-0 items-start gap-6">
-                      {e.extras.map((x) => (
-                        <span key={x.label} className="block whitespace-nowrap text-right">
-                          <span className="block text-xs text-muted-foreground">{x.label}</span>
-                          <span className="block text-sm font-semibold text-foreground tabular">
-                            {x.value}
+                    {!e.primary && (
+                      <span className="hidden md:flex shrink-0 items-start gap-6">
+                        {e.extras.map((x) => (
+                          <span key={x.label} className="block whitespace-nowrap text-right">
+                            <span className="block text-xs text-muted-foreground">{x.label}</span>
+                            <span className="block text-sm font-semibold text-foreground tabular">
+                              {x.value}
+                            </span>
+                          </span>
+                        ))}
+                      </span>
+                    )}
+
+                    {/* 並べ替えに使った値。primary がある場合は主役を譲るので出さない */}
+                    {!e.primary && (
+                      <span className="shrink-0 text-right">
+                        <span className="block text-xs text-muted-foreground md:mb-0.5">
+                          {def.valueLabel}
+                        </span>
+                        <span
+                          className={`block font-bold text-primary tabular ${
+                            e.rank <= 10 ? "text-2xl md:text-3xl" : "text-lg md:text-2xl"
+                          }`}
+                        >
+                          {e.display}
+                        </span>
+                      </span>
+                    )}
+                    <ChevronRightIcon className="hidden md:block h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </span>
+
+                  {/* 【主役の数値】検索需要のある指標（初任給・平均年収）を大きく出し、
+                      並べ替えに使った独自指標（両立スコア）は小さく添えるだけにする。
+                      スコアは誰も検索しないため、大きく出しても流入につながらない。 */}
+                  {e.primary && (
+                    <span className="mt-3 pt-3 border-t flex flex-wrap items-end gap-x-6 gap-y-3">
+                      {e.primary.map((p) => (
+                        <span key={p.label} className="block">
+                          <span className="block text-[11px] md:text-xs text-muted-foreground mb-0.5">
+                            {p.label}
+                          </span>
+                          <span
+                            className={`block font-bold text-primary tabular ${
+                              e.rank <= 10 ? "text-2xl md:text-4xl" : "text-xl md:text-2xl"
+                            }`}
+                          >
+                            {p.value}
                           </span>
                         </span>
                       ))}
-                    </span>
-
-                    <span className="shrink-0 text-right">
-                      <span className="block text-xs text-muted-foreground md:mb-0.5">
-                        {def.valueLabel}
+                      <span className="ml-auto text-right">
+                        {e.extras.map((x) => (
+                          <span key={x.label} className="block text-[11px] text-muted-foreground">
+                            {x.label} {x.value}
+                          </span>
+                        ))}
+                        <span className="block text-[11px] text-muted-foreground">
+                          {def.valueLabel} <span className="font-semibold tabular">{e.display}</span>
+                        </span>
                       </span>
-                      <span className="block text-lg md:text-2xl font-bold text-primary tabular">
-                        {e.display}
-                      </span>
                     </span>
-                    <ChevronRightIcon className="hidden md:block h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  )}
                   </Link>
                 </li>
                 </React.Fragment>

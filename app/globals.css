@@ -146,6 +146,24 @@
     }
   }
 
+  /* 【やや長い見出し用】
+     上の h1〜h4 は balance で行の長さを揃えているが、
+     20文字前後の見出しをスマホで表示すると1行の文字数が削られ、
+     「このページは「初任給が／高い企業」に絞ったデータ」のように
+     鉤括弧の途中で割れて読みにくくなる。
+     このクラスを付けた見出しだけ、スマホでは標準の折り返しに戻す。
+     （クラス指定は要素セレクタより優先されるので上書きできる） */
+  .jp-heading {
+    word-break: normal;
+    text-wrap: initial;
+  }
+  @media (min-width: 768px) {
+    .jp-heading {
+      word-break: auto-phrase;
+      text-wrap: balance;
+    }
+  }
+
   /* 【方針】本文の折り返しにはCSSで手を加えない。
      以前 p に text-wrap:pretty、.prose p に word-break:auto-phrase を入れていたが、
      日本語の長い文節が丸ごと次行に送られて右側が大きく空き、かえって読みにくかった。

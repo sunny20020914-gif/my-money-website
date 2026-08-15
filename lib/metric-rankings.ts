@@ -276,8 +276,23 @@ export interface RankedCompany {
   value: number
   display: string
   extras: { label: string; value: string }[]
-  /** 行に添える短いラベル（例: パレート最適の企業に付ける「他社に非劣」） */
+  /** 行に添える短いラベル（例: パレート最適の企業に付ける「両方で勝る企業なし」） */
   badge?: string
+  /**
+   * カード内で大きく見せる主要な数値。
+   *
+   * 【なぜ必要か】
+   * 通常のランキングでは並べ替えに使った値（平均年収・営業利益率など）が
+   * そのまま検索需要のある言葉なので、それを大きく出せばよい。
+   *
+   * しかし「両立スコア」は当サイトが独自に作った指標で、
+   * 誰も検索しない。スコアを大きく出しても検索からの流入にはつながらず、
+   * 読者にとっても金額そのものの方が判断材料になる。
+   *
+   * そこで primary が指定されている場合は、
+   * こちらを大きく、並べ替えに使った値（display）を小さく表示する。
+   */
+  primary?: { label: string; value: string }[]
 }
 
 export interface IndustryAverage {
