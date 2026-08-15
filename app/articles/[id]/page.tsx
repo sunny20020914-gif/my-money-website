@@ -12,14 +12,14 @@ import { Remarkable } from "remarkable"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FavoriteArticleButton } from "@/components/favorite-article-button"
-import { SITE_URL } from "@/lib/config"
+import { SITE_URL, REVALIDATE_STABLE } from "@/lib/config"
 
 type Props = {
   params: { id: string }
   searchParams: { [key: string]: string | string[] | undefined }
 }
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await fetchArticleById(params.id)

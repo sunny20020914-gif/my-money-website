@@ -5,10 +5,10 @@ import { CompanyLogo } from "@/components/company-logo"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { AdBanner } from "@/components/ad-banner"
-import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import type { Metadata } from "next"
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 /**
  * 【クロール対策】掲載企業の一覧ハブ。

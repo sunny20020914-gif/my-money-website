@@ -8,7 +8,7 @@ import {
   buildIndustryFaq,
   industryRank,
 } from "@/lib/industry-stats"
-import { FISCAL_YEAR } from "@/lib/config"
+import { FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { CompanyLogo } from "@/components/company-logo"
 import React from "react"
 import { notFound } from "next/navigation"
@@ -25,7 +25,7 @@ import { ChevronLeft, TrendingUp, Trophy } from "lucide-react"
 
 type Props = { params: { industry: string } }
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 /**
  * 【404対策・重要】

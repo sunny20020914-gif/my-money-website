@@ -1,9 +1,8 @@
 import { renderRankingPage } from "../render-ranking"
-import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL, REVALIDATE_FRESH } from "@/lib/config"
 import type { Metadata } from "next"
 
-// 1時間ごとに最新のデータをスプレッドシートから取得
-export const revalidate = 3600
+export const revalidate = REVALIDATE_FRESH
 
 /**
  * 【SEO・テーマ分散の解消】

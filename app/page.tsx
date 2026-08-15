@@ -1,4 +1,4 @@
-import { FISCAL_YEAR, SITE_NAME, SITE_URL } from "@/lib/config"
+import { FISCAL_YEAR, SITE_NAME, SITE_URL, REVALIDATE_FRESH } from "@/lib/config"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { RankingPreview } from "@/components/ranking-preview"
@@ -15,8 +15,7 @@ const DynamicAdBanner = dynamic(() => import("@/components/ad-banner").then((mod
   ssr: false,
 })
 
-// 1時間（3600秒）ごとにデータを再検証して更新する設定（ISR）
-export const revalidate = 3600
+export const revalidate = REVALIDATE_FRESH
 
 /**
  * 【重要・トップページがインデックスされなかった原因】

@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { fetchRankingDataServer, fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
+import { fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
 import { buildAllListDefinitions } from '@/lib/list-definitions'
 import { availableMetricRankingPaths } from './ranking/render-metric-ranking'
 import { SITE_URL, TARGET_GRADS } from '@/lib/config'
@@ -63,10 +63,10 @@ export default async function sitemap({
       priority: 0.9,
     }))
 
-    // 【重要】指標別ランキング（伸び率・平均年収・一人当たり営業利益・営業利益率）は、
-    // スプレッドシートのN〜Y列にデータが入っていないと notFound() になる。
+    // 【重要】指標別ランキングは、スプレッドシートのN〜Y列にデータが入っていないと
+    // noindexの代替画面になる（ビルドを落とさないため404にはしない）。
     // ページ側とまったく同じ判定を通ったパスだけを載せることで、
-    // 「sitemapには載っているが404」という不整合が起きないようにする。
+    // 「sitemapには載っているが中身が無い」という不整合を防ぐ。
     const metricPaths = await availableMetricRankingPaths()
     const metricRoutes: MetadataRoute.Sitemap = metricPaths.map((path) => ({
       url: `${baseUrl}${path}`,

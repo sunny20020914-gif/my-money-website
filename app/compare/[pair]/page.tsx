@@ -2,7 +2,8 @@ import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildComparePairs, parsePairSlug, pairSlug } from "@/lib/compare"
 import { getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
-import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
+import { updatedAt } from "@/lib/updated-at"
 import { notFound, redirect } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -19,7 +20,7 @@ type Props = {
   params: { pair: string }
 }
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 const num = (v: number | string | null | undefined): number | null =>
   typeof v === "number" && v > 0 ? v : null
@@ -80,7 +81,9 @@ export default async function ComparePage({ params }: Props) {
   const bNet = estimateNetSalary(b.baseMonthly)
   const aRank = getRankNeighbors(all, a).rank
   const bRank = getRankNeighbors(all, b).rank
-  const lastUpdated = new Date()
+  // 【ISR課金】日単位に丸めることで、同じ日のうちは再生成しても出力が
+  // 完全に一致し、キャッシュ書き込みが発生しない（lib/updated-at.ts 参照）
+  const lastUpdated = updatedAt()
 
   // 冒頭で答えを言い切るサマリー
   let leadSummary = ""
@@ -226,7 +229,7 @@ export default async function ComparePage({ params }: Props) {
                 </p>
               )}
               <p className="mt-2 text-xs text-muted-foreground">
-                最終更新日: <time dateTime={lastUpdated.toISOString()}>{lastUpdated.toLocaleDateString("ja-JP")}</time>
+                最終更新日: <time dateTime={lastUpdated.iso}>{lastUpdated.label}</time>
               </p>
             </section>
 

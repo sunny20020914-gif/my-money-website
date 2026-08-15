@@ -38,7 +38,8 @@ import {
 } from "@/lib/financials"
 import { buildSalaryGrowth } from "@/lib/salary-growth"
 import { buildFinancialInsight, buildBusinessModelInsight } from "@/lib/financial-insight"
-import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
+import { updatedAt } from "@/lib/updated-at"
 import { formatWithUnit, formatYear, isBlankValue } from "@/lib/format"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
@@ -47,8 +48,7 @@ type Props = {
   params: { id: string }
 }
 
-// 1時間（3600秒）ごとにデータを再検証して更新する設定（ISR）
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 // 各企業のメタデータを動的に生成
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -149,7 +149,9 @@ export default async function CompanyPage({ params }: Props) {
   const neighbors = getRankNeighbors(allCompanies, company)
   const compareCandidates = getCompareCandidates(allCompanies, company, 3)
   const primaryIndustry = company.industry.split("/")[0]?.trim() || null
-  const lastUpdated = new Date() // ISR再生成のたびに更新される
+  // 【ISR課金】日単位に丸めることで、同じ日のうちは再生成しても出力が
+  // 完全に一致し、キャッシュ書き込みが発生しない（lib/updated-at.ts 参照）
+  const lastUpdated = updatedAt()
 
   // 有価証券報告書由来の財務データ（スプシN列以降）。未入力の企業では空/nullになり非表示。
   // 第2引数に全企業を渡すと各指標に「◯社中◯位」が付く
@@ -403,7 +405,7 @@ export default async function CompanyPage({ params }: Props) {
               </p>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
-              最終更新日: <time dateTime={lastUpdated.toISOString()}>{lastUpdated.toLocaleDateString("ja-JP")}</time>
+              最終更新日: <time dateTime={lastUpdated.iso}>{lastUpdated.label}</time>
             </p>
             <div className="mt-3">
               <ShareButtons url={pageUrl} text={`${company.company}の初任給・年収・手取り情報`} />

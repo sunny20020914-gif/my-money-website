@@ -1,9 +1,9 @@
 import { fetchAllUniqueCompanies, fetchArticleDataServer } from '@/lib/sheets'
 import { SITE_URL, SITE_NAME, FISCAL_YEAR } from '@/lib/config'
+import { REVALIDATE_MACHINE } from "@/lib/config"
 
 // 【AI SEO】llms.txt — AIクローラー向けのサイト案内（Markdown形式）。
-// sitemapと同様にスプシの取得済みデータから自動生成され、ISRで1時間ごとに更新される。
-export const revalidate = 3600
+export const revalidate = REVALIDATE_MACHINE
 
 const yen = (v: number | string | null | undefined) =>
   typeof v === 'number' ? `${v.toLocaleString()}円` : null

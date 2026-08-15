@@ -1,6 +1,6 @@
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
-import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { AdBanner } from "@/components/ad-banner"
 import Link from "next/link"
 import { Metadata } from "next"
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 export const metadata: Metadata = {
   title: `条件で探す企業一覧【${FISCAL_YEAR}年最新】業界×初任給で絞り込み`,

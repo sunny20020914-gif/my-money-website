@@ -2,7 +2,8 @@ import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildRankingSummary } from "@/lib/ranking-summary"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
-import { SITE_URL, FISCAL_YEAR, TARGET_GRADS } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, TARGET_GRADS, REVALIDATE_STABLE } from "@/lib/config"
+import { updatedAt } from "@/lib/updated-at"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -18,7 +19,7 @@ type Props = {
   params: { grad: string }
 }
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 const parseGrad = (raw: string): number | null => {
   const n = Number(raw)
@@ -62,7 +63,9 @@ export default async function GradPage({ params }: Props) {
   const topLists = buildAllListDefinitions(all).slice(0, 8)
   const avgNet = summary.avgMonthly !== null ? estimateNetSalary(summary.avgMonthly) : null
   const otherGrads = TARGET_GRADS.filter((g) => g !== grad)
-  const lastUpdated = new Date()
+  // 【ISR課金】日単位に丸めることで、同じ日のうちは再生成しても出力が
+  // 完全に一致し、キャッシュ書き込みが発生しない（lib/updated-at.ts 参照）
+  const lastUpdated = updatedAt()
 
   const faq = [
     ...(summary.avgMonthly !== null
@@ -129,7 +132,7 @@ export default async function GradPage({ params }: Props) {
                 )}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                最終更新日: <time dateTime={lastUpdated.toISOString()}>{lastUpdated.toLocaleDateString("ja-JP")}</time>
+                最終更新日: <time dateTime={lastUpdated.iso}>{lastUpdated.label}</time>
                 （データは自動で最新に保たれます）
               </p>
             </section>

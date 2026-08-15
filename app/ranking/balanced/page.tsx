@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation"
 import type { Metadata } from "next"
+import { RankingUnavailable, UNAVAILABLE_ROBOTS } from "../ranking-unavailable"
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildBalancedRanking, BALANCED_DEF, type Quadrant } from "@/lib/balanced-ranking"
 import { MetricRankingView } from "../metric-ranking-view"
-import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL, REVALIDATE_FRESH } from "@/lib/config"
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_FRESH
 
 /**
  * 初任給 × 平均年収の両立ランキング。
@@ -16,9 +16,19 @@ export const revalidate = 3600
  * 4象限分類だけを extraSection として差し込む。
  */
 
+/**
+ * 【重要】ここで例外を投げないこと。
+ * 静的ルートなのでビルド時の事前レンダリングで例外や notFound() が起きると
+ * デプロイ全体が失敗する。データが無いときは null を返す。
+ */
 async function load() {
-  const all = await fetchAllUniqueCompanies()
-  return buildBalancedRanking(all)
+  try {
+    const all = await fetchAllUniqueCompanies()
+    return buildBalancedRanking(all)
+  } catch (error) {
+    console.error("[ranking] 初任給×平均年収の集計に失敗:", error)
+    return null
+  }
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,19 +36,18 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `【${FISCAL_YEAR}年最新】${BALANCED_DEF.title}`,
     alternates: { canonical: `${SITE_URL}${BALANCED_DEF.path}` },
   }
-  try {
-    const r = await load()
-    if (!r || !r.top) return { ...base, description: BALANCED_DEF.definition }
-    const both = r.quadrants.find((q) => q.key === "both")
-    return {
-      ...base,
-      description:
-        `${TARGET_GRAD_LABEL}向け・初任給と平均年収の両方が高い企業のランキング（対象${r.count}社）。` +
-        `1位は${r.top.company.company}。両方が中央値以上の企業は${both?.count ?? 0}社（${both?.share ?? 0}%）にとどまります。` +
-        `平均年収は有価証券報告書に基づく原則上場企業の数値です。`,
-    }
-  } catch {
-    return { ...base, description: BALANCED_DEF.definition }
+  const r = await load()
+  // データが無いときは代替画面を返すので必ず noindex にする
+  if (!r || !r.top) {
+    return { ...base, description: BALANCED_DEF.definition, robots: UNAVAILABLE_ROBOTS }
+  }
+  const both = r.quadrants.find((q) => q.key === "both")
+  return {
+    ...base,
+    description:
+      `${TARGET_GRAD_LABEL}向け・初任給と平均年収の両方が高い企業のランキング（対象${r.count}社）。` +
+      `1位は${r.top.company.company}。両方が中央値以上の企業は${both?.count ?? 0}社（${both?.share ?? 0}%）にとどまります。` +
+      `平均年収は有価証券報告書に基づく原則上場企業の数値です。`,
   }
 }
 
@@ -81,9 +90,10 @@ function QuadrantSection({ quadrants }: { quadrants: Quadrant[] }) {
 export default async function BalancedRankingPage() {
   const ranking = await load()
 
-  // データが揃っていない間はページごと存在しない扱いにする。
-  // 中身の薄いページを公開するとソフト404としてサイト全体の評価を下げる。
-  if (!ranking) notFound()
+  // 【重要】ここで notFound() を呼んではいけない。
+  // 静的ルートなのでビルド時の事前レンダリングで404を出すと
+  // 書き出すHTMLが決まらず、デプロイ全体が失敗する。
+  if (!ranking) return <RankingUnavailable title={BALANCED_DEF.h1} />
 
   const itemListLd = {
     "@context": "https://schema.org",

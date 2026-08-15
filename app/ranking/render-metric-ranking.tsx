@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation"
 import type { Metadata } from "next"
+import { RankingUnavailable, UNAVAILABLE_ROBOTS } from "./ranking-unavailable"
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildMetricRanking, METRIC_RANKINGS, type MetricSlug } from "@/lib/metric-rankings"
 import { buildBalancedRanking, BALANCED_DEF } from "@/lib/balanced-ranking"
@@ -18,10 +18,25 @@ import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
  * 初任給／想定年収を独立ページに分けたのと同じ考え方。
  */
 
+/**
+ * ランキングを組み立てる。
+ *
+ * 【重要】ここで例外を投げないこと。
+ * これらは静的ルートなので、ビルド時の事前レンダリングで例外や notFound() が
+ * 発生するとビルド全体が失敗する（実際に
+ * 「Export encountered errors on following paths: /ranking/average ...」で
+ * デプロイが落ちた）。データが取れないときは null を返し、
+ * 呼び出し側が noindex の代替画面を出す。
+ */
 async function loadRanking(slug: MetricSlug) {
-  const def = METRIC_RANKINGS[slug]
-  const all = await fetchAllUniqueCompanies()
-  return buildMetricRanking(all, def)
+  try {
+    const def = METRIC_RANKINGS[slug]
+    const all = await fetchAllUniqueCompanies()
+    return buildMetricRanking(all, def)
+  } catch (error) {
+    console.error(`[ranking] ${slug} の集計に失敗:`, error)
+    return null
+  }
 }
 
 /**
@@ -36,18 +51,18 @@ export async function buildMetricMetadata(slug: MetricSlug): Promise<Metadata> {
     alternates: { canonical: `${SITE_URL}${def.path}` },
   }
 
-  try {
-    const ranking = await loadRanking(slug)
-    if (!ranking || !ranking.top) return { ...base, description: def.definition }
-    return {
-      ...base,
-      description:
-        `${TARGET_GRAD_LABEL}向け・${def.valueLabel}のランキング（掲載${ranking.count}社）。` +
-        `1位は${ranking.top.company.company}の${ranking.top.display}、中央値は${ranking.medianDisplay}です。` +
-        `${def.definition}`,
-    }
-  } catch {
-    return { ...base, description: def.definition }
+  const ranking = await loadRanking(slug)
+  // データが無いときは代替画面を返すため、必ず noindex にする。
+  // 中身の薄いページをインデックスさせるとサイト全体の評価が下がる。
+  if (!ranking || !ranking.top) {
+    return { ...base, description: def.definition, robots: UNAVAILABLE_ROBOTS }
+  }
+  return {
+    ...base,
+    description:
+      `${TARGET_GRAD_LABEL}向け・${def.valueLabel}のランキング（掲載${ranking.count}社）。` +
+      `1位は${ranking.top.company.company}の${ranking.top.display}、中央値は${ranking.medianDisplay}です。` +
+      `${def.definition}`,
   }
 }
 
@@ -55,10 +70,12 @@ export async function renderMetricRankingPage(slug: MetricSlug) {
   const def = METRIC_RANKINGS[slug]
   const ranking = await loadRanking(slug)
 
-  // 【重要】データが揃っていない指標のページは公開しない。
-  // 中身の薄いページを出すとソフト404扱いになり、サイト全体の評価を下げる。
-  // スプレッドシートのN〜Y列が未入力の間は、このページ自体が存在しない扱いになる。
-  if (!ranking) notFound()
+  // 【重要】ここで notFound() を呼んではいけない。
+  // 静的ルートなのでビルド時の事前レンダリングで404を出すと
+  // 書き出すHTMLが決まらず、デプロイ全体が失敗する。
+  // データが無いときは noindex の代替画面を返し、
+  // 復旧後の再生成で通常表示に自動的に戻す。
+  if (!ranking) return <RankingUnavailable title={def.h1} />
 
   const itemListLd = {
     "@context": "https://schema.org",

@@ -7,6 +7,7 @@ import { CompanyLogo } from "@/components/company-logo"
 import { AdBanner } from "@/components/ad-banner"
 import { Button } from "@/components/ui/button"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
+import { updatedAt } from "@/lib/updated-at"
 import { getMetricCopy } from "@/lib/metric-ranking-copy"
 import { METRIC_RANKING_LINKS } from "@/lib/metric-ranking-links"
 import type { MetricRanking } from "@/lib/metric-rankings"
@@ -103,7 +104,9 @@ export function MetricRankingView({
 }) {
   const { def, entries, count, medianDisplay, industryAverages, analysis, faq } = ranking
   const copy = getMetricCopy(def.slug)
-  const updated = new Date().toLocaleDateString("ja-JP")
+  // 【ISR課金】日単位に丸める。時刻を含めると再生成のたびに出力が変わり、
+  // データが同じでもキャッシュ書き込みが毎回発生する（lib/updated-at.ts 参照）
+  const updated = updatedAt().label
 
   return (
     <div className="min-h-screen bg-background">

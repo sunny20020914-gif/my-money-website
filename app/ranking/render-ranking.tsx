@@ -2,6 +2,7 @@ import { fetchRankingDataServer, type RankingType } from "@/lib/sheets"
 import { buildRankingSummary, buildRankingFaq } from "@/lib/ranking-summary"
 import { RankingPageClient } from "./ranking-page-client"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { updatedAt } from "@/lib/updated-at"
 
 /**
  * 初任給ランキング（/ranking）と想定年収ランキング（/ranking/annual）の
@@ -28,7 +29,9 @@ export async function renderRankingPage(rankingType: RankingType) {
 
     // 冒頭サマリー用の集計（平均・中央値・業種別平均＝独自データ）
     const summary = buildRankingSummary(initialData)
-    const updatedLabel = new Date().toLocaleDateString("ja-JP")
+    // 【ISR課金】日単位に丸める。時刻まで含めると再生成のたびにHTMLが変わり、
+    // データが同じでもキャッシュ書き込みが毎回発生する（lib/updated-at.ts 参照）
+    const updatedLabel = updatedAt().label
 
     const itemListLd = {
       "@context": "https://schema.org",

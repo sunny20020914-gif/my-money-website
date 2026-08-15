@@ -5,7 +5,7 @@ import {
   buildHubSummary,
   rankableIndustries,
 } from "@/lib/industry-stats"
-import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,7 +14,7 @@ import Link from "next/link"
 import { ArrowRight, Building2, TrendingUp, Trophy } from "lucide-react"
 import { AdBanner } from "@/components/ad-banner"
 
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 export const metadata = {
   title: `業界別 初任給ランキング・分析 ${FISCAL_YEAR} | 平均初任給を全業界で比較`,

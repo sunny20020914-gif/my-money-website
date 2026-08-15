@@ -1,10 +1,9 @@
 import { renderRankingPage } from "./render-ranking"
-import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL, REVALIDATE_FRESH } from "@/lib/config"
 import { MARKET_BENCHMARK } from "@/lib/market-benchmark"
 import type { Metadata } from "next"
 
-// 1時間ごとに最新のデータをスプレッドシートから取得
-export const revalidate = 3600
+export const revalidate = REVALIDATE_FRESH
 
 export const metadata: Metadata = {
   // 【SEO】「初任給ランキング」単体は東洋経済・日経・大手就活サイトが上位を占める激戦区。

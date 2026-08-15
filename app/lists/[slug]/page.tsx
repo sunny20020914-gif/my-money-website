@@ -1,7 +1,8 @@
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildAllListDefinitions, getListBySlug, buildList, buildListLeadSummary } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
-import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
+import { updatedAt } from "@/lib/updated-at"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -19,8 +20,7 @@ type Props = {
   params: { slug: string }
 }
 
-// 1時間ごとにスプシから再取得（ISR）。条件別一覧は常に最新データで自動更新される
-export const revalidate = 3600
+export const revalidate = REVALIDATE_STABLE
 
 export async function generateStaticParams() {
   const all = await fetchAllUniqueCompanies()
@@ -56,7 +56,9 @@ export default async function ListPage({ params }: Props) {
 
   const companies = buildList(def, all)
   const leadSummary = buildListLeadSummary(def, companies)
-  const lastUpdated = new Date()
+  // 【ISR課金】日単位に丸めることで、同じ日のうちは再生成しても出力が
+  // 完全に一致し、キャッシュ書き込みが発生しない（lib/updated-at.ts 参照）
+  const lastUpdated = updatedAt()
   const pageUrl = `${SITE_URL}/lists/${encodeURIComponent(def.slug)}`
 
   // 【重複対策後】1セグメント1ページにしたため「同じセグメントの別閾値」は存在しない。
@@ -116,7 +118,7 @@ export default async function ListPage({ params }: Props) {
                 </p>
               )}
               <p className="mt-2 text-xs text-muted-foreground">
-                最終更新日: <time dateTime={lastUpdated.toISOString()}>{lastUpdated.toLocaleDateString("ja-JP")}</time>
+                最終更新日: <time dateTime={lastUpdated.iso}>{lastUpdated.label}</time>
                 （データは自動で最新に保たれます）
               </p>
             </section>
