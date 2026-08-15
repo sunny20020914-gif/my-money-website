@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ChevronRightIcon, ArrowRightIcon } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { CompanyLogo } from "@/components/company-logo"
@@ -57,22 +58,29 @@ function RankingSwitcher({ current }: { current: string }) {
 
   return (
     <nav aria-label="ランキングの種類" className="mb-8">
-      <p className="text-sm text-muted-foreground mb-2">別の切り口で見る</p>
-      <ul className="flex flex-wrap gap-2">
+      <p className="text-[15px] font-semibold text-foreground mb-3">別の切り口で見る</p>
+      {/* 【押しやすさ】以前は小さな文字のピルで、押せると気づかれにくかった。
+          高さを確保して文字を大きくし、未選択側には矢印を添えて
+          「ここから移動できる」ことが見て分かるようにする。 */}
+      <ul className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
         {items.map((item) => {
           const active = item.path === current
-          const cls = active
-            ? "px-4 py-2 rounded-full text-sm font-bold bg-primary text-primary-foreground"
-            : "px-4 py-2 rounded-full text-sm font-medium border bg-card text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
           return (
             <li key={item.path}>
               {active ? (
-                <span aria-current="page" className={cls}>
+                <span
+                  aria-current="page"
+                  className="flex h-12 items-center justify-center rounded-xl px-5 text-[15px] font-bold bg-primary text-primary-foreground shadow-sm"
+                >
                   {item.label}
                 </span>
               ) : (
-                <Link href={item.path} className={cls}>
+                <Link
+                  href={item.path}
+                  className="group flex h-12 items-center justify-center gap-1 rounded-xl border-2 px-5 text-[15px] font-semibold text-muted-foreground bg-card hover:border-primary hover:text-primary transition-colors"
+                >
                   {item.label}
+                  <ChevronRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               )}
             </li>
@@ -106,9 +114,15 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
           </nav>
 
           <header className="mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold text-primary mb-4 leading-[1.35]">
+            {/* h1は検索キーワードそのものだけに絞り、補足は下の行に分ける。
+                長い括弧付きの見出しはスマホ幅で単語の途中から折り返され、
+                「平均年収ランキング（全社／員・…」のように読めなくなる。 */}
+            <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2 leading-[1.35]">
               {def.h1}
             </h1>
+            <p className="jp-lead text-[15px] md:text-lg text-muted-foreground mb-4 leading-[1.8]">
+              {def.subtitle}
+            </p>
             <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
               <div className="flex gap-1">
                 <dt>最終更新</dt>
@@ -154,15 +168,21 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
             <h2 className="text-xl md:text-2xl font-bold mb-4">
               {def.valueLabel}ランキング（{count}社）
             </h2>
-            <ol className="space-y-2">
+            {/* 【カードの余白と情報量】
+                PC版で行が詰まって見えたため、パディング・順位バッジ・ロゴ・
+                社名・数値をすべて一段大きくした。
+                補助データはスマホでは1行のテキスト、PCでは項目ごとに
+                ラベルと値を縦に積んだ塊として並べる。
+                項目を1つ増やしても横に伸びるだけでレイアウトは崩れない。 */}
+            <ol className="space-y-2.5">
               {entries.map((e, i) => (
                 <li key={`${e.company.id}-${i}`}>
                   <Link
                     href={`/companies/${e.company.id}`}
-                    className="flex items-center gap-3 rounded-xl border bg-card p-3 hover:bg-accent transition-colors"
+                    className="group flex items-center gap-3 md:gap-5 rounded-2xl border bg-card p-4 md:p-5 hover:bg-accent hover:border-primary/40 transition-colors"
                   >
                     <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                      className={`flex h-9 w-9 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-full text-sm md:text-lg font-bold ${
                         e.rank <= 3
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
@@ -174,20 +194,48 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
                       logo={e.company.logo}
                       domain={e.company.domain}
                       company={e.company.company}
-                      size={32}
-                      className="h-8 w-8 shrink-0 rounded object-contain"
+                      size={48}
+                      className="h-9 w-9 md:h-12 md:w-12 shrink-0 rounded-lg object-contain"
                     />
+
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-semibold text-foreground">
+                      <span className="block truncate text-[15px] md:text-lg font-bold text-foreground">
                         {e.company.company}
                       </span>
-                      <span className="block truncate text-xs text-muted-foreground">
+                      {/* 業種。カード内の情報を1つ増やしてほしいという要望に対応。
+                          同じ業界どうしで比べる際の手がかりになる */}
+                      {e.company.industry && (
+                        <span className="mt-0.5 block truncate text-xs md:text-sm text-muted-foreground">
+                          {e.company.industry.split("/").map((s) => s.trim()).filter(Boolean).join("・")}
+                        </span>
+                      )}
+                      {/* スマホ用: 補助データを1行に畳む */}
+                      <span className="mt-1 block truncate text-xs text-muted-foreground md:hidden">
                         {e.extras.map((x) => `${x.label} ${x.value}`).join(" ／ ")}
                       </span>
                     </span>
-                    <span className="shrink-0 text-right text-base md:text-lg font-bold text-primary tabular">
-                      {e.display}
+
+                    {/* PC用: 補助データを項目ごとに縦積みで並べる */}
+                    <span className="hidden md:flex shrink-0 items-start gap-6">
+                      {e.extras.map((x) => (
+                        <span key={x.label} className="block whitespace-nowrap text-right">
+                          <span className="block text-xs text-muted-foreground">{x.label}</span>
+                          <span className="block text-sm font-semibold text-foreground tabular">
+                            {x.value}
+                          </span>
+                        </span>
+                      ))}
                     </span>
+
+                    <span className="shrink-0 text-right">
+                      <span className="block text-xs text-muted-foreground md:mb-0.5">
+                        {def.valueLabel}
+                      </span>
+                      <span className="block text-lg md:text-2xl font-bold text-primary tabular">
+                        {e.display}
+                      </span>
+                    </span>
+                    <ChevronRightIcon className="hidden md:block h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                   </Link>
                 </li>
               ))}

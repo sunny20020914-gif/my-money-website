@@ -775,18 +775,26 @@ export function RankingPageClient({
                   {/* 【導線】給与額以外の切り口で並べたランキングへ。
                       初任給と平均年収の順位はほとんど連動しないため、
                       「額面の順位」だけを見て終わる読者を減らしたい。 */}
+                  {/* 【押しやすさ】小さなピルだと押せると気づかれにくいため、
+                      高さ56pxのボタンにして矢印を添える。
+                      初任給と平均年収の順位はほとんど連動しないので、
+                      「額面の順位」だけ見て離脱する読者をここで拾いたい。 */}
                   <div className="border-t pt-4">
-                    <p className="text-sm text-muted-foreground mb-2">
+                    <p className="text-[15px] font-semibold text-foreground mb-1">
                       金額以外の切り口で並べる
                     </p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      初任給の順位と、入社後の年収の順位はほとんど一致しません。
+                    </p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                       {METRIC_RANKING_LINKS.map((link) => (
                         <Link
                           key={link.slug}
                           href={link.path}
-                          className="inline-flex items-center rounded-full border bg-card px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                          className="group flex h-14 items-center justify-between gap-1 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
                         >
                           {link.shortLabel}
+                          <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                         </Link>
                       ))}
                     </div>

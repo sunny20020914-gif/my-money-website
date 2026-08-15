@@ -6,7 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { DollarSign, TrendingUp, Sparkles, Info, ExternalLink } from "lucide-react"
+import {
+  DollarSign,
+  TrendingUp,
+  Sparkles,
+  Info,
+  ExternalLink,
+  ArrowRightIcon,
+  TrendingUpIcon,
+  WalletIcon,
+  CoinsIcon,
+  PercentIcon,
+} from "lucide-react"
 import { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
@@ -642,18 +653,26 @@ export default async function CompanyPage({ params }: Props) {
                   {/* 【導線】ここで出している順位は、そのままランキングページの軸になっている。
                       「◯社中◯位」を見た直後に全体像へ移動できるようにする。
                       内部リンクとしても、指標ランキング側の評価を押し上げる。 */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Link
                       href="/ranking/growth"
-                      className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                      className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
                     >
-                      伸び率ランキング全{salaryGrowth.sampleCount}社を見る
+                      <span className="flex items-center gap-2">
+                        <TrendingUpIcon className="h-5 w-5 shrink-0 text-primary" />
+                        伸び率ランキング（{salaryGrowth.sampleCount}社）
+                      </span>
+                      <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                     </Link>
                     <Link
                       href="/ranking/average"
-                      className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                      className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
                     >
-                      平均年収ランキングを見る
+                      <span className="flex items-center gap-2">
+                        <WalletIcon className="h-5 w-5 shrink-0 text-primary" />
+                        平均年収ランキング
+                      </span>
+                      <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                     </Link>
                   </div>
                 </div>
@@ -714,18 +733,26 @@ export default async function CompanyPage({ params }: Props) {
 
                       {/* 【導線】表に出している順位は、それぞれ独立したランキングページの軸。
                           「この会社は何位なのか」を見た読者を、その指標の全体像へ送る。 */}
-                      <div className="mt-3 pt-3 border-t flex flex-wrap gap-2">
+                      <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Link
                           href="/ranking/profit-per-employee"
-                          className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                          className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
                         >
-                          一人当たり営業利益ランキング
+                          <span className="flex items-center gap-2">
+                            <CoinsIcon className="h-5 w-5 shrink-0 text-primary" />
+                            一人当たり利益ランキング
+                          </span>
+                          <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                         </Link>
                         <Link
                           href="/ranking/margin"
-                          className="inline-flex items-center rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                          className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
                         >
-                          営業利益率ランキング
+                          <span className="flex items-center gap-2">
+                            <PercentIcon className="h-5 w-5 shrink-0 text-primary" />
+                            営業利益率ランキング
+                          </span>
+                          <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                         </Link>
                       </div>
                     </CardContent>

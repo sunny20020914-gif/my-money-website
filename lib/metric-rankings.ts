@@ -50,6 +50,20 @@ const median = (values: number[]): number | null => {
 
 const round1 = (v: number) => Math.round(v * 10) / 10
 
+/**
+ * 相関係数の表示。小数第2位に固定する。
+ *
+ * 【なぜ toFixed を使うか】
+ * 割り算で桁を丸めると浮動小数点の誤差がそのまま文字列に出る。
+ * 実際 `Math.round(r * 1000) / 10 / 100` は -9.7/100 を計算する形になり、
+ * 画面に「-0.09699999999999999」と表示されていた。
+ * 桁を固定したい場面では割り算ではなく toFixed を使うこと。
+ *
+ * 相関係数は小数第2位まであれば強さの判断には十分で、
+ * それ以上の桁は精度があるように見えるだけで根拠がない。
+ */
+const formatCorrelation = (r: number) => r.toFixed(2)
+
 const manYen = (v: number) => `${Math.round(v).toLocaleString()}万円`
 const times = (v: number) => `${round1(v)}倍`
 const percent = (v: number) => `${round1(v)}%`
@@ -106,8 +120,19 @@ export interface MetricRankingDef {
   path: string
   /** ページ<title>。検索結果に出る文言 */
   title: string
-  /** ページ内のh1 */
+  /**
+   * ページ内のh1。
+   *
+   * 【重要】短く保つこと。
+   * 以前は「平均年収ランキング（全社員・有価証券報告書ベース）」のように
+   * 括弧付きの長い見出しにしていたが、スマホ幅では
+   * 「平均年収ランキング（全社／員・有価証券報告書ベース）」と
+   * 単語の途中で折り返されて読めなくなっていた。
+   * 補足は subtitle に逃がし、h1 は検索キーワードそのものだけにする。
+   */
   h1: string
+  /** h1の下に置く補足。長い説明はこちらに書く */
+  subtitle: string
   /** 切り替えUIなどで使う短い名前 */
   shortLabel: string
   /** ランキングの軸そのものの名前（表頭に出る） */
@@ -136,7 +161,8 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     slug: "growth",
     path: pathOf("growth"),
     title: "初任給からの伸び率ランキング｜入社後に給与が伸びる企業",
-    h1: "初任給からどれだけ伸びるか｜賃金の伸び率ランキング",
+    h1: "賃金の伸び率ランキング",
+    subtitle: "初任給から全社員の平均年収まで、給与がどれだけ伸びるか",
     shortLabel: labelOf("growth"),
     valueLabel: "伸び倍率",
     definition:
@@ -146,7 +172,9 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     extras: (c) => {
       const s = starterAnnualYen(c)
       const a = averageAnnualYen(c)
+      const m = positive(c.baseMonthly)
       return [
+        { label: "初任給（月額）", value: m === null ? "-" : `${m.toLocaleString()}円` },
         { label: "初任給ベース年収", value: s === null ? "-" : manYen(s / MAN) },
         { label: "平均年収", value: a === null ? "-" : manYen(a / MAN) },
       ]
@@ -158,7 +186,8 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     slug: "average",
     path: pathOf("average"),
     title: "平均年収ランキング｜有価証券報告書ベースの全社員平均",
-    h1: "平均年収ランキング（全社員・有価証券報告書ベース）",
+    h1: "平均年収ランキング",
+    subtitle: "有価証券報告書に基づく、管理職を含む全社員の平均年間給与",
     shortLabel: labelOf("average"),
     valueLabel: "平均年収",
     definition:
@@ -171,7 +200,9 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     extras: (c) => {
       const s = starterAnnualYen(c)
       const r = growthRatio(c)
+      const m = positive(c.baseMonthly)
       return [
+        { label: "初任給（月額）", value: m === null ? "-" : `${m.toLocaleString()}円` },
         { label: "初任給ベース年収", value: s === null ? "-" : manYen(s / MAN) },
         { label: "伸び倍率", value: r === null ? "-" : times(r) },
       ]
@@ -183,7 +214,8 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     slug: "profit-per-employee",
     path: pathOf("profit-per-employee"),
     title: "社員一人当たり営業利益ランキング｜稼ぐ力が高い企業",
-    h1: "社員一人当たり営業利益ランキング",
+    h1: "一人当たり営業利益ランキング",
+    subtitle: "社員1人がどれだけの利益を生んでいるか（給与の原資の大きさ）",
     shortLabel: labelOf("profit-per-employee"),
     valueLabel: "一人当たり営業利益",
     definition:
@@ -193,8 +225,10 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     extras: (c) => {
       const sales = finite(c.salesPerEmployee)
       const avg = averageAnnualYen(c)
+      const margin = finite(c.operatingMargin)
       return [
         { label: "一人当たり売上高", value: sales === null ? "-" : manYen(sales) },
+        { label: "営業利益率", value: margin === null ? "-" : percent(margin) },
         { label: "平均年収", value: avg === null ? "-" : manYen(avg / MAN) },
       ]
     },
@@ -206,6 +240,7 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     path: pathOf("margin"),
     title: "営業利益率ランキング｜収益性が高い企業",
     h1: "営業利益率ランキング",
+    subtitle: "売上高に対する営業利益の割合（本業の収益性）",
     shortLabel: labelOf("margin"),
     valueLabel: "営業利益率",
     definition:
@@ -215,9 +250,11 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
     extras: (c) => {
       const s = finite(c.salesPerEmployee)
       const p = finite(c.profitPerEmployee)
+      const avg = averageAnnualYen(c)
       return [
         { label: "一人当たり売上高", value: s === null ? "-" : manYen(s) },
         { label: "一人当たり営業利益", value: p === null ? "-" : manYen(p) },
+        { label: "平均年収", value: avg === null ? "-" : manYen(avg / MAN) },
       ]
     },
     note:
@@ -420,9 +457,9 @@ function buildAnalysis(
     const word = correlationWord(r)
     const lead =
       Math.abs(r) < 0.2
-        ? `初任給の高さと${def.valueLabel}の間には${word}という結果でした（順位相関 ${round1(r * 100) / 100}、${pairs.length}社）。` +
+        ? `初任給の高さと${def.valueLabel}の間には${word}という結果でした（順位相関 ${formatCorrelation(r)}、${pairs.length}社）。` +
           `つまり初任給を見ただけでは${def.valueLabel}は予測できません。`
-        : `初任給の高さと${def.valueLabel}の間には${word}が見られました（順位相関 ${round1(r * 100) / 100}、${pairs.length}社）。`
+        : `初任給の高さと${def.valueLabel}の間には${word}が見られました（順位相関 ${formatCorrelation(r)}、${pairs.length}社）。`
     paragraphs.push(
       lead +
         `初任給は採用市場での競争によって決まる一方、${def.valueLabel}は入社後の給与制度や事業の収益構造によって決まります。` +
