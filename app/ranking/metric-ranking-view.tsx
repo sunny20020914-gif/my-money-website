@@ -23,11 +23,16 @@ import { METRIC_RANKINGS, METRIC_RANKING_ORDER, type MetricRanking } from "@/lib
 
 /** 数値を強調表示する（自動生成の分析文を読みやすくする） */
 function highlightNumbers(text: string): React.ReactNode[] {
-  const SPLIT = /([+＋-−]?[\d,]+(?:\.\d+)?(?:円|%|社|倍|万円|億円|兆円))/g
-  // 【注意】判定用の正規表現に g フラグを付けないこと。
+  // 【注意1】文字クラス内のハイフンは必ずエスケープする。
+  // [+＋-−] と書くと「＋(U+FF0B) から −(U+2212) までの範囲」と解釈され、
+  // 開始が終了より大きいため "Range out of order in character class" で
+  // ビルドが落ちる。符号として使いたい場合は \- と書くこと。
+  //
+  // 【注意2】判定用の正規表現に g フラグを付けないこと。
   // g 付きの正規表現は .test() が lastIndex を保持するため、
   // 同じパターンを繰り返し呼ぶと結果が交互にずれる。
-  const IS_NUMBER = /^[+＋-−]?[\d,]+(?:\.\d+)?(?:円|%|社|倍|万円|億円|兆円)$/
+  const SPLIT = /([+＋\-−]?[\d,]+(?:\.\d+)?(?:万円|億円|兆円|円|%|社|倍))/g
+  const IS_NUMBER = /^[+＋\-−]?[\d,]+(?:\.\d+)?(?:万円|億円|兆円|円|%|社|倍)$/
   return text.split(SPLIT).map((part, i) =>
     IS_NUMBER.test(part) ? (
       <strong key={i} className="font-bold text-foreground">
