@@ -1,10 +1,13 @@
 import type { CompanyData } from "./sheets"
-import { meaningfulAverageSalary } from "./financials"
-import { METRIC_RANKING_LINKS, type MetricSlug } from "./metric-ranking-links"
+import { meaningfulAverageSalary, LISTED_COMPANY_NOTE } from "./financials"
+import { METRIC_RANKING_LINKS, METRIC_SLUGS, type MetricSlug } from "./metric-ranking-links"
 
 export type { MetricSlug }
-/** 表示順。実体は lib/metric-ranking-links.ts（クライアント向けの軽量定義）にある */
-export const METRIC_RANKING_ORDER: MetricSlug[] = METRIC_RANKING_LINKS.map((l) => l.slug)
+/**
+ * buildMetricRanking で生成できる単一指標ランキングの並び順。
+ * balanced（初任給×平均年収）は2変数を合成する専用ロジックなのでここには含まない。
+ */
+export const METRIC_RANKING_ORDER: MetricSlug[] = METRIC_SLUGS
 
 const pathOf = (slug: MetricSlug): string =>
   METRIC_RANKING_LINKS.find((l) => l.slug === slug)!.path
@@ -116,7 +119,12 @@ function dedupeByCompany(all: CompanyData[]): CompanyData[] {
 }
 
 export interface MetricRankingDef {
-  slug: MetricSlug
+  /**
+   * ページの識別子。
+   * 単一指標のランキングは MetricSlug だが、balanced のように
+   * 専用ロジックで組み立てるページもこの型の定義を共有するため string にしている。
+   */
+  slug: string
   path: string
   /** ページ<title>。検索結果に出る文言 */
   title: string
@@ -180,7 +188,7 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
       ]
     },
     note:
-      "平均年収は有価証券報告書の「平均年間給与」（提出会社）、初任給ベース年収は各社の募集要項に基づく想定年収（未記載の場合は月額×12）です。平均年収には管理職やベテラン社員が含まれるため、若手のうちからこの金額に届くわけではありません。",
+      `初任給ベース年収は各社の募集要項に基づく想定年収（未記載の場合は月額×12）です。平均年収には管理職やベテラン社員が含まれるため、若手のうちからこの金額に届くわけではありません。${LISTED_COMPANY_NOTE}`,
   },
   average: {
     slug: "average",
@@ -208,7 +216,7 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
       ]
     },
     note:
-      "有価証券報告書「従業員の状況」の平均年間給与です。持株会社のように提出会社の従業員が連結の5%未満しかいない企業は、グループの実態を表さないため掲載していません。",
+      `持株会社のように提出会社の従業員が連結の5%未満しかいない企業は、グループの実態を表さないため掲載していません。${LISTED_COMPANY_NOTE}`,
   },
   "profit-per-employee": {
     slug: "profit-per-employee",
@@ -233,7 +241,7 @@ export const METRIC_RANKINGS: Record<MetricSlug, MetricRankingDef> = {
       ]
     },
     note:
-      "連結の営業利益を連結従業員数で割った値です。持株会社や、製造をグループ会社に委託している企業では実態とずれることがあります。IFRS採用企業では営業利益にあたる項目として事業利益を用いています。",
+      `連結の営業利益を連結従業員数で割った値です。持株会社や、製造をグループ会社に委託している企業では実態とずれることがあります。IFRS採用企業では営業利益にあたる項目として事業利益を用いています。${LISTED_COMPANY_NOTE}`,
   },
   margin: {
     slug: "margin",
@@ -268,6 +276,8 @@ export interface RankedCompany {
   value: number
   display: string
   extras: { label: string; value: string }[]
+  /** 行に添える短いラベル（例: パレート最適の企業に付ける「他社に非劣」） */
+  badge?: string
 }
 
 export interface IndustryAverage {

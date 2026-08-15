@@ -8,7 +8,8 @@ import { AdBanner } from "@/components/ad-banner"
 import { Button } from "@/components/ui/button"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 import { getMetricCopy } from "@/lib/metric-ranking-copy"
-import { METRIC_RANKINGS, METRIC_RANKING_ORDER, type MetricRanking } from "@/lib/metric-rankings"
+import { METRIC_RANKING_LINKS } from "@/lib/metric-ranking-links"
+import type { MetricRanking } from "@/lib/metric-rankings"
 
 /**
  * 指標別ランキングページの描画。
@@ -48,13 +49,13 @@ function highlightNumbers(text: string): React.ReactNode[] {
 
 /** ランキング種別の切り替えナビ。全6本を横並びにする */
 function RankingSwitcher({ current }: { current: string }) {
+  // ナビは軽量なリンク定義だけを見る。
+  // METRIC_RANKINGS を参照すると balanced のように
+  // 専用ロジックで作るページを引けないため。
   const items = [
     { path: "/ranking", label: "初任給" },
     { path: "/ranking/annual", label: "想定年収" },
-    ...METRIC_RANKING_ORDER.map((slug) => ({
-      path: METRIC_RANKINGS[slug].path,
-      label: METRIC_RANKINGS[slug].shortLabel,
-    })),
+    ...METRIC_RANKING_LINKS.map((l) => ({ path: l.path, label: l.shortLabel })),
   ]
 
   return (
@@ -92,7 +93,14 @@ function RankingSwitcher({ current }: { current: string }) {
   )
 }
 
-export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
+export function MetricRankingView({
+  ranking,
+  /** ランキング表の直後に差し込む追加セクション（4象限分類など） */
+  extraSection,
+}: {
+  ranking: MetricRanking
+  extraSection?: React.ReactNode
+}) {
   const { def, entries, count, medianDisplay, industryAverages, analysis, faq } = ranking
   const copy = getMetricCopy(def.slug)
   const updated = new Date().toLocaleDateString("ja-JP")
@@ -209,8 +217,17 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
                     />
 
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] md:text-lg font-bold text-foreground">
-                        {e.company.company}
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="truncate text-[15px] md:text-lg font-bold text-foreground">
+                          {e.company.company}
+                        </span>
+                        {/* 特筆すべき性質を持つ企業に付くラベル。
+                            初任給×平均年収ページでは「両方で勝る企業なし」が入る */}
+                        {e.badge && (
+                          <span className="hidden sm:inline shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] md:text-xs font-bold text-primary whitespace-nowrap">
+                            {e.badge}
+                          </span>
+                        )}
                       </span>
                       {/* 業種。カード内の情報を1つ増やしてほしいという要望に対応。
                           同じ業界どうしで比べる際の手がかりになる */}
@@ -253,6 +270,9 @@ export function MetricRankingView({ ranking }: { ranking: MetricRanking }) {
             </ol>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">{def.note}</p>
           </section>
+
+          {/* ページ固有の追加セクション（初任給×平均年収の4象限分類など） */}
+          {extraSection}
 
           {/* --- 業界別の中央値 --- */}
           {industryAverages.length >= 3 && (

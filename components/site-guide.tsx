@@ -10,9 +10,11 @@ import {
   GraduationCapIcon,
   TrendingUpIcon,
   WalletIcon,
+  ScaleIcon,
 } from "lucide-react"
 import { FISCAL_YEAR, TARGET_GRADS } from "@/lib/config"
 import { MARKET_BENCHMARK } from "@/lib/market-benchmark"
+import { LISTED_COMPANY_NOTE } from "@/lib/financials"
 
 /**
  * 【トップページ＝ポータル】目的別の入口一覧。
@@ -43,6 +45,12 @@ const ENTRIES = [
     icon: CoinsIcon,
     title: "想定年収ランキング",
     desc: "賞与を含めた年収ベース。初任給とは順位が大きく入れ替わります。",
+  },
+  {
+    href: "/ranking/balanced",
+    icon: ScaleIcon,
+    title: "初任給×平均年収",
+    desc: "入社時も入社後も高い企業。両方が高い会社は実は多くありません。",
   },
   {
     href: "/ranking/growth",
@@ -188,7 +196,12 @@ export function DataPolicy() {
               </h3>
               <p className="text-[16px] md:text-base text-muted-foreground leading-[1.95]">
                 平均年収・売上高・営業利益・従業員数は、金融庁のEDINETで公開されている
-                有価証券報告書から取得しています。一人あたりの売上高などの指標は連結従業員数を
+                有価証券報告書から取得しています。
+                {/* 有報の提出義務は原則として上場企業にあるため、
+                    この数値は上場企業の水準である。母集団を書かないと
+                    日本企業全体の相場だと誤解される。 */}
+                {LISTED_COMPANY_NOTE}
+                一人あたりの売上高などの指標は連結従業員数を
                 もとに算出しているため、持株会社のように単体と連結で人数が大きく異なる企業では
                 実態とずれることがあります。その場合は各企業のページで注意書きを表示しています。
               </p>

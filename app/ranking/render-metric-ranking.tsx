@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildMetricRanking, METRIC_RANKINGS, type MetricSlug } from "@/lib/metric-rankings"
+import { buildBalancedRanking, BALANCED_DEF } from "@/lib/balanced-ranking"
 import { MetricRankingView } from "./metric-ranking-view"
 import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
 
@@ -118,9 +119,16 @@ export async function renderMetricRankingPage(slug: MetricSlug) {
 export async function availableMetricRankingPaths(): Promise<string[]> {
   try {
     const all = await fetchAllUniqueCompanies()
-    return (Object.keys(METRIC_RANKINGS) as MetricSlug[])
+    const paths = (Object.keys(METRIC_RANKINGS) as MetricSlug[])
       .filter((slug) => buildMetricRanking(all, METRIC_RANKINGS[slug]) !== null)
       .map((slug) => METRIC_RANKINGS[slug].path)
+
+    // 初任給×平均年収は専用ロジックで作るため個別に判定する。
+    // ページ側（app/ranking/balanced/page.tsx）と同じ関数を通すので、
+    // 「sitemapには載るが404」という不整合は起きない。
+    if (buildBalancedRanking(all) !== null) paths.push(BALANCED_DEF.path)
+
+    return paths
   } catch {
     return []
   }

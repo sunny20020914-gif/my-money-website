@@ -17,7 +17,7 @@ import { useFavorites } from "@/hooks/use-favorites"
 import { showToast } from "@/components/toaster"
 import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
-import { buildCardFinancialMetrics } from "@/lib/financials"
+import { buildCardFinancialMetrics, LISTED_COMPANY_NOTE } from "@/lib/financials"
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
 import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead } from "@/lib/market-benchmark"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
@@ -776,11 +776,8 @@ export function RankingPageClient({
 
                   {/* 【導線】給与額以外の切り口で並べたランキングへ。
                       初任給と平均年収の順位はほとんど連動しないため、
-                      「額面の順位」だけを見て終わる読者を減らしたい。 */}
-                  {/* 【押しやすさ】小さなピルだと押せると気づかれにくいため、
-                      高さ56pxのボタンにして矢印を添える。
-                      初任給と平均年収の順位はほとんど連動しないので、
-                      「額面の順位」だけ見て離脱する読者をここで拾いたい。 */}
+                      「額面の順位」だけ見て離脱する読者をここで拾いたい。
+                      小さなピルだと押せると気づかれにくいので高さ56pxのボタンにする。 */}
                   <div className="border-t pt-4">
                     <p className="text-[15px] font-semibold text-foreground mb-1">
                       金額以外の切り口で並べる
@@ -1112,6 +1109,14 @@ export function RankingPageClient({
                     </p>
                   </div>
                 </div>
+
+                {/* 【母集団の明示】カード内に平均年収を出しているため、
+                    その数値がどの範囲の企業のものかをこのページでも明記する。
+                    有報の提出義務は原則上場企業にあり、書かないと
+                    日本企業全体の相場だと誤解される。 */}
+                <p className="mt-6 pt-4 border-t text-xs text-muted-foreground leading-relaxed">
+                  ※{LISTED_COMPANY_NOTE}
+                </p>
               </section>
             )}
 

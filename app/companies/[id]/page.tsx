@@ -30,7 +30,12 @@ import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries, getR
 import { pairSlug } from "@/lib/compare"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
-import { buildFinancialMetrics, buildSourceLabel, buildPerEmployeeNote } from "@/lib/financials"
+import {
+  buildFinancialMetrics,
+  buildSourceLabel,
+  buildPerEmployeeNote,
+  LISTED_COMPANY_NOTE,
+} from "@/lib/financials"
 import { buildSalaryGrowth } from "@/lib/salary-growth"
 import { buildFinancialInsight, buildBusinessModelInsight } from "@/lib/financial-insight"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
@@ -791,6 +796,10 @@ export default async function CompanyPage({ params }: Props) {
                 <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t">
                   出典: {financialSource}。平均年収は提出会社（単体）の全社員平均で、
                   管理職・ベテラン社員を含みます。新卒入社時の年収とは異なります。
+                  {/* 【母集団の明示】有報の提出義務があるのは原則上場企業なので、
+                      この数値は上場企業の水準である。書かないと日本企業全体の
+                      相場だと誤解される。 */}
+                  {LISTED_COMPANY_NOTE}
                 </p>
               )}
             </section>
