@@ -42,6 +42,7 @@ import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { updatedAt } from "@/lib/updated-at"
 import { formatWithUnit, formatYear, isBlankValue } from "@/lib/format"
 import { nearestTakeHomeAmount, manLabel } from "@/lib/take-home"
+import { estimateSavings, buildSavingsSummary, SAVINGS_BENCHMARK } from "@/lib/savings"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import('@/components/ad-banner').then(mod => mod.AdBanner), { ssr: false });
@@ -153,6 +154,10 @@ export default async function CompanyPage({ params }: Props) {
   // 額面別の手取りページのうち、この企業の初任給に最も近いもの。
   // 該当が無ければ（20万未満・60万超）リンクを出さない。
   const nearestTakeHome = nearestTakeHomeAmount(company.baseMonthly)
+  // 【貯蓄の目安】手取りが計算できる企業だけ表示する。
+  // 根拠は公的統計（家計調査の黒字率・J-FLECの金融資産中央値）で、
+  // 数値は lib/savings.ts に出典つきで集約している。
+  const savings = netSalary ? estimateSavings(roundNet(netSalary.netMonthlyFirstYear)) : null
   // 【ISR課金】日単位に丸めることで、同じ日のうちは再生成しても出力が
   // 完全に一致し、キャッシュ書き込みが発生しない（lib/updated-at.ts 参照）
   const lastUpdated = updatedAt()
@@ -585,6 +590,62 @@ export default async function CompanyPage({ params }: Props) {
                       扶養人数を変えて手取りを詳しく計算する →
                     </Link>
                   </div>
+                </CardContent>
+              </Card>
+            </section>
+          )}
+
+          {/* --- 貯蓄の目安 ---
+              【根拠のある数字にする】「年間◯万円貯められます」と根拠なく書かない。
+              公的統計から「手取りに対して手元に残る割合」を取り、この企業の手取りに掛ける。
+              1つの数字ではなく幅で出すのは、統計上の黒字率（借金返済等を含む）と
+              先取り貯蓄の一般的な目安に開きがあり、実際はその間に収まるため。
+              詳しい考え方は lib/savings.ts のコメントに書いている。 */}
+          {savings && (
+            <section className="space-y-3">
+              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                {company.company}なら年間いくら貯められる？
+              </h2>
+
+              <Card className="py-0 gap-0">
+                <CardContent className="p-4 md:p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border bg-card p-3 md:p-4">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        手取りの{SAVINGS_BENCHMARK.ruleOfThumbMax}%を貯蓄した場合
+                      </p>
+                      <p className="text-xl md:text-2xl font-bold text-primary tabular">
+                        年{Math.round(savings.conservativeAnnual / 10_000).toLocaleString()}
+                        <span className="text-sm font-normal text-muted-foreground">万円</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        月{savings.conservativeMonthly.toLocaleString()}円
+                      </p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-3 md:p-4">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        統計上の黒字率（{SAVINGS_BENCHMARK.surplusRate}%）と同じ場合
+                      </p>
+                      <p className="text-xl md:text-2xl font-bold text-foreground tabular">
+                        年{Math.round(savings.statisticalAnnual / 10_000).toLocaleString()}
+                        <span className="text-sm font-normal text-muted-foreground">万円</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        月{savings.statisticalMonthly.toLocaleString()}円
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    {buildSavingsSummary(company.company, savings)}
+                  </p>
+
+                  <p className="pt-3 border-t text-xs text-muted-foreground leading-relaxed">
+                    ※ 月給ベースの試算で、賞与は含めていません（新卒1年目は支給が寸志のみ、
+                    あるいは支給なしの企業もあるため）。賞与があればこれに上乗せされます。
+                    家賃・奨学金の返済額によって実際に貯められる金額は大きく変わります。
+                    出典: {SAVINGS_BENCHMARK.surplusSurvey}、{SAVINGS_BENCHMARK.assetSurvey}。
+                  </p>
                 </CardContent>
               </Card>
             </section>

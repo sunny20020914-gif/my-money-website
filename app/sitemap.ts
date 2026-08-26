@@ -3,6 +3,8 @@ import { fetchArticleDataServer, fetchAllUniqueCompanies } from '@/lib/sheets'
 import { buildAllListDefinitions } from '@/lib/list-definitions'
 import { availableMetricRankingPaths } from './ranking/render-metric-ranking'
 import { TAKE_HOME_AMOUNTS } from '@/lib/take-home'
+import { ANNUAL_AMOUNTS } from '@/lib/annual-take-home'
+import { SAVINGS_AMOUNTS } from '@/lib/savings-page'
 import { SITE_URL, TARGET_GRADS } from '@/lib/config'
 
 /**
@@ -50,6 +52,10 @@ export default async function sitemap({
       { route: '/simulator', priority: 0.8, freq: 'monthly' },
       // 【ロングテール】「初任給30万 手取り」系の検索を受け止めるハブ
       { route: '/take-home', priority: 0.9, freq: 'monthly' },
+      // 手取り別の貯金目安。手取りページが結果を出した型を貯蓄にも広げたもの
+      { route: '/savings', priority: 0.9, freq: 'monthly' },
+      // 年収別。「年収500万 手取り」系は月額版よりさらに検索数が多い
+      { route: '/take-home/annual', priority: 0.9, freq: 'monthly' },
       { route: '/about', priority: 0.5, freq: 'monthly' },
       { route: '/privacy', priority: 0.3, freq: 'monthly' },
       { route: '/terms', priority: 0.3, freq: 'monthly' },
@@ -110,7 +116,21 @@ export default async function sitemap({
       priority: 0.8,
     }))
 
-    return [...articleRoutes, ...takeHomeRoutes]
+    const annualRoutes: MetadataRoute.Sitemap = ANNUAL_AMOUNTS.map((amount) => ({
+      url: `${baseUrl}/take-home/annual/${amount}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    }))
+
+    // 手取り別の貯蓄ページ。手取りページとは扱う話が違う（引かれる話／残す話）ため
+    // 内容は重複しない。
+    const savingsRoutes: MetadataRoute.Sitemap = SAVINGS_AMOUNTS.map((amount) => ({
+      url: `${baseUrl}/savings/${amount}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    }))
+
+    return [...articleRoutes, ...takeHomeRoutes, ...annualRoutes, ...savingsRoutes]
   }
 
   // ---- 3: 業界ページ・条件一覧ページ ----
@@ -121,10 +141,14 @@ export default async function sitemap({
   const industrySet = new Set(
     all.flatMap((c) => c.industry.split('/').map((i) => i.trim())).filter(Boolean),
   )
+  // 【優先度の引き上げ】実測で業界ページが最も順位を取れている
+  // （「ゲーム会社 初任給 ランキング」2.0位、/industries/製薬 6.2位）。
+  // 一方 /ranking は36.5位。競合が薄いのは業界軸のほうなので、
+  // クロールの優先度もそれに合わせる。
   const industryRoutes: MetadataRoute.Sitemap = Array.from(industrySet).map((industry) => ({
     url: `${baseUrl}/industries/${encodeURIComponent(industry)}`,
-    changeFrequency: 'monthly' as const,
-    priority: 0.85,
+    changeFrequency: 'weekly' as const,
+    priority: 0.95,
   }))
 
   const listRoutes: MetadataRoute.Sitemap = buildAllListDefinitions(all).map((def) => ({

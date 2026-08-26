@@ -23,6 +23,7 @@ import { Metadata } from "next"
 import { AdBanner } from "@/components/ad-banner"
 import { ChevronLeft, TrendingUp, Trophy } from "lucide-react"
 import { rankTier, RANK_BADGE } from "@/lib/rank-tier"
+import { buildIndustryFinancials } from "@/lib/industry-financials"
 
 type Props = { params: { industry: string } }
 
@@ -84,7 +85,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `¥${top.baseMonthly.toLocaleString()}`
       : String(top.baseMonthly)
 
-  const description = `【${FISCAL_YEAR}年最新】${industry}業界の初任給ランキング（${companies.length}社）。1位${top.company}（初任給${topSalary}/月）。各社の初任給・想定年収・従業員数を比較できます。`
+  // 【表記ゆれ】実測で「ゲーム会社 初任給 ランキング」が2.0位を取れている。
+  // 検索する側は「◯◯業界」とも「◯◯会社」とも打つため、
+  // 説明文に両方の言い方を自然に含めて、どちらのクエリでも拾えるようにする。
+  const description =
+    `【${FISCAL_YEAR}年最新】${industry}業界の初任給ランキング（${companies.length}社）。` +
+    `1位${top.company}（初任給${topSalary}/月）。` +
+    `${industry}会社の初任給・想定年収・平均年収・従業員数を一覧で比較できます。`
 
   return {
     title: `${industry}業界 初任給ランキング ${FISCAL_YEAR}【${companies.length}社】`,
@@ -126,6 +133,9 @@ export default async function IndustryPage({ params }: Props) {
   const rank = industryRank(analyses, industry)
   const leadSummary = analysis ? buildIndustryLeadSummary(analysis, overall, rank, FISCAL_YEAR) : ""
   const faq = analysis ? buildIndustryFaq(analysis, overall, rank, FISCAL_YEAR) : []
+  // 【独自データ】有価証券報告書ベースの業界別集計。
+  // 財務列が未入力の間は null になり、セクションごと非表示になる。
+  const industryFinancials = buildIndustryFinancials(allCompanies, industry)
 
   const itemListLd = {
     "@context": "https://schema.org",
@@ -291,7 +301,77 @@ export default async function IndustryPage({ params }: Props) {
               </section>
             )}
 
-            <AdBanner />
+            {/* --- 業界の財務データ ---
+                【なぜここに置くか】業界ページはSearch Consoleの実測で
+                最も順位が取れている（ゲーム2.0位・製薬6.2位）。
+                ところが持っているのは初任給だけで、有価証券報告書のデータを
+                使っていなかった。「この業界は入社後どれだけ伸びるか」を
+                業界単位で出せるサイトは他にほとんど無く、
+                大手就活サイト（初任給のみ）とも年収サイト（初任給を持たない）とも
+                重ならない独自データになる。 */}
+            {industryFinancials && (
+              <section className="mt-8">
+                <h2 className="jp-heading text-xl md:text-2xl font-bold mb-4">
+                  {industry}業界の年収と収益力
+                </h2>
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  {industryFinancials.metrics.map((m) => (
+                    <div
+                      key={m.key}
+                      className={`rounded-2xl border p-4 ${
+                        m.isTop ? "border-primary/40 bg-primary/5" : "bg-card"
+                      }`}
+                    >
+                      <p className="text-xs text-muted-foreground mb-1">{m.label}</p>
+                      <p className="text-xl md:text-2xl font-bold text-primary tabular mb-1">
+                        {m.display}
+                      </p>
+                      <p
+                        className={`text-[11px] md:text-xs font-semibold ${
+                          m.isTop ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        {m.totalIndustries}業界中{m.rank}位（{m.sampleCount}社）
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-4">
+                  {industryFinancials.paragraphs.map((p, i) => (
+                    <p key={i} className="text-[16px] md:text-base leading-[1.95] text-muted-foreground">
+                      {p}
+                    </p>
+                  ))}
+                </div>
+                <ul className="mt-4 space-y-1.5">
+                  {industryFinancials.metrics.map((m) => (
+                    <li key={m.key} className="text-xs text-muted-foreground leading-relaxed">
+                      <span className="font-semibold text-foreground">{m.label}</span>：{m.note}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                  ※{industryFinancials.note}
+                </p>
+                {/* 指標ランキングへの導線。業界ページで興味を持った読者を
+                    全体の順位表へ送る */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm" className="bg-transparent">
+                    <Link href="/ranking/average">平均年収ランキング</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm" className="bg-transparent">
+                    <Link href="/ranking/growth">伸び率ランキング</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm" className="bg-transparent">
+                    <Link href="/ranking/balanced">初任給×平均年収</Link>
+                  </Button>
+                </div>
+              </section>
+            )}
+
+            <div className="mt-8">
+              <AdBanner />
+            </div>
 
             {/* 企業リスト */}
             <div className="space-y-3 mt-6">

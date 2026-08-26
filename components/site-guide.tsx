@@ -11,6 +11,7 @@ import {
   TrendingUpIcon,
   WalletIcon,
   ScaleIcon,
+  PiggyBankIcon,
 } from "lucide-react"
 import { FISCAL_YEAR, TARGET_GRADS } from "@/lib/config"
 import { MARKET_BENCHMARK } from "@/lib/market-benchmark"
@@ -47,6 +48,12 @@ const ENTRIES = [
     desc: "賞与を含めた年収ベース。初任給とは順位が大きく入れ替わります。",
   },
   {
+    href: "/industries",
+    icon: LayersIcon,
+    title: "業界別に見る",
+    desc: "業界ごとの初任給・平均年収・伸び率・収益力をまとめて比較できます。",
+  },
+  {
     href: "/ranking/balanced",
     icon: ScaleIcon,
     title: "初任給×平均年収",
@@ -65,12 +72,6 @@ const ENTRIES = [
     desc: "有価証券報告書に基づく全社員の平均年収。口コミではない実額。",
   },
   {
-    href: "/industries",
-    icon: LayersIcon,
-    title: "業界別に見る",
-    desc: "商社・コンサル・金融など、業界ごとの給与水準と傾向を分析。",
-  },
-  {
     href: "/companies",
     icon: Building2Icon,
     title: "掲載企業一覧",
@@ -83,10 +84,22 @@ const ENTRIES = [
     desc: "月30万円以上、平均年収1,000万円超など、条件別のまとめ。",
   },
   {
+    href: "/savings",
+    icon: PiggyBankIcon,
+    title: "貯金の目安",
+    desc: "手取り別に毎月いくら貯めるのが現実的か。20代の実態データつき。",
+  },
+  {
     href: "/take-home",
     icon: CalculatorIcon,
     title: "手取り早見表",
     desc: "額面20万〜60万円の手取りを1万円刻みで一覧。内訳も確認できます。",
+  },
+  {
+    href: "/take-home/annual",
+    icon: CoinsIcon,
+    title: "年収別の手取り",
+    desc: "年収300万〜1,500万円の手取りを一覧。社会保険料と税金の内訳つき。",
   },
   {
     href: "/simulator",

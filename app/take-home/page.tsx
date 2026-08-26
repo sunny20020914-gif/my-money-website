@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { AdBanner } from "@/components/ad-banner"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { TAKE_HOME_AMOUNTS, manLabel } from "@/lib/take-home"
+import { ANNUAL_AMOUNTS, annualManLabel } from "@/lib/annual-take-home"
 import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { updatedAt } from "@/lib/updated-at"
 
@@ -130,6 +131,28 @@ export default function TakeHomeIndexPage() {
                 <Link href="/simulator" className="text-primary hover:underline mx-1">シミュレーター</Link>
                 をご利用ください。
               </p>
+            </section>
+
+            {/* 【年収軸への導線】月額版で結果が出たので年収版を追加した。
+                「年収500万 手取り」系は月額版より検索数が大きい。
+                ハブから全ページへリンクしてクロール導線にする。 */}
+            <section className="mt-10">
+              <h2 className="jp-heading text-xl md:text-2xl font-bold mb-3">年収別の手取り</h2>
+              <p className="text-[15px] md:text-base text-muted-foreground mb-4 leading-relaxed">
+                賞与を含めた年収から手取りを知りたい場合はこちらです。住民税を含めた通年の金額を掲載しています。
+              </p>
+              <ul className="flex flex-wrap gap-2">
+                {ANNUAL_AMOUNTS.map((a) => (
+                  <li key={a}>
+                    <Link
+                      href={`/take-home/annual/${a}`}
+                      className="inline-flex h-10 items-center rounded-lg border bg-card px-3.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                    >
+                      年収{annualManLabel(a)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </section>
 
             <section className="mt-10 border-t pt-6">

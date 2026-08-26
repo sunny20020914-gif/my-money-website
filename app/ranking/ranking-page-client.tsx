@@ -20,7 +20,7 @@ import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { buildCardFinancialMetrics, LISTED_COMPANY_NOTE } from "@/lib/financials"
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
 import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead } from "@/lib/market-benchmark"
-import { FISCAL_YEAR, TARGET_GRAD_LABEL } from "@/lib/config"
+import { FISCAL_YEAR, TARGET_GRAD_LABEL, TARGET_GRAD_YEAR_SHORT } from "@/lib/config"
 import { NO_DATA, isBlankValue, formatWithUnit, formatYear, splitValueAndUnit } from "@/lib/format"
 // 【バンドル削減】集計ロジックを含む lib/metric-rankings は import しない。
 // ここで必要なのはパスとラベルだけなので、軽量な定義ファイルだけを読む。
@@ -546,9 +546,13 @@ export function RankingPageClient({
                 </h1>
               ) : (
                 <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4 leading-tight text-primary">
-                  初任給が高い企業ランキング {FISCAL_YEAR}
+                  初任給ランキング {FISCAL_YEAR}
+                  {/* 【年号】実測で年号付きクエリは10位前後、年号なしは45位。
+                      就活生は自分の卒業年度で検索するため、西暦も併記して
+                      「初任給ランキング 2027」のようなクエリを直接狙う。 */}
                   <span className="block text-xl md:text-3xl mt-2 text-foreground">
-                    月30万円超の高待遇企業を{summary?.withMonthly ?? ""}社掲載
+                    {TARGET_GRAD_YEAR_SHORT}向け・月30万円超の高待遇企業を
+                    {summary?.withMonthly ?? ""}社掲載
                   </span>
                 </h1>
               )}

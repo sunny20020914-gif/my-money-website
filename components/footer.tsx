@@ -46,7 +46,18 @@ export function Footer() {
                 {/* 額面別の手取りページ41本への入口。全ページのフッターに置くことで
                     どこからでも到達でき、クローラーにも発見されやすくなる */}
                 <Link href="/take-home" className="text-muted-foreground hover:text-foreground transition-colors">
-                  手取り早見表
+                  手取り早見表（月額）
+                </Link>
+              </li>
+              <li>
+                <Link href="/take-home/annual" className="text-muted-foreground hover:text-foreground transition-colors">
+                  手取り早見表（年収）
+                </Link>
+              </li>
+              <li>
+                {/* 手取り別の貯蓄ページ26本への入口 */}
+                <Link href="/savings" className="text-muted-foreground hover:text-foreground transition-colors">
+                  貯金の目安
                 </Link>
               </li>
               <li>

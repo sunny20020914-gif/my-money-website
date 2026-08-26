@@ -178,5 +178,40 @@ for (const f of files) {
   visit(sf)
 }
 
-console.log(`\n検査 ${files.length} ファイル / 未定義の識別子 ${problems} 件`)
-process.exit(problems > 0 ? 1 : 0)
+// ------------------------------------------------------------------
+// 【トップレベルの重複宣言】
+//
+// 同じ名前を同一ファイルで2回 export const すると
+//   SyntaxError: Identifier 'X' has already been declared
+// で実行時に落ちる。構文解析自体は通ってしまうため、
+// 上の未定義チェックでも tsc を通さない限り気づけない。
+//
+// 実際に定数を追加した際、既に同名の定数があることに気づかず
+// 二重宣言してビルドを壊したことがある。
+// ------------------------------------------------------------------
+let duplicates = 0
+for (const f of files) {
+  const sf = ts.createSourceFile(f, fs.readFileSync(f, "utf8"), ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const seen = new Map()
+  for (const st of sf.statements) {
+    const names = []
+    if (ts.isVariableStatement(st)) {
+      for (const d of st.declarationList.declarations) {
+        if (d.name && ts.isIdentifier(d.name)) names.push(d.name.text)
+      }
+    }
+    if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name) names.push(st.name.text)
+    for (const n of names) {
+      const line = sf.getLineAndCharacterOfPosition(st.getStart(sf)).line + 1
+      if (seen.has(n)) {
+        console.log(`  NG ${f}:${line}  "${n}" が二重に宣言されています（L${seen.get(n)} にも定義あり）`)
+        duplicates++
+      } else {
+        seen.set(n, line)
+      }
+    }
+  }
+}
+
+console.log(`\n検査 ${files.length} ファイル / 未定義の識別子 ${problems} 件 / 重複宣言 ${duplicates} 件`)
+process.exit(problems + duplicates > 0 ? 1 : 0)

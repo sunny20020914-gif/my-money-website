@@ -1,5 +1,5 @@
 import { renderRankingPage } from "../render-ranking"
-import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL, REVALIDATE_FRESH } from "@/lib/config"
+import { SITE_URL, FISCAL_YEAR, TARGET_GRAD_LABEL, REVALIDATE_FRESH, TARGET_GRAD_YEAR_SHORT } from "@/lib/config"
 import type { Metadata } from "next"
 
 export const revalidate = REVALIDATE_FRESH
@@ -17,7 +17,7 @@ export const revalidate = REVALIDATE_FRESH
  * と、それぞれが別のキーワードで検索評価を受けられるようになる。
  */
 export const metadata: Metadata = {
-  title: `【${FISCAL_YEAR}年最新】新卒の年収が高い企業ランキング｜賞与込みの想定年収で比較`,
+  title: `新卒の年収ランキング ${FISCAL_YEAR}｜${TARGET_GRAD_YEAR_SHORT}向け 賞与込みの想定年収で比較`,
   description:
     `${TARGET_GRAD_LABEL}向け・新卒1年目の想定年収が高い企業のランキング（${FISCAL_YEAR}年度）。` +
     `月額の初任給だけでなく賞与（ボーナス）まで含めた年収ベースで順位を掲載。` +
