@@ -46,6 +46,26 @@ export const SAVINGS_BENCHMARK = {
   surplusSurvey: "総務省「家計調査（家計収支編）2024年」",
   surplusTarget: "34歳以下の単身勤労者世帯",
 
+  // ------------------------------------------------------------------
+  // 【黒字率をやめて消費支出を使う理由】
+  //
+  // 黒字率45.3%は「手取りの45%が残る」という意味だが、
+  // 先取り貯蓄の目安20%と並べると数字の幅が開きすぎて、
+  // 結局いくらを目指せばいいのか分からなくなる。
+  // 黒字率には借金の返済や保険料も含まれるため、
+  // そのまま「貯金できる額」として読むこともできない。
+  //
+  // 代わりに単身勤労者世帯の平均消費支出を使う。
+  //   手取り − 平均的な支出 = 実際に手元に残る額
+  // という引き算なので意味が明快で、目標（20%）との差も
+  // 「あと月いくら削る必要があるか」として読める。
+  // ------------------------------------------------------------------
+
+  /** 単身勤労者世帯の1か月あたり平均消費支出（円） */
+  monthlyExpense: 183_950,
+  expenseSurvey: "総務省「家計調査（2024年）」",
+  expenseTarget: "単身勤労者世帯",
+
   /**
    * 先取り貯蓄の一般的な目安（手取りに対する割合）。
    * 公的統計ではなくファイナンシャルプランニングの慣行値なので、
@@ -116,11 +136,14 @@ export interface SavingsEstimate {
   netMonthly: number
   /** 控えめな見積り（先取り貯蓄20%）の月額 */
   conservativeMonthly: number
-  /** 統計上の余剰（黒字率45.3%）の月額 */
-  statisticalMonthly: number
+  /**
+   * 平均的な支出をした場合に実際に残る月額（手取り − 平均消費支出）。
+   * マイナスになることもある（＝統計上の平均支出では赤字）。
+   */
+  realisticMonthly: number
   /** 年間（月額×12。賞与は含めない） */
   conservativeAnnual: number
-  statisticalAnnual: number
+  realisticAnnual: number
   /** 20歳代の金融資産中央値に到達するまでの月数（控えめな見積りの場合） */
   monthsToMedian: number
 }
@@ -142,14 +165,17 @@ export function estimateSavings(netMonthly: number): SavingsEstimate | null {
   const conservativeMonthly = Math.round(
     (netMonthly * SAVINGS_BENCHMARK.ruleOfThumbMax) / 100,
   )
-  const statisticalMonthly = Math.round((netMonthly * SAVINGS_BENCHMARK.surplusRate) / 100)
+  // 【現実的に残る額】手取りから単身勤労者世帯の平均消費支出を引く。
+  // 黒字率（45.3%）は借金返済や保険料も含むため貯金額として読めず、
+  // 先取り貯蓄の目安20%と並べると幅が開きすぎて役に立たなかった。
+  const realisticMonthly = netMonthly - SAVINGS_BENCHMARK.monthlyExpense
 
   return {
     netMonthly,
     conservativeMonthly,
-    statisticalMonthly,
+    realisticMonthly,
     conservativeAnnual: conservativeMonthly * 12,
-    statisticalAnnual: statisticalMonthly * 12,
+    realisticAnnual: realisticMonthly * 12,
     monthsToMedian: Math.ceil(SAVINGS_BENCHMARK.median20s / conservativeMonthly),
   }
 }
@@ -235,8 +261,13 @@ export function buildSavingsSummary(companyName: string, est: SavingsEstimate): 
   return (
     `${companyName}の手取り（月${yen(est.netMonthly)}）をもとに、年間で貯められる金額を試算しました。` +
     `手取りの${b.ruleOfThumbMax}%を先取り貯蓄に回す一般的な目安なら年間${man(est.conservativeAnnual)}、` +
-    `${b.surplusSurvey}が示す${b.surplusTarget}の黒字率${b.surplusRate}%と同じペースなら年間${man(est.statisticalAnnual)}です。` +
-    `黒字率には借金の返済や保険料の支払いも含まれるため、実際に貯金として残るのはこの幅の中ほどになることが多いと考えられます。` +
+    `一方、${b.expenseSurvey}が示す${b.expenseTarget}の平均的な支出（月${yen(b.monthlyExpense)}）をした場合、` +
+    `実際に手元に残るのは${est.realisticMonthly > 0 ? `月${yen(est.realisticMonthly)}・年間${man(est.realisticAnnual)}` : "ほとんどありません"}。` +
+    `${
+      est.realisticMonthly >= est.conservativeMonthly
+        ? "平均的な使い方をしていても目標ペースに届く水準です。"
+        : `目標に届かせるには、平均より月${yen(Math.max(est.conservativeMonthly - est.realisticMonthly, 0))}ほど支出を抑える必要があります。`
+    }` +
     `控えめに見積もった場合でも、${b.assetTarget}の金融資産の中央値${man(b.median20s)}には約${est.monthsToMedian}か月で届く計算です。`
   )
 }

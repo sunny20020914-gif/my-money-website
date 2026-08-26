@@ -171,7 +171,7 @@ export default async function CompanyPage({ params }: Props) {
   // 初任給の差より大きなインパクトを持つことがある。
   const livingScenarios = savings ? buildLivingScenarios(savings.netMonthly) : null
   // 30歳時点の目標額に対して、統計上の黒字率ペースで間に合うかの逆算
-  const goalAt30 = savings ? buildGoalAt30(savings.statisticalAnnual) : null
+  const goalAt30 = savings ? buildGoalAt30(savings.conservativeAnnual) : null
   // 手取り別の貯蓄ページへの導線
   const savingsPageLink = savings ? nearestSavingsAmount(savings.netMonthly) : null
   const livingComparison = livingScenarios
@@ -656,15 +656,23 @@ export default async function CompanyPage({ params }: Props) {
                       </p>
                     </div>
                     <div className="rounded-xl border bg-card p-3 md:p-4">
+                      {/* 【黒字率をやめた】45.3%は20%と幅が開きすぎて
+                          結局いくら目指せばいいのか分からなかった。
+                          「手取り − 平均支出」なら引き算の意味が明快で、
+                          目標との差も「あと月いくら削るか」として読める。 */}
                       <p className="text-xs text-muted-foreground mb-1">
-                        統計上の黒字率（{SAVINGS_BENCHMARK.surplusRate}%）と同じ場合
+                        平均的な支出だと実際に残るのは
                       </p>
                       <p className="text-xl md:text-2xl font-bold text-foreground tabular">
-                        {Math.round(savings.statisticalAnnual / 10_000).toLocaleString()}
+                        {savings.realisticMonthly > 0
+                          ? Math.round(savings.realisticAnnual / 10_000).toLocaleString()
+                          : "0"}
                         <span className="text-sm font-normal text-muted-foreground">万円</span>
                       </p>
                       <p className="mt-1 text-[11px] text-muted-foreground">
-                        月{savings.statisticalMonthly.toLocaleString()}円
+                        {savings.realisticMonthly > 0
+                          ? `月${savings.realisticMonthly.toLocaleString()}円`
+                          : "統計上の平均支出では赤字"}
                       </p>
                     </div>
                   </div>
@@ -672,77 +680,6 @@ export default async function CompanyPage({ params }: Props) {
                   <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                     {buildSavingsSummary(company.company, savings)}
                   </p>
-
-                  {/* 【当サイト独自の切り口】
-                      銀行のコラムは「手取りの1〜2割を貯めましょう」で終わる。
-                      実際に効くのは住まいの選択で、統計上は年110万円以上の差がつく。
-                      初任給が月5万円高い企業を選んでも年60万円の差にしかならないので、
-                      就活生にとってはこちらのほうがインパクトが大きい。
-                      企業ごとの手取りを持っている当サイトだから具体的に出せる。 */}
-                  {livingScenarios && (
-                    <div className="pt-4 border-t space-y-3">
-                      <h3 className="jp-heading text-base md:text-lg font-bold text-foreground">
-                        住まい方でどれくらい変わる？
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {livingScenarios.map((s) => (
-                          <div
-                            key={s.key}
-                            className={`rounded-xl border p-3 md:p-4 ${
-                              s.beatsAverage ? "border-primary/40 bg-primary/5" : "bg-card"
-                            }`}
-                          >
-                            <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                            <p
-                              className={`text-xl md:text-2xl font-bold tabular ${
-                                s.annualSurplus > 0 ? "text-primary" : "text-muted-foreground"
-                              }`}
-                            >
-                              {s.annualSurplus > 0
-                                ? Math.round(s.annualSurplus / 10_000).toLocaleString()
-                                : "0"}
-                              <span className="text-sm font-normal text-muted-foreground">万円</span>
-                            </p>
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              年間支出 約{Math.round(s.annualCost / 10_000).toLocaleString()}万円
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                        {livingComparison}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* 30歳時点の目標額に間に合うかの逆算 */}
-                  {goalAt30 && (
-                    <div className="pt-4 border-t space-y-2">
-                      <h3 className="jp-heading text-base md:text-lg font-bold text-foreground">
-                        30歳までに{Math.round(goalAt30.goal / 10_000).toLocaleString()}万円は現実的？
-                      </h3>
-                      <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                        {SAVINGS_BENCHMARK.firstYearSurvey}によると、社会人2年目が考える30歳時点の
-                        目標貯蓄額は平均
-                        <strong className="text-foreground">
-                          {Math.round(goalAt30.goal / 10_000).toLocaleString()}万円
-                        </strong>
-                        です。新卒入社から{SAVINGS_BENCHMARK.yearsTo30}年で割ると、
-                        年<strong className="text-foreground">
-                          {Math.round(goalAt30.requiredAnnual / 10_000).toLocaleString()}万円
-                        </strong>
-                        のペースが必要になります。
-                        {company.company}の手取りで黒字率と同じペースなら年
-                        {Math.round(goalAt30.actualAnnual / 10_000).toLocaleString()}万円なので、
-                        {goalAt30.achievable
-                          ? "初任給のままでも計算上は届く水準です。"
-                          : `そのままでは年${Math.round(goalAt30.shortfallAnnual / 10_000).toLocaleString()}万円足りません。ただし給与は年次とともに上がるため、昇給と賞与でこの差は縮まります。`}
-                        {salaryGrowth
-                          ? `${company.company}の平均年収は初任給ベースの${Math.round(salaryGrowth.ratio * 10) / 10}倍なので、昇給後はより余裕が出ます。`
-                          : ""}
-                      </p>
-                    </div>
-                  )}
 
                   {/* 【回遊】貯蓄ページへ送る。手取り別の詳細な目安と
                       到達期間はあちらに集約している */}
@@ -766,7 +703,7 @@ export default async function CompanyPage({ params }: Props) {
                     あるいは支給なしの企業もあるため）。賞与があればこれに上乗せされます。
                     家賃・奨学金の返済額によって実際に貯められる金額は大きく変わります。
                     30歳時点の目標額はアンケートの平均値であり、全員が目指すべき金額ではありません。
-                    出典: {SAVINGS_BENCHMARK.surplusSurvey}、{SAVINGS_BENCHMARK.assetSurvey}、
+                    出典: {SAVINGS_BENCHMARK.expenseSurvey}、{SAVINGS_BENCHMARK.assetSurvey}、
                     {SAVINGS_BENCHMARK.livingCostSurvey}、{SAVINGS_BENCHMARK.firstYearSurvey}。
                   </p>
                 </CardContent>
@@ -1012,7 +949,26 @@ export default async function CompanyPage({ params }: Props) {
           <section className="space-y-7">
             {company.long_description && <div className="space-y-3">
               {/* 「企業名 企業研究」を拾うため、見出しにもキーワードを含める */}
-              <h3 className="flex items-center gap-3 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2"><Info className="w-6 h-6" />企業研究：{company.company}の事業内容</h3>
+              {/* 【Safariでの折り返し対策】
+                  以前は「企業研究：{社名}の事業内容」を1つのテキストにしていたため、
+                  Safariで「霞ヶ関キ／ャピタルの事業内容」のように社名の途中で
+                  改行されていた。Chromeは word-break: auto-phrase を解釈するが
+                  Safariは非対応で、日本語をどこでも改行してしまうため。
+
+                  対策は2つ。
+                  ① 「企業研究」を上の行に分離し、社名から始まる行に幅を与える
+                  ② 社名を .jp-nobreak で囲み、その中では改行させない
+                  ②だけだと極端に長い社名がはみ出すので、
+                  overflow-wrap: anywhere を併用して必要なときだけ折り返す。 */}
+              <h3 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                <span className="flex items-center gap-2 text-sm md:text-base font-semibold text-muted-foreground mb-1">
+                  <Info className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                  企業研究
+                </span>
+                <span className="block">
+                  <span className="jp-nobreak">{company.company}</span>の事業内容
+                </span>
+              </h3>
               <div
                 /* 幅は制限しない。下の「強み」「将来性」カードと左右の位置を揃えるため、
                    親要素の幅いっぱいに広げる（max-w-[42em]を入れると幅が揃わず不自然になる）。 */
@@ -1068,6 +1024,94 @@ export default async function CompanyPage({ params }: Props) {
           <div>
             <DynamicAdBanner />
           </div>
+
+          {/* --- 貯蓄の応用（住まい方・30歳の目標）---
+              【配置】冒頭の「年間いくら貯められる？」だけを給与の近くに残し、
+              住まい方以降は企業概要より後ろへ回す。
+              企業ページを開いた読者がまず知りたいのは給与と事業内容で、
+              貯蓄の応用はそれを読み終えたあとに効く話のため。 */}
+          {savings && livingScenarios && goalAt30 && (
+            <section className="space-y-4">
+              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                貯めるために知っておきたいこと
+              </h2>
+              <Card className="py-0 gap-0">
+                <CardContent className="p-4 md:p-5 space-y-4">
+                  {/* 【当サイト独自の切り口】
+                      銀行のコラムは「手取りの1〜2割を貯めましょう」で終わる。
+                      実際に効くのは住まいの選択で、統計上は年110万円以上の差がつく。
+                      初任給が月5万円高い企業を選んでも年60万円の差にしかならないので、
+                      就活生にとってはこちらのほうがインパクトが大きい。
+                      企業ごとの手取りを持っている当サイトだから具体的に出せる。 */}
+                  {livingScenarios && (
+                    <div className="pt-4 border-t space-y-3">
+                      <h3 className="jp-heading text-base md:text-lg font-bold text-foreground">
+                        住まい方でどれくらい変わる？
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {livingScenarios.map((s) => (
+                          <div
+                            key={s.key}
+                            className={`rounded-xl border p-3 md:p-4 ${
+                              s.beatsAverage ? "border-primary/40 bg-primary/5" : "bg-card"
+                            }`}
+                          >
+                            <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
+                            <p
+                              className={`text-xl md:text-2xl font-bold tabular ${
+                                s.annualSurplus > 0 ? "text-primary" : "text-muted-foreground"
+                              }`}
+                            >
+                              {s.annualSurplus > 0
+                                ? Math.round(s.annualSurplus / 10_000).toLocaleString()
+                                : "0"}
+                              <span className="text-sm font-normal text-muted-foreground">万円</span>
+                            </p>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              年間支出 約{Math.round(s.annualCost / 10_000).toLocaleString()}万円
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                        {livingComparison}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 30歳時点の目標額に間に合うかの逆算 */}
+                  {goalAt30 && (
+                    <div className="pt-4 border-t space-y-2">
+                      <h3 className="jp-heading text-base md:text-lg font-bold text-foreground">
+                        30歳までに1,000万円は貯まる？
+                      </h3>
+                      <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                        {SAVINGS_BENCHMARK.firstYearSurvey}によると、社会人2年目が考える30歳時点の
+                        目標貯蓄額は平均
+                        <strong className="text-foreground">
+                          {Math.round(goalAt30.goal / 10_000).toLocaleString()}万円
+                        </strong>
+                        です。新卒入社から{SAVINGS_BENCHMARK.yearsTo30}年で割ると、
+                        年<strong className="text-foreground">
+                          {Math.round(goalAt30.requiredAnnual / 10_000).toLocaleString()}万円
+                        </strong>
+                        のペースが必要になります。
+                        {company.company}の手取りで{SAVINGS_BENCHMARK.ruleOfThumbMax}%を貯めると年
+                        {Math.round(goalAt30.actualAnnual / 10_000).toLocaleString()}万円なので、
+                        {goalAt30.achievable
+                          ? "初任給のままでも計算上は届く水準です。"
+                          : `そのままでは年${Math.round(goalAt30.shortfallAnnual / 10_000).toLocaleString()}万円足りません。ただし給与は年次とともに上がるため、昇給と賞与でこの差は縮まります。`}
+                        {salaryGrowth
+                          ? `${company.company}の平均年収は初任給ベースの${Math.round(salaryGrowth.ratio * 10) / 10}倍なので、昇給後はより余裕が出ます。`
+                          : ""}
+                      </p>
+                    </div>
+                  )}
+
+                </CardContent>
+              </Card>
+            </section>
+          )}
 
           {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
           {faq.length > 0 && (

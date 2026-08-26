@@ -169,12 +169,21 @@ export function buildSavingsPage(amount: number, all: CompanyData[]): SavingsPag
       "しっかり貯めるペース",
       "先取り貯蓄の上限としてよく挙げられる割合です。実家暮らしや家賃補助がある場合は現実的に達成できます。",
     ),
-    makePace(
-      b.surplusRate,
-      "統計上の黒字率と同じペース",
-      `${b.surplusSurvey}が示す${b.surplusTarget}の黒字率です。借金の返済や保険料も含む数字なので、全額が貯金として残るわけではありません。`,
-    ),
   ]
+
+  // 【黒字率をやめた理由】45.3%は先取り貯蓄の目安20%と幅が開きすぎて、
+  // 結局いくら目指せばいいのか分からなかった。
+  // 「手取り − 平均消費支出」なら引き算の意味が明快で、
+  // 目標との差も「あと月いくら削るか」として読める。
+  const realisticMonthly = Math.max(0, amount - b.monthlyExpense)
+  paces.push({
+    rate: Math.round((realisticMonthly / amount) * 1000) / 10,
+    label: "平均的な支出をした場合",
+    monthly: realisticMonthly,
+    annual: realisticMonthly * 12,
+    monthsToMillion: realisticMonthly > 0 ? Math.ceil(1_000_000 / realisticMonthly) : 0,
+    note: `${b.expenseSurvey}によると${b.expenseTarget}の消費支出は月${yen(b.monthlyExpense)}です。手取りからこれを引いた金額が、平均的な使い方をした場合に実際に残るお金になります。`,
+  })
 
   const emergencyMin = amount * 3
   const emergencyMax = amount * 6
@@ -240,8 +249,13 @@ export function buildSavingsPage(amount: number, all: CompanyData[]): SavingsPag
       `賞与は含めていないので、支給がある企業ではこれに上乗せされます。`,
     `「余ったら貯める」ではまず貯まりません。給料日に自動で別口座へ移す先取り貯蓄にすると、` +
       `残ったお金で生活する形になり、意識せずに続けられます。` +
-      `${b.surplusSurvey}によれば${b.surplusTarget}の黒字率は${b.surplusRate}%（前年${b.surplusRatePrev}%）で、` +
-      `統計上はもっと余裕がある計算になりますが、この数字には借金の返済や保険料も含まれます。`,
+      `${b.expenseSurvey}によると${b.expenseTarget}の消費支出は月${yen(b.monthlyExpense)}。` +
+      `手取り${label}からこれを引くと${realisticMonthly > 0 ? `月${yen(realisticMonthly)}` : "ほぼ0円"}が実際に残る計算で、` +
+      `${
+        realisticMonthly >= paces[1].monthly
+          ? "平均的な使い方でも目標ペースに届きます。"
+          : `目標の月${yen(paces[1].monthly)}に届かせるには、平均より月${yen(paces[1].monthly - realisticMonthly)}ほど支出を抑える必要があります。家賃を抑える、実家から通うといった固定費の見直しが最も効きます。`
+      }`,
     `最初の目標は生活防衛資金です。手取り${label}なら3か月分で${man(emergencyMin)}、6か月分で${man(emergencyMax)}。` +
       `${b.ruleOfThumbMax}%ペースなら${periodLabel(goals[1].months)}〜${periodLabel(goals[2].months)}で到達します。` +
       `これが貯まるまでは投資より現金を優先し、すぐ引き出せる普通預金に置いておくのが基本です。`,

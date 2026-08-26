@@ -157,6 +157,23 @@
     word-break: normal;
     text-wrap: initial;
   }
+
+  /* 【固有名詞を途中で割らせない】
+     Chromeは word-break: auto-phrase で文節を判断して改行するが、
+     Safariは非対応で日本語をどこでも改行する。そのため見出しの中で
+     「霞ヶ関キ／ャピタル」のように社名が途中で割れることがあった。
+
+     keep-all は連続する文字の間での改行を禁止するので、
+     囲んだ範囲は原則1つのまとまりとして扱われる。
+     ただしそれだけでは極端に長い社名がはみ出すため、
+     overflow-wrap: anywhere を併用して、収まらないときだけ折り返す。
+
+     社名・ブランド名など、途中で切れると読めなくなる語にだけ使うこと。
+     長い文に付けると折り返し位置が不自然になる。 */
+  .jp-nobreak {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
   @media (min-width: 768px) {
     .jp-heading {
       word-break: auto-phrase;

@@ -258,7 +258,7 @@ export default async function SavingsPage({ params }: Props) {
             {/* --- 30歳時点の目標額 --- */}
             <section className="mt-10">
               <h2 className="jp-heading text-xl md:text-2xl font-bold mb-4">
-                30歳までに{Math.round(d.goalAt30.goal / 10_000).toLocaleString()}万円は間に合う？
+                30歳までに1,000万円は貯まる？
               </h2>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="rounded-2xl border bg-card p-4">
