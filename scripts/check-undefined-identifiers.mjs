@@ -213,5 +213,67 @@ for (const f of files) {
   }
 }
 
-console.log(`\n検査 ${files.length} ファイル / 未定義の識別子 ${problems} 件 / 重複宣言 ${duplicates} 件`)
-process.exit(problems + duplicates > 0 ? 1 : 0)
+// ------------------------------------------------------------------
+// 【import した名前が実在するか】
+//
+// 「import { foo } from './bar'」と書いたのに bar が foo を export
+// していないケース。実行時に undefined になり、呼び出した瞬間に落ちる。
+// リファクタで関数名を変えたときや、まだ書いていない関数を
+// 先に import してしまったときに起きる。実際に何度かやっている。
+// ------------------------------------------------------------------
+const exportsOf = (f) => {
+  const sf = ts.createSourceFile(f, fs.readFileSync(f, "utf8"), ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const out = new Set()
+  const add = (n) => n && out.add(n.getText())
+  for (const st of sf.statements) {
+    const exported = st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+    if (ts.isVariableStatement(st) && exported) {
+      for (const d of st.declarationList.declarations) add(d.name)
+    }
+    if (
+      (ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st) || ts.isInterfaceDeclaration(st) ||
+       ts.isTypeAliasDeclaration(st) || ts.isEnumDeclaration(st)) && exported
+    ) add(st.name)
+    if (ts.isExportDeclaration(st) && st.exportClause && ts.isNamedExports(st.exportClause)) {
+      for (const el of st.exportClause.elements) out.add(el.name.getText())
+    }
+  }
+  return out
+}
+
+const resolveModule = (from, spec) => {
+  const base = spec.startsWith("@/") ? spec.slice(2) : path.join(path.dirname(from), spec)
+  for (const ext of [".ts", ".tsx", "/index.ts", "/index.tsx"]) {
+    if (fs.existsSync(base + ext)) return base + ext
+  }
+  return fs.existsSync(base) && fs.statSync(base).isFile() ? base : null
+}
+
+let missing = 0
+for (const f of files) {
+  const sf = ts.createSourceFile(f, fs.readFileSync(f, "utf8"), ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  for (const st of sf.statements) {
+    if (!ts.isImportDeclaration(st)) continue
+    const spec = st.moduleSpecifier.getText().slice(1, -1)
+    if (!spec.startsWith("@/") && !spec.startsWith(".")) continue
+    const target = resolveModule(f, spec)
+    if (!target) continue
+    const available = exportsOf(target)
+    const nb = st.importClause?.namedBindings
+    if (nb && ts.isNamedImports(nb)) {
+      for (const el of nb.elements) {
+        const name = (el.propertyName ?? el.name).getText()
+        if (!available.has(name)) {
+          const line = sf.getLineAndCharacterOfPosition(st.getStart(sf)).line + 1
+          console.log(`  NG ${f}:${line}  "${name}" は ${spec} から export されていません`)
+          missing++
+        }
+      }
+    }
+  }
+}
+
+console.log(
+  `\n検査 ${files.length} ファイル / 未定義の識別子 ${problems} 件 / 重複宣言 ${duplicates} 件 / import名の不一致 ${missing} 件`,
+)
+process.exit(problems + duplicates + missing > 0 ? 1 : 0)

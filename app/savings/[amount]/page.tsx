@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { AdBanner } from "@/components/ad-banner"
 import { CompanyLogo } from "@/components/company-logo"
+import { ArrowRightIcon } from "lucide-react"
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import {
   buildSavingsPage,
@@ -203,6 +204,98 @@ export default async function SavingsPage({ params }: Props) {
               </div>
             </section>
 
+            {/* --- 住まい方による差 ---
+                【独自の切り口】銀行のコラムは「手取りの1〜2割を貯めましょう」で終わる。
+                実際に効くのは住まいの選択で、統計上は年110万円以上の差がつく。
+                初任給が月5万円高い企業でも年60万円の差にしかならないため、
+                就活生にとってはこちらのほうがインパクトが大きい。 */}
+            <section className="mt-10">
+              <h2 className="jp-heading text-xl md:text-2xl font-bold mb-4">
+                実家暮らしなら、いくら変わる？
+              </h2>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {d.livingScenarios.map((s) => (
+                  <div
+                    key={s.key}
+                    className={`rounded-2xl border p-4 md:p-5 ${
+                      s.beatsAverage ? "border-primary/40 bg-primary/5" : "bg-card"
+                    }`}
+                  >
+                    <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
+                    <p
+                      className={`text-2xl md:text-3xl font-bold tabular mb-1 ${
+                        s.annualSurplus > 0 ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
+                      {s.annualSurplus > 0
+                        ? Math.round(s.annualSurplus / 10_000).toLocaleString()
+                        : "0"}
+                      <span className="text-sm font-normal text-muted-foreground">万円/年</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mb-2">
+                      年間支出 約{Math.round(s.annualCost / 10_000).toLocaleString()}万円
+                    </p>
+                    <p className="text-[13px] leading-[1.8] text-muted-foreground">{s.note}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-xl border-l-4 border-l-primary/50 bg-card p-4">
+                <p className="text-[16px] leading-[1.95] text-foreground">
+                  その差は年
+                  <strong className="text-primary text-xl mx-1 tabular">
+                    {Math.round(d.livingDiff / 10_000).toLocaleString()}万円
+                  </strong>
+                  。初任給が月5万円高い企業に入っても年60万円の差なので、
+                  住まいの選択は企業選びと同じくらい貯蓄額を左右します。
+                </p>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                ※ 家賃補助や社宅がある企業なら、一人暮らしでもこの差をかなり埋められます。
+                福利厚生は求人票だけでは分かりにくいので、説明会や面接で確認してください。
+              </p>
+            </section>
+
+            {/* --- 30歳時点の目標額 --- */}
+            <section className="mt-10">
+              <h2 className="jp-heading text-xl md:text-2xl font-bold mb-4">
+                30歳までに{Math.round(d.goalAt30.goal / 10_000).toLocaleString()}万円は間に合う？
+              </h2>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="rounded-2xl border bg-card p-4">
+                  <p className="text-xs text-muted-foreground mb-1">必要なペース</p>
+                  <p className="text-xl md:text-2xl font-bold text-foreground tabular">
+                    年{Math.round(d.goalAt30.requiredAnnual / 10_000).toLocaleString()}万円
+                  </p>
+                </div>
+                <div
+                  className={`rounded-2xl border p-4 ${
+                    d.goalAt30.achievable ? "border-primary/40 bg-primary/5" : "bg-card"
+                  }`}
+                >
+                  <p className="text-xs text-muted-foreground mb-1">
+                    手取りの{SAVINGS_BENCHMARK.ruleOfThumbMax}%なら
+                  </p>
+                  <p
+                    className={`text-xl md:text-2xl font-bold tabular ${
+                      d.goalAt30.achievable ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    年{Math.round(d.goalAt30.actualAnnual / 10_000).toLocaleString()}万円
+                  </p>
+                </div>
+              </div>
+              <p className="text-[16px] leading-[1.95] text-muted-foreground">
+                {SAVINGS_BENCHMARK.firstYearSurvey}によると、社会人1年目の平均貯蓄額は
+                {Math.round(SAVINGS_BENCHMARK.firstYearAverage / 10_000)}万円、
+                社会人2年目が考える30歳時点の目標額は平均
+                {Math.round(d.goalAt30.goal / 10_000).toLocaleString()}万円です。
+                {d.goalAt30.achievable
+                  ? "手取りの20%を貯め続けられれば、計算上はこのペースに乗ります。"
+                  : `手取り${d.amountLabel}の20%では年${Math.round(d.goalAt30.shortfallAnnual / 10_000).toLocaleString()}万円足りませんが、給与は年次とともに上がるため、昇給と賞与でこの差は縮まります。`}
+                目標額はアンケートの平均値であり、全員が目指すべき金額ではありません。
+              </p>
+            </section>
+
             {/* --- 解説 --- */}
             <section className="mt-10 space-y-5">
               {d.paragraphs.map((p, i) => (
@@ -299,9 +392,49 @@ export default async function SavingsPage({ params }: Props) {
                 <Button asChild variant="outline" className="bg-transparent">
                   <Link href="/savings">貯金の目安一覧</Link>
                 </Button>
-                <Button asChild variant="outline" className="bg-transparent">
-                  <Link href="/ranking">初任給ランキング</Link>
-                </Button>
+              </div>
+
+              {/* 【回遊】貯蓄ページから企業選びへ戻す。
+                  「貯められる額を増やしたい」→「初任給の高い企業を見る」は
+                  読者の関心が自然につながる流れで、当サイトの本体でもある。 */}
+              <div className="mt-6 rounded-2xl border bg-card p-5">
+                <h2 className="jp-heading text-lg md:text-xl font-bold text-foreground mb-2">
+                  貯められる額を増やすには
+                </h2>
+                <p className="text-[15px] leading-[1.9] text-muted-foreground mb-4">
+                  支出を削るより、そもそもの手取りを上げるほうが確実です。
+                  当サイトでは掲載企業の初任給・手取り・入社後の平均年収まで比較できます。
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Link
+                    href="/ranking"
+                    className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
+                  >
+                    初任給が高い企業ランキング
+                    <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </Link>
+                  <Link
+                    href="/ranking/growth"
+                    className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
+                  >
+                    入社後に伸びる企業
+                    <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </Link>
+                  <Link
+                    href="/ranking/average"
+                    className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
+                  >
+                    平均年収ランキング
+                    <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </Link>
+                  <Link
+                    href="/companies"
+                    className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
+                  >
+                    企業名から探す
+                    <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </Link>
+                </div>
               </div>
               <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
                 ※ 先取り貯蓄の{SAVINGS_BENCHMARK.ruleOfThumbMin}〜{SAVINGS_BENCHMARK.ruleOfThumbMax}%と

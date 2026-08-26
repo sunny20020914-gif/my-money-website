@@ -60,7 +60,56 @@ export const SAVINGS_BENCHMARK = {
   nonHolderRate20s: 33.2,
   assetSurvey: "金融経済教育推進機構（J-FLEC）「家計の金融行動に関する世論調査（2025年）」",
   assetTarget: "20歳代の単身世帯",
+
+  // ------------------------------------------------------------------
+  // 【当サイトならではの切り口をつくるための数値】
+  //
+  // 銀行のコラムは「新卒の貯金は手取りの1〜2割」で終わってしまう。
+  // 当サイトは企業ごとの初任給を持っているので、
+  //   ・この会社なら1年目の平均貯蓄額を超えられるか
+  //   ・30歳時点の目標額に間に合うか
+  //   ・実家暮らしと一人暮らしでどれだけ違うか
+  // まで踏み込める。ここが他サイトと重ならない部分になる。
+  // ------------------------------------------------------------------
+
+  /** 社会人1年目の平均貯蓄額（円） */
+  firstYearAverage: 490_000,
+  firstYearSurvey: "ソニー生命「社会人1年目と2年目の意識調査2024」",
+
+  /** 社会人2年目が考える30歳時点の目標貯蓄額（円） */
+  goalAt30: 9_860_000,
+  /** 新卒入社から30歳までの年数 */
+  yearsTo30: 8,
+
+  /**
+   * 34歳以下・単身勤労者世帯の年間支出（円）。
+   *
+   * 【この数字が最も効く】一人暮らしと実家暮らしで年100万円以上違う。
+   * 初任給が月5万円（年60万円）高い企業を選ぶより、
+   * 住まいの選択のほうが貯蓄額への影響が大きいことすらある。
+   * 就活生がまず知るべきなのはこの事実。
+   */
+  livingAloneAnnual: 2_050_000,
+  livingWithFamilyAnnual: 935_000,
+  livingCostSurvey: "総務省「家計調査（家計収支編）単身世帯」",
 } as const
+
+/**
+ * 住まい方の違いによる貯蓄可能額。
+ * 一人暮らしと実家暮らしで年100万円以上違うため、
+ * 初任給の差より大きなインパクトを持つことがある。
+ */
+export interface LivingScenario {
+  key: "alone" | "family"
+  label: string
+  /** 年間の支出（円） */
+  annualCost: number
+  /** 年収（手取り×12）から支出を引いた残り。マイナスなら赤字 */
+  annualSurplus: number
+  /** 1年目の平均貯蓄額（49万円）を上回れるか */
+  beatsAverage: boolean
+  note: string
+}
 
 export interface SavingsEstimate {
   /** 月の手取り（1年目） */
@@ -107,6 +156,75 @@ export function estimateSavings(netMonthly: number): SavingsEstimate | null {
 
 const man = (v: number) => `${Math.round(v / 10_000).toLocaleString()}万円`
 const yen = (v: number) => `${Math.round(v).toLocaleString()}円`
+
+/**
+ * 住まい方の違いで年間いくら残るかを出す。
+ *
+ * 【なぜこれを出すか】
+ * 銀行のコラムは「手取りの1〜2割を貯めましょう」で終わる。
+ * だが実際に効くのは住まいの選択で、統計上は年間110万円以上の差がつく。
+ * 初任給が月5万円高い企業を選んでも年60万円の差にしかならないので、
+ * 就活生にとっては住まいのほうがインパクトが大きいことすらある。
+ * 当サイトは企業ごとの手取りを持っているので、この比較を具体的に出せる。
+ */
+export function buildLivingScenarios(netMonthly: number): LivingScenario[] {
+  const b = SAVINGS_BENCHMARK
+  const annualNet = netMonthly * 12
+
+  const make = (
+    key: LivingScenario["key"],
+    label: string,
+    annualCost: number,
+    note: string,
+  ): LivingScenario => {
+    const annualSurplus = annualNet - annualCost
+    return {
+      key,
+      label,
+      annualCost,
+      annualSurplus,
+      beatsAverage: annualSurplus >= b.firstYearAverage,
+      note,
+    }
+  }
+
+  return [
+    make(
+      "alone",
+      "一人暮らしの場合",
+      b.livingAloneAnnual,
+      "家賃・食費・光熱費・通信費などを含む単身世帯の平均的な支出です。家賃補助や社宅がある企業では、これより支出を抑えられます。",
+    ),
+    make(
+      "family",
+      "実家暮らしの場合",
+      b.livingWithFamilyAnnual,
+      "家賃と食費の大部分がかからない前提です。実家に生活費を入れる場合はその分を差し引いて考えてください。",
+    ),
+  ]
+}
+
+/**
+ * 30歳時点の目標額に対して、このペースで間に合うかを判定する。
+ * 目標額はアンケートの平均値であり、全員が目指すべき額ではない。
+ */
+export function buildGoalAt30(annualSavings: number): {
+  goal: number
+  requiredAnnual: number
+  actualAnnual: number
+  achievable: boolean
+  shortfallAnnual: number
+} {
+  const b = SAVINGS_BENCHMARK
+  const requiredAnnual = Math.round(b.goalAt30 / b.yearsTo30)
+  return {
+    goal: b.goalAt30,
+    requiredAnnual,
+    actualAnnual: annualSavings,
+    achievable: annualSavings >= requiredAnnual,
+    shortfallAnnual: Math.max(0, requiredAnnual - annualSavings),
+  }
+}
 
 /**
  * 企業詳細ページに載せる解説文。

@@ -1,4 +1,5 @@
-import { SAVINGS_BENCHMARK, estimateSavings } from "./savings"
+import { SAVINGS_BENCHMARK, estimateSavings, buildLivingScenarios, buildGoalAt30 } from "./savings"
+import type { LivingScenario } from "./savings"
 import { estimateNetSalary } from "./net-salary"
 import type { CompanyData } from "./sheets"
 
@@ -43,6 +44,22 @@ export function isValidSavingsAmount(amount: number): boolean {
   return SAVINGS_AMOUNTS.includes(amount)
 }
 
+/**
+ * 指定した手取りに最も近い、ページが存在する金額を返す。
+ * 用意している範囲（15万〜40万）から外れている場合は null。
+ *
+ * 企業ページから「手取り◯万円の貯金プラン」へ送るために使う。
+ */
+export function nearestSavingsAmount(netMonthly: number | null | undefined): number | null {
+  if (typeof netMonthly !== "number" || netMonthly <= 0) return null
+  const nearest = SAVINGS_AMOUNTS.reduce((best, a) =>
+    Math.abs(a - netMonthly) < Math.abs(best - netMonthly) ? a : best,
+  )
+  // 刻みが1万円なので最寄りとの差は最大5千円。
+  // それを超える＝用意している範囲の外なのでリンクしない。
+  return Math.abs(nearest - netMonthly) <= 5_000 ? nearest : null
+}
+
 /** 200000 → 「20万円」 */
 export function savingsManLabel(amount: number): string {
   const m = amount / 10_000
@@ -82,6 +99,12 @@ export interface SavingsPageData {
   nextAmount: number | null
   /** 手取りがこの水準に近い掲載企業 */
   nearbyCompanies: { company: CompanyData; netMonthly: number }[]
+  /** 一人暮らし／実家暮らしで年間いくら残るか */
+  livingScenarios: LivingScenario[]
+  /** 一人暮らしと実家暮らしの差額（年・円） */
+  livingDiff: number
+  /** 30歳時点の目標額に対する逆算 */
+  goalAt30: ReturnType<typeof buildGoalAt30>
   paragraphs: string[]
   faq: { question: string; answer: string }[]
 }
@@ -186,6 +209,14 @@ export function buildSavingsPage(amount: number, all: CompanyData[]): SavingsPag
 
   const grossEstimate = estimateGross(amount)
 
+  // 【独自の切り口】住まい方の違い。統計上は年110万円以上の差がつき、
+  // 初任給の差より貯蓄額を左右することがある。
+  const livingScenarios = buildLivingScenarios(amount)
+  const livingDiff =
+    livingScenarios[1].annualSurplus - livingScenarios[0].annualSurplus
+  // 30歳時点の目標額に対して、20%ペースで間に合うかの逆算
+  const goalAt30 = buildGoalAt30(paces[1].annual)
+
   // 手取りがこの水準に近い掲載企業。±1万円以内。
   const nearbyCompanies = all
     .map((c) => {
@@ -214,6 +245,21 @@ export function buildSavingsPage(amount: number, all: CompanyData[]): SavingsPag
     `最初の目標は生活防衛資金です。手取り${label}なら3か月分で${man(emergencyMin)}、6か月分で${man(emergencyMax)}。` +
       `${b.ruleOfThumbMax}%ペースなら${periodLabel(goals[1].months)}〜${periodLabel(goals[2].months)}で到達します。` +
       `これが貯まるまでは投資より現金を優先し、すぐ引き出せる普通預金に置いておくのが基本です。`,
+    `同じ手取り${label}でも、住む場所で貯まる額は大きく変わります。` +
+      `${b.livingCostSurvey}によると34歳以下の単身勤労者世帯の年間支出は約${man(b.livingAloneAnnual)}。` +
+      `一人暮らしなら年${man(Math.max(livingScenarios[0].annualSurplus, 0))}、実家暮らしなら年${man(Math.max(livingScenarios[1].annualSurplus, 0))}が手元に残る計算で、その差は年${man(livingDiff)}です。` +
+      `初任給が月5万円高い企業に入っても年60万円の差にしかならないことを考えると、住まいの選択は企業選びと同じくらい効きます。` +
+      `家賃補助や社宅がある企業なら、一人暮らしでもこの差をかなり埋められます。`,
+    `${b.firstYearSurvey}によると、社会人1年目の平均貯蓄額は${man(b.firstYearAverage)}、` +
+      `社会人2年目が考える30歳時点の目標額は平均${man(b.goalAt30)}です。` +
+      `後者を新卒入社からの${b.yearsTo30}年で割ると年${man(goalAt30.requiredAnnual)}のペースが必要になります。` +
+      `手取り${label}で${b.ruleOfThumbMax}%を貯めると年${man(paces[1].annual)}なので、` +
+      `${
+        goalAt30.achievable
+          ? "このペースを保てれば計算上は届きます。"
+          : `年${man(goalAt30.shortfallAnnual)}足りません。ただし給与は年次とともに上がるため、昇給と賞与でこの差は縮まります。`
+      }` +
+      `目標額はアンケートの平均値であり、全員が目指すべき金額ではありません。`,
   ]
 
   const faq: { question: string; answer: string }[] = [
@@ -245,7 +291,39 @@ export function buildSavingsPage(amount: number, all: CompanyData[]): SavingsPag
         `これは公的統計ではなくファイナンシャルプランニングの慣行値です。` +
         `病気・転職・急な引っ越しに備えるお金なので、投資に回さずすぐ引き出せる状態で持っておきます。`,
     },
+    {
+      // 【独自の切り口】銀行のコラムには無い、当サイトならではの問い。
+      // 企業ごとの手取りを持っているから具体的な金額で答えられる。
+      question: "実家暮らしと一人暮らしでどれくらい差がつきますか？",
+      answer:
+        `${b.livingCostSurvey}をもとに試算すると、手取り${label}の場合で年${man(livingDiff)}の差になります。` +
+        `一人暮らしの年間支出が約${man(b.livingAloneAnnual)}なのに対し、実家暮らしは約${man(b.livingWithFamilyAnnual)}だからです。` +
+        `初任給が月5万円高い企業に入っても年60万円の差にしかならないため、住まいの選択は企業選びと同じくらい貯蓄額を左右します。` +
+        `家賃補助や社宅制度がある企業を選べば、一人暮らしでもこの差を縮められます。`,
+    },
+    {
+      question: `30歳までに${man(b.goalAt30)}貯めるのは現実的ですか？`,
+      answer:
+        `${b.firstYearSurvey}によると、社会人2年目が考える30歳時点の目標貯蓄額は平均${man(b.goalAt30)}です。` +
+        `新卒入社からの${b.yearsTo30}年で割ると年${man(goalAt30.requiredAnnual)}のペースが必要になります。` +
+        `手取り${label}で${b.ruleOfThumbMax}%を貯めると年${man(paces[1].annual)}なので、` +
+        `${
+          goalAt30.achievable
+            ? "このペースを保てれば計算上は届きます。"
+            : `年${man(goalAt30.shortfallAnnual)}足りません。ただし給与は年次とともに上がるため、昇給と賞与でこの差は縮まります。`
+        }` +
+        `この金額はアンケートの平均値であり、全員が目指すべき目標ではありません。`,
+    },
   ]
+
+  if (nearbyCompanies.length > 0) {
+    faq.push({
+      question: `手取りが${label}前後になるのはどんな企業ですか？`,
+      answer:
+        `当サイト掲載企業では${nearbyCompanies.map((r) => r.company.company).join("、")}などが該当します。` +
+        `各企業のページでは初任給の内訳、手取りの計算過程、有価証券報告書に基づく平均年収まで確認できます。`,
+    })
+  }
 
   return {
     amount,
@@ -258,6 +336,9 @@ export function buildSavingsPage(amount: number, all: CompanyData[]): SavingsPag
     prevAmount,
     nextAmount,
     nearbyCompanies,
+    livingScenarios,
+    livingDiff,
+    goalAt30,
     paragraphs,
     faq,
   }
