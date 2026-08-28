@@ -240,6 +240,14 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
       }
     })
 
+    // 【診断】セルに値があるのに画面に出ない項目をビルドログへ出す。
+    // 表示側は値が取れないと黙って隠すため、入力ミスに気づけなかった。
+    // 問題が無ければ何も出力しない。
+    {
+      const { logHiddenFinancials } = await import("./financial-diagnostics")
+      logHiddenFinancials(companies, sheetName)
+    }
+
     // 月額額面ランキング: 年俸タブのうち月額が数値で入っている企業のみを
     // 月額降順に並べ替え、順位を振り直して返す（月額未記載の企業は載せない）
     if (rankingType === "monthly") {

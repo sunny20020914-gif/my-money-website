@@ -174,6 +174,34 @@
     word-break: keep-all;
     overflow-wrap: anywhere;
   }
+
+  /* 【記事本文の表】
+     スプレッドシートにMarkdownの表記法で書いた表は
+     lib/markdown.ts の withScrollableTables でこのdivに包まれる。
+
+     列が多い表はスマホの画面幅に収まらず、そのままだと
+     ページ全体が横スクロールしてしまう。
+     table 自体に overflow を効かせるには display:block にするしかないが、
+     それをすると列幅の自動調整が効かなくなる。
+     外側のdivにスクロールを預けるのが、表の見た目を保ったまま
+     解決できる唯一の方法。 */
+  .md-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 1.5rem 0;
+  }
+  .md-table-scroll > table {
+    margin: 0;
+    /* 中身に応じて広がるが、画面より狭いときは全幅に伸ばす */
+    min-width: 100%;
+    width: max-content;
+  }
+  /* セル内で数字や社名が不自然に折り返さないようにする。
+     入りきらない場合は横スクロールで見てもらう。 */
+  .md-table-scroll th,
+  .md-table-scroll td {
+    white-space: nowrap;
+  }
   @media (min-width: 768px) {
     .jp-heading {
       word-break: auto-phrase;

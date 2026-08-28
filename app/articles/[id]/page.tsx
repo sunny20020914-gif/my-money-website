@@ -9,6 +9,7 @@ import { StructuredData } from "@/components/structured-data"
 import Image from "next/image"
 import { AdBanner } from "@/components/ad-banner"
 import { Remarkable } from "remarkable"
+import { splitIntoBlocks, withScrollableTables } from "@/lib/markdown"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FavoriteArticleButton } from "@/components/favorite-article-button"
@@ -87,20 +88,42 @@ export default async function ArticlePage({ params, searchParams }: Props) {
   const md = new Remarkable({
     html: true, // HTMLタグを有効にして、文字色やサイズ指定を反映させる
   })
-  // スプレッドシートからの改行をMarkdownの段落として正しく解釈させるための処理
-  // 1つ以上の連続した改行を2つの改行に置き換える
-  const formattedContent = currentContent.replace(/\n+/g, "\n\n")
 
-  // 本文中に広告を挟むため、段落単位で前半・後半に分割する
-  // （段落数が少ない薄いコンテンツに無理に広告を挟まないよう、4段落以上の場合のみ分割）
-  const paragraphs = formattedContent.split(/\n\n+/).filter(Boolean)
-  const shouldSplitForInContentAd = paragraphs.length >= 4
-  const splitIndex = Math.ceil(paragraphs.length / 2)
-  const htmlContentTop = md.render(
-    shouldSplitForInContentAd ? paragraphs.slice(0, splitIndex).join("\n\n") : formattedContent,
+  /**
+   * 【重要・表とリストが壊れていた原因】
+   *
+   * 以前はここで currentContent.replace(/\n+/g, "\n\n") としていた。
+   * つまり単一の改行まですべて段落区切りに変換していた。
+   *
+   * Markdownの表は
+   *   | 順位 | 企業名 |
+   *   | --- | --- |
+   *   | 1 | ○○ |
+   * のように「連続した行」であることが構文の条件になっている。
+   * 行の間に空行が入ると表として認識されず、ただの文字列になる。
+   * 実際に検証したところ <table> が一切生成されなかった。
+   * 箇条書きも各項目が別段落になり、間延びした表示になっていた。
+   *
+   * 企業詳細ページでは既に修正済みだったが、記事ページだけ古いままだった。
+   * 標準のMarkdownの規則に戻す:
+   *   ・空行（\n\n）… 段落の区切り
+   *   ・単一の改行 …… 同じ段落内。表やリストの行はここで繋がる
+   * \r\n はGoogle Sheets由来で混ざることがあるため \n に正規化しておく。
+   */
+  const formattedContent = currentContent.replace(/\r\n/g, "\n")
+
+  // 本文中に広告を挟むため前半・後半に分割する
+  // （薄いコンテンツに無理に挟まないよう、4ブロック以上の場合のみ）
+  const blocks = splitIntoBlocks(formattedContent)
+  const shouldSplitForInContentAd = blocks.length >= 4
+  const splitIndex = Math.ceil(blocks.length / 2)
+  const htmlContentTop = withScrollableTables(
+    md.render(
+      shouldSplitForInContentAd ? blocks.slice(0, splitIndex).join("\n\n") : formattedContent,
+    ),
   )
   const htmlContentBottom = shouldSplitForInContentAd
-    ? md.render(paragraphs.slice(splitIndex).join("\n\n"))
+    ? withScrollableTables(md.render(blocks.slice(splitIndex).join("\n\n")))
     : ""
 
   return (

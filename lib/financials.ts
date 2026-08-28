@@ -323,17 +323,24 @@ export function buildFinancialMetrics(
 }
 
 /**
- * ランキングカード用（3項目まで）。
- * 売上高・営業利益率・一人当たり営業利益に絞り、カードが縦に伸びるのを防ぐ。
+ * ランキングカード用（onCard: true の3項目・固定）。
+ *
+ * 【データが無い項目は隠さず「-」で出す】
+ * 以前は値が取れない指標をカードから丸ごと隠していたが、それだと
+ *   ・そもそもデータが無い（非上場・外資日本法人など有報が無い企業）
+ *   ・持株会社ガードで意図的に隠している（平均年収）
+ * のどちらなのかが読者にも運営者にも区別できず、
+ * 「スプシに入れたのに表示されない」という混乱の原因になっていた。
+ * 項目名は常に3つ並べ、値だけを「-」にすることで
+ * 欠測が仕様であることが一目で伝わり、カードの高さと列位置も揃う。
+ * （企業詳細ページの表は従来どおり、データがある指標だけを出す）
  */
 export function buildCardFinancialMetrics(company: CompanyData): FinancialMetric[] {
   const metrics: FinancialMetric[] = []
   for (const def of METRIC_DEFS) {
     if (!def.onCard) continue
     const value = def.format(company)
-    if (value !== null) {
-      metrics.push({ key: def.key, label: def.label(company), value })
-    }
+    metrics.push({ key: def.key, label: def.label(company), value: value ?? "-" })
   }
   return metrics
 }
