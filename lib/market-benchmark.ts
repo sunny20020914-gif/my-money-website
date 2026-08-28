@@ -82,6 +82,16 @@ export interface LeadBlock {
   body: string
 }
 
+/**
+ * 【引数について】listedCount・avgMonthly・medianMonthly・topCompany・
+ * topMonthly・over30・over40 は現在この関数の中で使っていない。
+ * これらの集計値を扱っていた段落（②）を、下の集計サマリーと
+ * 内容が重複するため削除したため。
+ *
+ * 引数自体は残してある。呼び出し側の記述を変えずに済み、
+ * 将来サマリーの構成を変えて集計値をリード文に戻したくなったときに
+ * すぐ書けるようにしておくため。
+ */
 export function buildRankingLead(opts: {
   listedCount: number
   avgMonthly: number | null
@@ -110,27 +120,16 @@ export function buildRankingLead(opts: {
       `企業規模による差も大きく、従業員1,000人以上では${yen(b.largeCompany)}、10〜99人では${yen(b.smallCompany)}です。`,
   })
 
-  // ② このページが何のデータなのかを明示（母集団の偏りを隠さない）
-  if (opts.avgMonthly !== null) {
-    const ratio = Math.round((opts.avgMonthly / b.universityGraduate) * 10) / 10
-    let body =
-      `掲載${opts.listedCount}社の平均は月額${yen(opts.avgMonthly)}`
-    if (opts.medianMonthly !== null) body += `（中央値${yen(opts.medianMonthly)}）`
-    body += `で、全国平均の約${ratio}倍にあたります。`
-    if (opts.topCompany && opts.topMonthly !== null) {
-      body += `最高額は${opts.topCompany}の${yen(opts.topMonthly)}。`
-    }
-    body += `月30万円以上が${opts.over30}社、40万円以上が${opts.over40}社です。`
-    // 【見出しの折り返し】鉤括弧を先頭に置くと、スマホでも
-    // 「初任給が高い企業」／に絞ったデータを掲載 のように
-    // 括弧の閉じ目で自然に改行される。
-    // 以前の「このページは「初任給が高い企業」に絞ったデータ」は
-    // 括弧の途中で割れて読みにくかった。
-    blocks.push({
-      heading: `「初任給が高い企業」に絞ったデータを掲載`,
-      body,
-    })
-  }
+  // ②【意図的に置かない】
+  // かつてここに「掲載◯社の平均は月額◯円（中央値◯円）。最高額は◯◯の◯円。
+  // 月30万円以上が◯社、40万円以上が◯社」という段落があった。
+  // だがこの内容は、すぐ下に表示している集計サマリー（数値カード＋1文）と
+  // まったく同じで、同じ数字を2回読ませることになっていた。
+  // 繰り返しは読み手にくどく、機械が生成した文章という印象を強める。
+  //
+  // 集計値の提示はサマリー側に任せ、リード文は
+  //   相場 → 高い企業の特徴 → 読み方の注意
+  // という「サマリーには書けない話」だけに絞る。
 
   // ③ 高い企業に共通する特徴（就活生が最も知りたい「なぜ」に答える）
   if (opts.topIndustries.length >= 2) {

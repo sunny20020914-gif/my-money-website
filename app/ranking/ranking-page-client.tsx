@@ -607,8 +607,13 @@ export function RankingPageClient({
                 text-[17px] のような任意値は globals.css のスマホ用底上げ（text-base等）の
                 対象外になるため、ここで直接指定している。
                 段落間の余白（space-y-5）も広めに取り、文章の塊が見分けやすいようにする。 */}
+            {/* 【囲みを外した理由】枠線・背景・左のアクセント罫で囲むと、
+                ページ冒頭に「装飾された箱」が並ぶ見た目になり、
+                機械が組み立てた画面という印象が強くなっていた。
+                リード文は記事の導入なので、背景そのままに文章として置く。
+                読み手には普通の記事の書き出しに見えるほうが自然。 */}
             {leadBlocks.length > 0 && (
-              <section className="mb-8 rounded-2xl border bg-card p-5 md:p-7 border-l-4 border-l-primary/50">
+              <section className="mb-8">
                 <div className="space-y-6 text-left">
                   {leadBlocks.map((block, i) => (
                     <div key={i}>
@@ -636,31 +641,34 @@ export function RankingPageClient({
               <div className="mb-6 rounded-xl border bg-card p-4 md:p-5">
                 {/* 主要指標をカード化して一目で掴めるようにする。
                     文章だけだと数字が埋もれ、データサイトとしての説得力が出ない。 */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <div className="rounded-lg bg-muted/50 p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1">平均初任給</div>
-                    <div className="text-lg md:text-2xl font-bold text-primary tabular">
+                {/* 【スマホでの見え方】数字が18pxだとカードの余白ばかり目立っていた。
+                    22pxまで上げ、ラベルとの間隔を詰めて数字を主役にする。
+                    ¥368,230 のような8文字でも2列グリッドに収まる大きさ。 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3 mb-4">
+                  <div className="rounded-lg bg-muted/50 px-2 py-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-0.5">平均初任給</div>
+                    <div className="text-[22px] md:text-2xl font-bold text-primary tabular leading-tight">
                       ¥{summary.avgMonthly.toLocaleString()}
                     </div>
                   </div>
                   {summary.medianMonthly !== null && (
-                    <div className="rounded-lg bg-muted/50 p-3 text-center">
-                      <div className="text-xs text-muted-foreground mb-1">中央値</div>
-                      <div className="text-lg md:text-2xl font-bold text-foreground tabular">
+                    <div className="rounded-lg bg-muted/50 px-2 py-3 text-center">
+                      <div className="text-xs text-muted-foreground mb-0.5">中央値</div>
+                      <div className="text-[22px] md:text-2xl font-bold text-foreground tabular leading-tight">
                         ¥{summary.medianMonthly.toLocaleString()}
                       </div>
                     </div>
                   )}
-                  <div className="rounded-lg bg-muted/50 p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1">掲載企業数</div>
-                    <div className="text-lg md:text-2xl font-bold text-foreground tabular">
+                  <div className="rounded-lg bg-muted/50 px-2 py-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-0.5">掲載企業数</div>
+                    <div className="text-[22px] md:text-2xl font-bold text-foreground tabular leading-tight">
                       {summary.withMonthly}
                       <span className="text-sm font-normal text-muted-foreground">社</span>
                     </div>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1">40万円以上</div>
-                    <div className="text-lg md:text-2xl font-bold text-foreground tabular">
+                  <div className="rounded-lg bg-muted/50 px-2 py-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-0.5">40万円以上</div>
+                    <div className="text-[22px] md:text-2xl font-bold text-foreground tabular leading-tight">
                       {summary.over40}
                       <span className="text-sm font-normal text-muted-foreground">社</span>
                     </div>
