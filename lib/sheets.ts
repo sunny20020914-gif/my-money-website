@@ -149,23 +149,49 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
 
   try {
     const sheetName = getSheetName(rankingType)
+    // 【4,000社対応・分割取得】
+    // 以前は `A2:Z1000` の固定レンジで、1,000行を超えた企業は黙って消えていた。
+    // さらに Next.js の Data Cache はレスポンスが2MBを超えるとキャッシュ対象外になる。
+    // 全行を1リクエストで取ると180社≒120KB → 4,000社で2.5MB前後と上限を超え、
+    // キャッシュが静かに無効化 → 全静的ページのビルドがAPIを直接叩く → 429 →
+    // catch が空配列を返して全ページが空のままビルドされる、という壊れ方をする。
+    // 1,000行ずつ別URLで取得すれば、各レスポンスが2MB未満に収まってキャッシュが効き続け、
+    // ビルド中のAPI呼び出しもチャンク数（4,000社なら4〜5回）で済む。
+    //
     // M列(salaryUrl)までが従来の必須データ。N〜V列が財務指標。
     // 将来さらに指標を足しても range を変えずに済むよう、余裕を持って Z まで取得する。
     // 列が存在しない場合、Sheets APIは単に短い配列を返すだけでエラーにはならない。
-    const range = `${sheetName}!A2:Z1000`
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
+    const CHUNK_ROWS = 1000
+    const MAX_CHUNKS = 10 // 安全弁（1万行）。これを超える規模ならデータ基盤の移行を検討する
+    const allRows: any[][] = []
 
-    console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
+    for (let chunk = 0; chunk < MAX_CHUNKS; chunk++) {
+      const startRow = 2 + chunk * CHUNK_ROWS // 1行目はヘッダーなので2行目から
+      const range = `${sheetName}!A${startRow}:Z${startRow + CHUNK_ROWS - 1}`
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${SHEETS_API_KEY}`
 
-    const response = await fetch(url, fetchCacheOptions)
+      console.log("[v0] Google Sheets APIリクエスト:", url.replace(SHEETS_API_KEY, "***"))
 
-    console.log("[v0] APIレスポンスステータス:", response.status)
+      const response = await fetch(url, fetchCacheOptions)
 
-    const data = await response.json()
+      if (!response.ok) {
+        // 429等をここで握りつぶすと「途中のチャンクから先の企業だけ消えた」一覧が
+        // 正常データとしてビルドされてしまう。部分成功は返さず、
+        // 全体を失敗（catch → 空配列＝明確な取得失敗）に倒す。
+        throw new Error(`Sheets API responded with status ${response.status} (${range})`)
+      }
 
-    console.log("[v0] 取得したデータ行数:", data.values?.length || 0)
+      const data = await response.json()
+      const rows: any[][] = data.values ?? []
+      allRows.push(...rows)
 
-    if (!data.values) {
+      // 空応答 or 1,000行未満＝データが尽きたので打ち切り
+      if (rows.length < CHUNK_ROWS) break
+    }
+
+    console.log("[v0] 取得したデータ行数:", allRows.length)
+
+    if (allRows.length === 0) {
       console.warn("[v0] スプレッドシートにデータが見つかりません。空の配列を返します。")
       return []
     }
@@ -201,7 +227,11 @@ export async function fetchRankingDataServer(rankingType: RankingType = "annual"
       return parseSalaryValue(value) ?? '?';
     }
 
-    const companies: CompanyData[] = data.values.map((row: any[], index: number) => {
+    // 空行（B列＝企業名が空の行）はスキップする。数千行の手入力では途中に空行が
+    // 紛れやすく、空のカードや `company-<n>` という無意味なIDが生成されるのを防ぐ。
+    const dataRows = allRows.filter((row) => String(row?.[1] ?? "").trim() !== "")
+
+    const companies: CompanyData[] = dataRows.map((row: any[], index: number) => {
       const id = row[11] || row[1]?.toLowerCase().replace(/\s/g, '_') || `company-${index}`
       const baseData = {
         rank: parseStrictNumber(row[0]) || index + 1,

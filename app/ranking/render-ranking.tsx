@@ -1,4 +1,4 @@
-import { fetchRankingDataServer, type RankingType } from "@/lib/sheets"
+import { fetchRankingDataServer, type CompanyData, type RankingType } from "@/lib/sheets"
 import { buildRankingSummary, buildRankingFaq } from "@/lib/ranking-summary"
 import { RankingPageClient } from "./ranking-page-client"
 import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
@@ -21,7 +21,25 @@ export async function renderRankingPage(rankingType: RankingType) {
   const pageName = isAnnual ? "想定年収ランキング" : "初任給ランキング"
 
   try {
-    const initialData = await fetchRankingDataServer(rankingType)
+    // 【転送量削減】一覧ページが実際に使う列だけをクライアントへ渡す。
+    // ここで落とす列（企業サイトURL・一人当たり指標・対象期など）は企業詳細ページ専用で、
+    // 4,000社規模ではHTML/RSCペイロードを数百KB単位で太らせるだけになる。
+    // 【落とせない列に注意】カードは description・salaryUrl・logo/domain のほか、
+    // 財務指標に revenue・operatingMargin・averageAnnualSalary・連結/単体従業員数・
+    // accountingStandard（営業利益率/事業利益率のラベル分岐）を使う。
+    // 列を落とす際は ranking-page-client と lib/financials の使用箇所を確認すること。
+    const toListPayload = ({
+      url,
+      operatingProfit,
+      salesPerEmployee,
+      profitPerEmployee,
+      capitalPerEmployee,
+      laborShare,
+      fiscalPeriod,
+      ...rest
+    }: CompanyData): CompanyData => rest
+
+    const initialData = (await fetchRankingDataServer(rankingType)).map(toListPayload)
 
     // C列の業界データを抽出し、重複を除いたリストを作成
     const allIndustries = initialData.flatMap((c) => c.industry.split("/")).filter(Boolean)
@@ -40,8 +58,10 @@ export async function renderRankingPage(rankingType: RankingType) {
       description: isAnnual
         ? `${FISCAL_YEAR}年度 新卒の想定年収ランキング（賞与込み）`
         : `${FISCAL_YEAR}年度 新卒初任給ランキング（月額）`,
-      numberOfItems: initialData.length,
-      itemListElement: initialData.map((company, i) => ({
+      // 【構造化データの肥大化対策】全社分入れると4,000社で数百KBのJSONが
+      // 毎ページに埋まる。リッチリザルトの評価には上位分で十分なため100件に制限する。
+      numberOfItems: Math.min(initialData.length, 100),
+      itemListElement: initialData.slice(0, 100).map((company, i) => ({
         "@type": "ListItem",
         position: company.rank || i + 1,
         name: company.company,

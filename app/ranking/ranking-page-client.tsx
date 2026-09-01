@@ -396,7 +396,11 @@ export function RankingPageClient({
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
   const [isIndustryFilterOpen, setIsIndustryFilterOpen] = useState(false)
   const { data: companies, loading, error, refreshData } = useRankingData(selectedRanking, {
-    fallbackData: selectedRanking === 'monthly' ? initialData : undefined,
+    // 種別はURLごとに固定（selectedRanking === rankingType が常に成立）なので、
+    // SSRで埋め込んだ初期データをそのままSWRの初期値にする。
+    // 以前の「monthlyのみfallback」はタブ切り替え時代の名残で、
+    // /ranking/annual だけ毎回クライアントが全件を取り直す無駄が残っていた。
+    fallbackData: initialData,
   })
   
   const sortedAndFilteredCompanies = useMemo(() => {
