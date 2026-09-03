@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, Star, TrendingUpIcon } from "lucide-react"
+import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, ChevronRight, Star, TrendingUpIcon } from "lucide-react"
 import { AdBanner } from "@/components/ad-banner"
 import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
@@ -205,8 +205,13 @@ const CompanyCard = ({
     return valueComponent;
   };
 
+  // 【Cardの上下余白】Cardの既定は py-6（上下24pxずつ）。
+  // スマホではこの48pxがまるごと空白として乗り、カードが
+  // 実測230pxまで膨らんで「スカスカ」に見える原因になっていた。
+  // スマホは各レイアウト側で余白を持つため py-0 にし、
+  // PCは従来どおり py-6 を維持する。
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="py-0 lg:py-6 hover:shadow-lg transition-shadow">
       {/* PC (lg以上) 用のレイアウト */}
       <div className="hidden lg:block">
         <CardContent className="px-6 pt-4 pb-2 flex flex-col">
@@ -314,80 +319,99 @@ const CompanyCard = ({
           )}
         </CardContent>
       </div>
-      {/* スマホ・タブレット (lg未満) 用のレイアウト */}
-      <div className="px-2 pt-0 pb-1 md:px-6 md:pt-6 md:pb-4 lg:hidden">
-        <div className="pl-2">
-          <div className="flex flex-col gap-4 py-2">
-            {/* 上段：企業情報 */}
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm flex-shrink-0 ${(company.rank || index + 1) <= 3 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
-                {company.rank || index + 1}
-              </div>
-              <CompanyLogo
-                logo={company.logo}
-                domain={company.domain}
-                company={company.company}
-                size={40}
-                className="w-10 h-10 rounded-lg object-contain"
-              />
-              {/* min-w-0 が無いと長い企業名がflexを押し広げてカードから溢れる。
-                  text-balance は2行に折り返る際に行の長さを均等に分割し、
-                  最終行に1〜2文字だけ残る不格好な折り返しを防ぐ。 */}
-              {/* 【スマホは3情報に絞る】業界バッジは出さない（詳細ページで確認できる）。
-                  一覧はアイコン・企業名・初任給に絞り、1画面に入る社数を増やす */}
-              <div className="ml-1 text-left min-w-0">
-                <h3 className="text-base font-bold text-foreground leading-snug text-balance">{company.company}</h3>
-              </div>
-            </div>
-            {/* 下段：初任給のみ。
-                以前は従業員数・設立年まで並べていたが、一覧の判断材料としては
-                ほぼ読まれず縦幅を消費するだけだった。スマホの詳細情報は
-                詳細ページ（詳しく見る）に任せる。 */}
-            {/* 【横一列】ラベルと金額を1行に並べる。
-                以前はラベルの下に金額を置く2段組みだったが、
-                「初任給」の3文字のために1行まるごと使っており、
-                カード1枚あたりの縦幅が無駄に伸びていた。
+      {/* スマホ・タブレット (lg未満) 用のレイアウト
+          ------------------------------------------------------------------
+          【カード全体をタップ領域にする】
+          以前は「詳しく見る」と「保存」の2つを全幅ボタンとして縦に積んでいた。
+          実測するとボタン領域がカード高の49%を占め、情報領域48%を上回っていた。
+          ランキングなのに1画面に2〜3社しか入らず、順位を比較しづらい。
 
-                items-baseline: ラベル(14px)と金額(24px)の文字の下端を揃える。
-                  中央揃えにすると、大きい数字に対してラベルが浮いて見える。
-                flex-wrap: 「想定年収」＋8桁のような長い組み合わせでも
-                  はみ出さず、収まらないときだけ従来どおり2段に折り返す。 */}
-            <div className="pl-[52px] flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-              <span className="text-sm text-muted-foreground shrink-0">
-                {rankingTypes.find((r) => r.id === selectedRanking)?.label}
-              </span>
-              <SalaryDisplay isMobile />
-            </div>
-          </div>
-          {/* 説明文はスマホでは出さない（詳細ページで読める。一覧性を優先） */}
+          ボタンを廃止し、カードのどこを押しても詳細ページへ行くようにする。
 
-          {/* 財務指標（売上高・平均年収など）はスマホでは出さない。
-              PCの下段と企業詳細ページでのみ表示する（3情報ルール） */}
-        </div>
+          【実装上の注意】
+          <a> の中に <button>（保存）を入れるのはHTMLとして不正で、
+          キーボード操作と読み上げが壊れる。
+          そこでリンクは absolute inset-0 の透明な面として本文の上に敷き、
+          保存ボタンだけ z-index をさらに上げて重ねる。
+          こうすればリンクと保存ボタンは入れ子にならず兄弟の関係になる。
+          カードあたりのリンクも1本のままなのでクロール上も増えない。 */}
+      <div className="relative px-3 py-2.5 md:px-6 md:py-4 lg:hidden">
+        {/* 透明なリンク面。見た目は持たず、タップ領域と読み上げのためだけに置く。
+            aria-label が無いと中身が空のリンクとして読み上げられてしまう。 */}
         {company.id && (
-          <div className="mt-4 flex flex-col gap-1.5">
-            {/* 詳細ページへの導線を塗りつぶし＋幅いっぱいにし、★は下段に分離 */}
-            <Button asChild size="sm" className="w-full font-semibold">
-              <Link href={`/companies/${company.id}`}>
-                詳しく見る
-                <ArrowRightIcon className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+          <Link
+            href={`/companies/${company.id}`}
+            aria-label={`${company.company}の初任給・年収の詳細を見る`}
+            className="absolute inset-0 z-[1] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          />
+        )}
+
+        {/* 上段：順位・ロゴ・企業名・保存 */}
+        <div className="flex items-center gap-3">
+          <div className={`flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm flex-shrink-0 ${(company.rank || index + 1) <= 3 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
+            {company.rank || index + 1}
+          </div>
+          <CompanyLogo
+            logo={company.logo}
+            domain={company.domain}
+            company={company.company}
+            size={40}
+            className="w-10 h-10 rounded-lg object-contain flex-shrink-0"
+          />
+          {/* min-w-0 が無いと長い企業名がflexを押し広げてカードから溢れる。
+              text-balance は2行に折り返る際に行の長さを均等に分割し、
+              最終行に1〜2文字だけ残る不格好な折り返しを防ぐ。 */}
+          {/* 【スマホは3情報に絞る】業界バッジは出さない（詳細ページで確認できる）。
+              一覧はアイコン・企業名・初任給に絞り、1画面に入る社数を増やす */}
+          <div className="min-w-0 flex-1 text-left">
+            <h3 className="text-base font-bold text-foreground leading-snug text-balance">{company.company}</h3>
+          </div>
+
+          {/* 【保存】以前は全幅のアウトラインボタンだったが、
+              一覧の主役ではない操作に1行まるごと使うのは重すぎた。
+              右上のアイコンだけにする。枠を消しても40pxの
+              タップ領域は確保しているので押しにくくはならない。
+              z-[2] でリンク面より上に置き、押しても詳細ページへ飛ばない。 */}
+          {company.id && (
+            <button
+              type="button"
               onClick={handleFavoriteClick}
-              className={`bg-transparent w-full transition-colors ${
+              aria-label={isFav ? `${company.company}の保存を解除` : `${company.company}を保存`}
+              aria-pressed={isFav}
+              className={`relative z-[2] -mr-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
                 isFav
-                  ? "text-primary border-primary dark:text-green-500 dark:border-green-500"
-                  : "text-muted-foreground hover:text-primary hover:border-primary dark:hover:text-green-500 dark:hover:border-green-500"
+                  ? "text-primary dark:text-green-500"
+                  : "text-muted-foreground/50 hover:text-primary dark:hover:text-green-500"
               }`}
             >
-              <Star className="h-3.5 w-3.5 mr-1" fill={isFav ? "currentColor" : "none"} />
-              <span className="text-xs">{isFav ? "保存済み" : "保存"}</span>
-            </Button>
+              <Star className="h-5 w-5" fill={isFav ? "currentColor" : "none"} />
+            </button>
+          )}
+        </div>
+
+        {/* 下段：金額と、詳細への矢印。
+            金額は順位バッジと同じ左端に揃える（ロゴの左端に合わせていた頃は
+            企業名ともカード左端とも揃わず、数字だけが宙に浮いて見えた）。
+
+            items-baseline: ラベル(14px)と金額(24px)の文字の下端を揃える。
+              中央揃えにすると、大きい数字に対してラベルが浮いて見える。 */}
+        <div className="mt-2 flex items-baseline justify-between gap-3">
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 min-w-0">
+            <span className="text-sm text-muted-foreground shrink-0">
+              {rankingTypes.find((r) => r.id === selectedRanking)?.label}
+            </span>
+            <SalaryDisplay isMobile />
           </div>
-        )}
+          {/* カード全体が押せることを示す目印。スマホにはホバーが無いため、
+              押せる場所であることを見た目で伝える手がかりが要る。
+              リンクは上の透明な面が担うので、ここは装飾に徹する（aria-hidden）。 */}
+          {company.id && (
+            <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground/70" aria-hidden="true">
+              詳細
+              <ChevronRight className="h-4 w-4" />
+            </span>
+          )}
+        </div>
       </div>
     </Card>
   );
