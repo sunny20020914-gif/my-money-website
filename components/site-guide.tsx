@@ -117,10 +117,10 @@ const ENTRIES = [
 
 export function SiteGuide() {
   return (
-    <section className="py-14 md:py-20">
+    <section className="py-12 md:py-16 border-t">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
+          <div className="text-center mb-6 md:mb-8">
             <h2 className="text-xl md:text-3xl font-bold mb-3">目的から探す</h2>
             <p className="text-[15px] md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               知りたいことに合わせて入口を分けています。初任給の順位を見たいのか、
@@ -128,22 +128,33 @@ export function SiteGuide() {
             </p>
           </div>
 
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          {/* 【カードを小さくした理由】
+              15枚あるため、1枚が大きいとこのセクションだけで画面を何度も
+              スクロールすることになる。ここは「読ませる場所」ではなく
+              「行き先を選ぶ場所」なので、一覧性を最優先する。
+
+              ・スマホを2列にする（1列だと15回スクロールが必要だった）
+              ・説明文はスマホでは隠す（md以上でのみ表示）
+                2列の幅では説明文が3〜4行に折り返り、かえって読みにくい。
+                行き先の判断はタイトルとアイコンで足りる。
+                文章自体はPCでは従来どおり表示されるため、
+                ページから消えるわけではない。 */}
+          <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
             {ENTRIES.map(({ href, icon: Icon, title, desc }) => (
               <li key={href}>
                 <Link
                   href={href}
-                  className="group flex h-full flex-col gap-2 rounded-2xl border bg-card p-5 transition-colors hover:bg-accent"
+                  className="group flex h-full flex-col gap-1.5 rounded-xl border bg-card p-3 md:p-4 transition-colors hover:bg-accent"
                 >
-                  <span className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                      <Icon className="h-[18px] w-[18px]" />
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                      <Icon className="h-4 w-4" />
                     </span>
-                    <span className="font-bold text-foreground text-[15px] md:text-base">
+                    <span className="font-bold text-foreground text-[13px] md:text-[15px] leading-snug">
                       {title}
                     </span>
                   </span>
-                  <span className="text-[13px] md:text-sm text-muted-foreground leading-relaxed">
+                  <span className="hidden md:block text-[13px] text-muted-foreground leading-relaxed">
                     {desc}
                   </span>
                 </Link>
@@ -155,17 +166,17 @@ export function SiteGuide() {
               <li key={g}>
                 <Link
                   href={`/grad/${g}`}
-                  className="group flex h-full flex-col gap-2 rounded-2xl border bg-card p-5 transition-colors hover:bg-accent"
+                  className="group flex h-full flex-col gap-1.5 rounded-xl border bg-card p-3 md:p-4 transition-colors hover:bg-accent"
                 >
-                  <span className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                      <GraduationCapIcon className="h-[18px] w-[18px]" />
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                      <GraduationCapIcon className="h-4 w-4" />
                     </span>
-                    <span className="font-bold text-foreground text-[15px] md:text-base">
+                    <span className="font-bold text-foreground text-[13px] md:text-[15px] leading-snug">
                       {String(g).padStart(2, "0")}卒向けまとめ
                     </span>
                   </span>
-                  <span className="text-[13px] md:text-sm text-muted-foreground leading-relaxed">
+                  <span className="hidden md:block text-[13px] text-muted-foreground leading-relaxed">
                     20{g}年卒の就職活動に向けた、初任給データと企業選びの要点。
                   </span>
                 </Link>

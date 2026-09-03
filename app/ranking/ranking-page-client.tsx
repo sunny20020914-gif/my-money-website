@@ -343,13 +343,20 @@ const CompanyCard = ({
                 以前は従業員数・設立年まで並べていたが、一覧の判断材料としては
                 ほぼ読まれず縦幅を消費するだけだった。スマホの詳細情報は
                 詳細ページ（詳しく見る）に任せる。 */}
-            <div className="flex-1">
-              <div className="pl-[52px]">
-                <div className="text-sm text-muted-foreground">{rankingTypes.find((r) => r.id === selectedRanking)?.label}</div>
-                <div className="flex items-baseline">
-                  <SalaryDisplay isMobile />
-                </div>
-              </div>
+            {/* 【横一列】ラベルと金額を1行に並べる。
+                以前はラベルの下に金額を置く2段組みだったが、
+                「初任給」の3文字のために1行まるごと使っており、
+                カード1枚あたりの縦幅が無駄に伸びていた。
+
+                items-baseline: ラベル(14px)と金額(24px)の文字の下端を揃える。
+                  中央揃えにすると、大きい数字に対してラベルが浮いて見える。
+                flex-wrap: 「想定年収」＋8桁のような長い組み合わせでも
+                  はみ出さず、収まらないときだけ従来どおり2段に折り返す。 */}
+            <div className="pl-[52px] flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+              <span className="text-sm text-muted-foreground shrink-0">
+                {rankingTypes.find((r) => r.id === selectedRanking)?.label}
+              </span>
+              <SalaryDisplay isMobile />
             </div>
           </div>
           {/* 説明文はスマホでは出さない（詳細ページで読める。一覧性を優先） */}
