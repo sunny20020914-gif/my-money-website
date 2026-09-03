@@ -19,7 +19,7 @@ import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { buildCardFinancialMetrics, LISTED_COMPANY_NOTE } from "@/lib/financials"
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
-import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead } from "@/lib/market-benchmark"
+import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead, type LeadBlock } from "@/lib/market-benchmark"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL, TARGET_GRAD_YEAR_SHORT } from "@/lib/config"
 import { NO_DATA, isBlankValue, formatWithUnit, formatYear } from "@/lib/format"
 // 【バンドル削減】集計ロジックを含む lib/metric-rankings は import しない。
@@ -70,6 +70,56 @@ const highlightNumbers = (text: string): React.ReactNode[] => {
     ),
   )
 }
+
+/**
+ * リード文（小見出し＋本文）をまとめて描画する。
+ *
+ * ランキング一覧の前と後ろの2か所で同じ体裁を使うため、
+ * 部品として切り出している。片方だけ手を入れて
+ * 見た目がずれることを防ぐ目的。
+ */
+const LeadBlocks = ({
+  blocks,
+  variant = "lead",
+}: {
+  blocks: LeadBlock[]
+  /**
+   * lead    … ページ冒頭。記事の書き出しとして控えめな見出し
+   * section … 一覧の下の解説セクション。周囲のh2と同じ大きさに揃える
+   */
+  variant?: "lead" | "section"
+}) => (
+  <div className={variant === "lead" ? "space-y-6 text-left" : "space-y-3"}>
+    {blocks.map((block, i) => (
+      <div key={i}>
+        {/* 小見出しに結論を書き、本文は補足に徹する。
+            文章だけを並べると長さに圧倒されて読まれないため、
+            読み飛ばしても要点が拾える構成にしている。 */}
+        {/* jp-heading: スマホでは端まで詰めて折り返す。
+            h2の既定（text-wrap: balance）のままだと1行の文字数が
+            削られ、鉤括弧の途中で割れて読みにくくなる。 */}
+        <h2
+          className={
+            variant === "lead"
+              ? "jp-heading text-[17px] md:text-lg font-bold text-foreground mb-2 leading-snug"
+              : "jp-heading text-xl md:text-2xl font-bold text-primary leading-snug"
+          }
+        >
+          {highlightNumbers(block.heading)}
+        </h2>
+        <p
+          className={
+            variant === "lead"
+              ? "text-[16px] md:text-base leading-[2.05] text-muted-foreground"
+              : "text-[15px] md:text-base leading-relaxed text-muted-foreground"
+          }
+        >
+          {highlightNumbers(block.body)}
+        </p>
+      </div>
+    ))}
+  </div>
+)
 
 const calculateDescriptionPosition = (index: number, total: number) => {
   // 常に中央に配置するため、固定値50を返す。0に近いほど右、100に近いほど左に寄る。
@@ -461,6 +511,15 @@ export function RankingPageClient({
     [summary, selectedRanking],
   )
 
+  // 【配置】リード文を一覧の前後に振り分ける。
+  // 全文を冒頭に置くとスマホで約830pxを占め、1位が見えるまで
+  // 2.3画面ぶんスクロールが必要だった。ランキングを見に来た人にとって
+  // これは邪魔でしかない。
+  // 相場の話（＝検索意図への回答）だけ前に残し、
+  // 業界の傾向や読み方の注意は一覧を見たあとに読んでもらう。
+  const leadBefore = useMemo(() => leadBlocks.filter((b) => b.placement === "before"), [leadBlocks])
+  const leadAfter = useMemo(() => leadBlocks.filter((b) => b.placement === "after"), [leadBlocks])
+
   const currentError = initialError || error
 
   // 初期表示時にサーバーサイドでエラーが発生した場合
@@ -586,26 +645,13 @@ export function RankingPageClient({
                 機械が組み立てた画面という印象が強くなっていた。
                 リード文は記事の導入なので、背景そのままに文章として置く。
                 読み手には普通の記事の書き出しに見えるほうが自然。 */}
-            {leadBlocks.length > 0 && (
+            {/* 【冒頭に置くのは相場の話だけ】
+                「初任給の相場はいくらか」は検索意図そのものなので冒頭で答える。
+                業界の傾向と読み方の注意は一覧のあと（下部の解説セクション）に回し、
+                ランキング本体が早く現れるようにしている。 */}
+            {leadBefore.length > 0 && (
               <section className="mb-8">
-                <div className="space-y-6 text-left">
-                  {leadBlocks.map((block, i) => (
-                    <div key={i}>
-                      {/* 小見出しに結論を書き、本文は補足に徹する。
-                          文章だけを並べると長さに圧倒されて読まれないため、
-                          読み飛ばしても要点が拾える構成にしている。 */}
-                      {/* jp-heading: スマホでは端まで詰めて折り返す。
-                          h2の既定（text-wrap: balance）のままだと1行の文字数が
-                          削られ、鉤括弧の途中で割れて読みにくくなる。 */}
-                      <h2 className="jp-heading text-[17px] md:text-lg font-bold text-foreground mb-2 leading-snug">
-                        {highlightNumbers(block.heading)}
-                      </h2>
-                      <p className="text-[16px] md:text-base leading-[2.05] text-muted-foreground">
-                        {highlightNumbers(block.body)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                <LeadBlocks blocks={leadBefore} />
               </section>
             )}
 
@@ -908,8 +954,16 @@ export function RankingPageClient({
             {!loading && companies.length > 0 && (
               <section className="mt-12 border-t pt-8 text-left space-y-8">
 
+                {/* 【冒頭から移動】「どの業界の初任給が高いか」の話。
+                    以前はページ冒頭に置いていたが、リード文全体でスマホ約830pxを占め、
+                    ランキング本体が2.3画面ぶん下に押し下げられていた。
+                    この内容は一覧を見たあとに読むほうが自然なため、ここに移した。
+                    すぐ下の「初任給が高い＝生涯賃金が高い、ではない」への
+                    導入にもなっている。 */}
+                {leadAfter.length > 0 && <LeadBlocks blocks={leadAfter} variant="section" />}
+
                 {/* ① 企業規模による格差。
-                    冒頭のリード文では「全国平均」と「当サイト平均」の対比を扱っているため、
+                    冒頭のリード文では「全国平均」（＝世間相場）を扱っているため、
                     ここでは重複を避けて「規模による差」という別の切り口に踏み込む。 */}
                 <div className="space-y-3">
                   <h2 className="text-xl md:text-2xl font-bold text-primary">
@@ -977,8 +1031,8 @@ export function RankingPageClient({
                 {/* ③ 業界別の傾向。実データから生成 */}
                 {summary && summary.industryAverages.length >= 3 && (
                   <div className="space-y-3">
-                    {/* 【独自コンテンツ】冒頭では「どの業界が高いか」を扱っているため、
-                        ここでは「初任給の高さと生涯賃金は一致しない」という、
+                    {/* 【独自コンテンツ】すぐ上のブロックで「どの業界が高いか」を
+                        扱っているため、ここでは「初任給の高さと生涯賃金は一致しない」という、
                         有報データを持つ当サイトだけが書ける踏み込んだ話にする。 */}
                     <h2 className="text-xl md:text-2xl font-bold text-primary">
                       初任給が高い＝生涯賃金が高い、ではない
