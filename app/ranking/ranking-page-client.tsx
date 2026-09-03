@@ -21,7 +21,7 @@ import { buildCardFinancialMetrics, LISTED_COMPANY_NOTE } from "@/lib/financials
 import { buildRankingFaq, type RankingSummary } from "@/lib/ranking-summary"
 import { MARKET_BENCHMARK, buildMarketComparison, buildRankingLead } from "@/lib/market-benchmark"
 import { FISCAL_YEAR, TARGET_GRAD_LABEL, TARGET_GRAD_YEAR_SHORT } from "@/lib/config"
-import { NO_DATA, isBlankValue, formatWithUnit, formatYear, splitValueAndUnit } from "@/lib/format"
+import { NO_DATA, isBlankValue, formatWithUnit, formatYear } from "@/lib/format"
 // 【バンドル削減】集計ロジックを含む lib/metric-rankings は import しない。
 // ここで必要なのはパスとラベルだけなので、軽量な定義ファイルだけを読む。
 import { METRIC_RANKING_LINKS } from "@/lib/metric-ranking-links"
@@ -164,7 +164,9 @@ const CompanyCard = ({
           <div className="flex flex-grow flex-col md:flex-row md:items-center md:justify-between gap-0">
             {/* 左側: 企業情報 */}
             <div className="flex items-center gap-6">
-              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground font-bold text-2xl shrink-0">
+              {/* 【順位バッジ】全順位を同じ塗りの青丸にすると生成UIのダミー感が出るため、
+                  メダル圏（1〜3位）だけ塗り、4位以下は白地＋枠線で番号を落ち着かせる */}
+              <div className={`flex items-center justify-center w-16 h-16 rounded-full font-bold text-2xl shrink-0 ${(company.rank || index + 1) <= 3 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
                 {company.rank || index + 1}
               </div>
               <CompanyLogo
@@ -268,7 +270,7 @@ const CompanyCard = ({
           <div className="flex flex-col gap-4 py-2">
             {/* 上段：企業情報 */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
+              <div className={`flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm flex-shrink-0 ${(company.rank || index + 1) <= 3 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
                 {company.rank || index + 1}
               </div>
               <CompanyLogo
@@ -281,61 +283,29 @@ const CompanyCard = ({
               {/* min-w-0 が無いと長い企業名がflexを押し広げてカードから溢れる。
                   text-balance は2行に折り返る際に行の長さを均等に分割し、
                   最終行に1〜2文字だけ残る不格好な折り返しを防ぐ。 */}
+              {/* 【スマホは3情報に絞る】業界バッジは出さない（詳細ページで確認できる）。
+                  一覧はアイコン・企業名・初任給に絞り、1画面に入る社数を増やす */}
               <div className="ml-1 text-left min-w-0">
                 <h3 className="text-base font-bold text-foreground leading-snug text-balance">{company.company}</h3>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {company.industry.split('/').map((industry: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-[11px] px-1.5">{industry}</Badge>
-                  ))}
-                </div>
               </div>
             </div>
-            {/* 下段：詳細情報 */}
+            {/* 下段：初任給のみ。
+                以前は従業員数・設立年まで並べていたが、一覧の判断材料としては
+                ほぼ読まれず縦幅を消費するだけだった。スマホの詳細情報は
+                詳細ページ（詳しく見る）に任せる。 */}
             <div className="flex-1">
-              <div className="grid grid-cols-2 gap-x-12 gap-y-3 items-start pl-[52px]">
-                <div>
-                  <div className="text-sm text-muted-foreground">{rankingTypes.find((r) => r.id === selectedRanking)?.label}</div>
-                  <div className="flex items-baseline">
-                    <SalaryDisplay isMobile />
-                  </div>
-                </div>
-                <div>
-                  <div>
-                    <div className="text-[13px] text-muted-foreground">従業員数</div>
-                    {/* 単位「人」だけ小さい文字にしているため、単純な文字列連結ではなく
-                        値と単位を分けて受け取る。空欄なら単位が "" になり "-" だけが出る。 */}
-                    <div className="text-sm font-semibold text-foreground">
-                      {(() => {
-                        const { text, unit: u } = splitValueAndUnit(company.employees, "人")
-                        return (
-                          <>
-                            {text}
-                            {u && <span className="text-xs">{u}</span>}
-                          </>
-                        )
-                      })()}
-                    </div>
-                  </div>
-                  <div className="text-[13px] text-muted-foreground mt-0.5">設立: {formatYear(company.founded)}</div>
+              <div className="pl-[52px]">
+                <div className="text-sm text-muted-foreground">{rankingTypes.find((r) => r.id === selectedRanking)?.label}</div>
+                <div className="flex items-baseline">
+                  <SalaryDisplay isMobile />
                 </div>
               </div>
             </div>
           </div>
-          {company.description && <p className="text-[15px] text-muted-foreground mt-1 leading-relaxed pl-[52px]">{company.description}</p>}
+          {/* 説明文はスマホでは出さない（詳細ページで読める。一覧性を優先） */}
 
-          {/* --- 財務指標エリア（モバイル）---
-              狭い画面では2列固定。指標が増えても行が下に伸びるだけで横溢れしない。 */}
-          {financials.length > 0 && (
-            /* pl-[52px] は「順位バッジ(w-9=36px) + gap-4(16px)」。PC同様ロゴ左端に揃う。 */
-            <div className="mt-3 pt-3 border-t pl-[52px] flex flex-wrap items-start gap-x-8 gap-y-2">
-              {financials.map((m) => (
-                <div key={m.key} className="min-w-0 max-w-[10rem]">
-                  <p className="text-xs text-muted-foreground truncate">{m.label}</p>
-                  <p className="text-sm font-semibold text-foreground truncate">{m.value}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* 財務指標（売上高・平均年収など）はスマホでは出さない。
+              PCの下段と企業詳細ページでのみ表示する（3情報ルール） */}
         </div>
         {company.id && (
           <div className="mt-4 flex flex-col gap-1.5">
