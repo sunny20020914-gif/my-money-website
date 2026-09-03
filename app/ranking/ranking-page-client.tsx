@@ -335,7 +335,7 @@ const CompanyCard = ({
           保存ボタンだけ z-index をさらに上げて重ねる。
           こうすればリンクと保存ボタンは入れ子にならず兄弟の関係になる。
           カードあたりのリンクも1本のままなのでクロール上も増えない。 */}
-      <div className="relative px-3 py-2.5 md:px-6 md:py-4 lg:hidden">
+      <div className="relative px-3 py-4 md:px-6 md:py-5 lg:hidden">
         {/* 透明なリンク面。見た目は持たず、タップ領域と読み上げのためだけに置く。
             aria-label が無いと中身が空のリンクとして読み上げられてしまう。 */}
         {company.id && (
@@ -390,12 +390,19 @@ const CompanyCard = ({
         </div>
 
         {/* 下段：金額と、詳細への矢印。
-            金額は順位バッジと同じ左端に揃える（ロゴの左端に合わせていた頃は
-            企業名ともカード左端とも揃わず、数字だけが宙に浮いて見えた）。
+
+            【左端をロゴに揃える】pl-12 = 48px は
+              順位バッジ w-9（36px）＋ gap-3（12px）
+            の合計で、ちょうど上段のロゴの左端に一致する。
+            上段の gap やバッジの大きさを変えたときは、この数値も直すこと。
+
+            順位バッジは「何位か」を示す欄であって企業の情報ではない。
+            金額をバッジと同じ左端に置くと順位の欄にはみ出して見えるため、
+            ロゴから始まる「企業の情報」の列に揃える。
 
             items-baseline: ラベル(14px)と金額(24px)の文字の下端を揃える。
               中央揃えにすると、大きい数字に対してラベルが浮いて見える。 */}
-        <div className="mt-2 flex items-baseline justify-between gap-3">
+        <div className="mt-2 flex items-baseline justify-between gap-3 pl-12">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 min-w-0">
             <span className="text-sm text-muted-foreground shrink-0">
               {rankingTypes.find((r) => r.id === selectedRanking)?.label}
@@ -404,12 +411,14 @@ const CompanyCard = ({
           </div>
           {/* カード全体が押せることを示す目印。スマホにはホバーが無いため、
               押せる場所であることを見た目で伝える手がかりが要る。
-              リンクは上の透明な面が担うので、ここは装飾に徹する（aria-hidden）。 */}
+              リンクは上の透明な面が担うので、ここは装飾に徹する（aria-hidden）。
+
+              【「詳細」の文字を外した理由】インデントを入れたぶん横幅が狭まり、
+              「想定年収 ¥14,000,000」のような長い組み合わせで金額が
+              次の行に落ちるようになった。一部のカードだけ2行になると
+              並びが不揃いに見える。矢印だけでも一覧の行が押せることは伝わる。 */}
           {company.id && (
-            <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground/70" aria-hidden="true">
-              詳細
-              <ChevronRight className="h-4 w-4" />
-            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
           )}
         </div>
       </div>
