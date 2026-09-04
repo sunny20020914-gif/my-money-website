@@ -310,7 +310,11 @@ const CompanyCard = ({
           保存ボタンだけ z-index をさらに上げて重ねる。
           こうすればリンクと保存ボタンは入れ子にならず兄弟の関係になる。
           カードあたりのリンクも1本のままなのでクロール上も増えない。 */}
-      <div className="relative px-3 py-4 md:px-6 md:py-5 lg:hidden">
+      {/* 【上下の余白】下だけ少し厚くする（上16px / 下20px）。
+          カード同士の隙間を6pxまで詰めたぶん、区切りは
+          カード内側の余白で作る。下がわずかに広いほうが
+          1枚のまとまりとして見え、次のカードとの境目もはっきりする。 */}
+      <div className="relative px-3 pt-4 pb-5 md:px-6 md:pt-5 md:pb-6 lg:hidden">
         {/* 透明なリンク面。見た目は持たず、タップ領域と読み上げのためだけに置く。
             aria-label が無いと中身が空のリンクとして読み上げられてしまう。 */}
         {company.id && (
@@ -694,15 +698,17 @@ export function RankingPageClient({
                   </div>
                 </div>
 
-                {/* 【SEO・AI検索】数値だけでなく文章でも自己完結させる（引用されやすくするため） */}
-                <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                  【{FISCAL_YEAR}年度】掲載{summary.withMonthly}社の平均初任給は月額{summary.avgMonthly.toLocaleString()}円
-                  {summary.medianMonthly !== null && <>（中央値{summary.medianMonthly.toLocaleString()}円）</>}。
-                  {summary.topCompany && summary.topMonthly !== null && (
-                    <>最高は{summary.topCompany}の{summary.topMonthly.toLocaleString()}円。</>
-                  )}
-                  35万円以上{summary.over35}社・30万円以上{summary.over30}社。
-                </p>
+                {/*【削除済み】ここに
+                     「【2026年度】掲載159社の平均初任給は月額371,217円（中央値360,000円）。
+                       最高は霞ヶ関キャピタルの1,000,000円。35万円以上95社・30万円以上138社。」
+                   という一文があった。
+
+                   数値カードで既に見せている平均・中央値・掲載社数を、
+                   すぐ下で文章として繰り返しているだけだった。
+                   同じ数字を2回読ませることになり、機械が並べた画面に見えてしまう。
+
+                   AI検索に引用させる目的で置いていたが、その役割は
+                   ページ冒頭のリード文と、この下の解説セクションが担っている。 */}
                 {summary.industryAverages.length > 0 && (
                   <details className="mt-3">
                     <summary className="cursor-pointer text-[15px] font-semibold text-primary hover:underline">
@@ -819,15 +825,20 @@ export function RankingPageClient({
                     <p className="text-sm text-muted-foreground mb-3">
                       初任給の順位と、入社後の年収の順位はほとんど一致しません。
                     </p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                    {/* 【小さくした理由】高さ56px・太枠・15px太字では、
+                        本体のランキングと同じ強さで主張してしまい、
+                        画面の上部を切り口ボタンが占める形になっていた。
+                        ここは「他の見方もある」と伝える補助の導線なので、
+                        高さ40px・細枠・13pxまで落として一覧を早く見せる。 */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
                       {METRIC_RANKING_LINKS.map((link) => (
                         <Link
                           key={link.slug}
                           href={link.path}
-                          className="group flex h-14 items-center justify-between gap-1 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
+                          className="group flex h-10 items-center justify-between gap-1 rounded-lg border bg-card px-3 text-[13px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
                         >
                           {link.shortLabel}
-                          <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                          <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                         </Link>
                       ))}
                     </div>
@@ -879,7 +890,10 @@ export function RankingPageClient({
                 <p className="text-muted-foreground">データを読み込み中...</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              /* 【カード間の隙間】6pxまで詰める。
+                 隙間で区切りを作るのではなく、カード自身の枠線と
+                 下側の余白で区切りを感じさせるほうが一覧が締まって見える。 */
+              <div className="space-y-1.5">
                 {displayedCompanies.map((company, index) => (
                   <React.Fragment key={`${selectedRanking}-${company.company}-${index}`}>
                     <CompanyCard

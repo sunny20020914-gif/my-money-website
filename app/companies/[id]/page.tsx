@@ -220,9 +220,11 @@ export default async function CompanyPage({ params }: Props) {
   faq.push({
     question: `${company.company}の企業研究では何を見ればよいですか？`,
     answer:
+      // 【短縮】2文目にあった「当ページでは〜をまとめて掲載しています」は、
+      // 設問（何を見ればよいか）への答えではなく掲載物の列挙だった。
+      // 上の本文からも同趣旨の一文を削っており、重複でもあったため落とす。
       `${company.company}の企業研究では、初任給の額面だけでなく「固定残業代や手当が含まれているか」「入社後に給与がどれだけ伸びるか」「収益性は業界内でどの位置か」の3点を確認するのがおすすめです。` +
-      `当ページでは初任給の手取り目安、有価証券報告書にもとづく全社員の平均年収、売上高・営業利益率などの業績データ、業界内での順位をまとめて掲載しています。` +
-      `事業内容や強み・将来性とあわせて確認することで、給与の背景にある収益構造まで理解できます。`,
+      `事業内容や強みとあわせて見ると、給与の背景にある収益構造まで理解できます。`,
   })
 
   if (salaryGrowth) {
@@ -240,12 +242,14 @@ export default async function CompanyPage({ params }: Props) {
       answer:
         `初任給ベースの年収${man(salaryGrowth.starterAnnual)}に対し、全社員の平均年収は${man(salaryGrowth.averageAnnual)}で${Math.round(salaryGrowth.ratio * 10) / 10}倍です。` +
         `当サイト掲載${salaryGrowth.sampleCount}社の中央値は${Math.round(salaryGrowth.medianRatio * 10) / 10}倍のため、` +
+        // 【短縮】末尾の「ただし平均年収は全社員の平均のため〜」を削除。
+        // 同じ断りが1つ上のFAQと、平均年収の数値のすぐ横（注記）にもあり、
+        // 1ページで3回繰り返していた。数値の横にある注記が最も目に入る。
         (salaryGrowth.verdict === "high"
           ? `平均より給与が伸びやすい企業といえます。`
           : salaryGrowth.verdict === "low"
             ? `初任給の時点で既に高水準に達しているタイプです。`
-            : `平均的な伸び方です。`) +
-        `ただし平均年収は全社員の平均のため、若手のうちからこの金額になるわけではありません。`,
+            : `平均的な伸び方です。`),
     })
   }
 
@@ -446,11 +450,15 @@ export default async function CompanyPage({ params }: Props) {
             {/* 【AI SEO】答えを先に書く自己完結型サマリー。AI検索がこの一文だけで引用できる。
                 末尾に「企業研究」を自然な形で含め、
                 「企業名 企業研究」の検索需要も拾えるようにしている。 */}
+            {/*【短縮】ここに続けて
+                 「このページでは初任給の手取り目安、全社員の平均年収、業績データまで、
+                   ◯◯の企業研究に必要な情報をまとめています。」
+               という一文があったが、ページに何が載っているかは
+               画面を見れば分かる。読み手に新しい情報を与えない案内文なので削除した。
+               「企業研究」の語は下のFAQの設問に残っている。 */}
             {leadSummary && (
               <p className="mt-4 text-[15px] md:text-base leading-relaxed text-muted-foreground">
                 {leadSummary}
-                このページでは初任給の手取り目安、全社員の平均年収、業績データまで、
-                {company.company}の企業研究に必要な情報をまとめています。
               </p>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
