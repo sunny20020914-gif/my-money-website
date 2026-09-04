@@ -557,9 +557,20 @@ export default async function CompanyPage({ params }: Props) {
 
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5">
+                  {/*【表を2つに分けた理由】
+                      以前は額面・控除4項目・手取り2種を1つの表に7行並べていた。
+                      だが多くの人が知りたいのは「結局いくら手元に残るか」であって、
+                      健康保険料や厚生年金の内訳はその根拠にすぎない。
+                      根拠まで7行読ませてから答えに着くのは順序が逆。
+
+                      答え（額面→手取り）だけを表に残し、
+                      天引きの内訳は折りたたんで、知りたい人が開く形にする。
+
+                      折りたたんでも中身はHTMLに含まれるため検索エンジンには読まれる
+                      （初期表示で隠れている内容も通常のコンテンツとして扱われる）。 */}
                   <table className="w-full text-sm md:text-[15px]">
                     <caption className="sr-only">
-                      {company.company}の初任給から差し引かれる控除の内訳
+                      {company.company}の初任給の額面と手取り
                     </caption>
                     <tbody>
                       <tr className="border-b">
@@ -569,30 +580,6 @@ export default async function CompanyPage({ params }: Props) {
                         <td className="py-2 text-right font-semibold">
                           ¥{netSalary.grossMonthly.toLocaleString()}
                         </td>
-                      </tr>
-                      <tr className="border-b">
-                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
-                          健康保険料
-                        </th>
-                        <td className="py-2 text-right">−¥{netSalary.healthInsurance.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b">
-                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
-                          厚生年金保険料
-                        </th>
-                        <td className="py-2 text-right">−¥{netSalary.pension.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b">
-                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
-                          雇用保険料
-                        </th>
-                        <td className="py-2 text-right">−¥{netSalary.employmentInsurance.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b">
-                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
-                          所得税
-                        </th>
-                        <td className="py-2 text-right">−¥{netSalary.incomeTaxMonthly.toLocaleString()}</td>
                       </tr>
                       <tr className="border-b-2 border-primary/50">
                         <th scope="row" className="py-2.5 text-left font-bold">
@@ -613,11 +600,47 @@ export default async function CompanyPage({ params }: Props) {
                     </tbody>
                   </table>
 
-                  <p className="mt-3 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
-                    新卒1年目は前年の所得が無いため住民税がかかりません。2年目からは住民税（月約¥
-                    {netSalary.residentTaxMonthly.toLocaleString()}）が加わるため、手取りは1年目より少なくなります。
-                    賞与・残業代・各種手当は含まない月給ベースの概算です。
-                  </p>
+                  <details className="mt-3 pt-3 border-t">
+                    <summary className="cursor-pointer text-sm font-semibold text-primary hover:underline">
+                      差し引かれる内訳を見る
+                    </summary>
+                    <table className="w-full mt-3 text-sm md:text-[15px]">
+                      <caption className="sr-only">
+                        {company.company}の初任給から差し引かれる控除の内訳
+                      </caption>
+                      <tbody>
+                        <tr className="border-b">
+                          <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                            健康保険料
+                          </th>
+                          <td className="py-2 text-right">−¥{netSalary.healthInsurance.toLocaleString()}</td>
+                        </tr>
+                        <tr className="border-b">
+                          <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                            厚生年金保険料
+                          </th>
+                          <td className="py-2 text-right">−¥{netSalary.pension.toLocaleString()}</td>
+                        </tr>
+                        <tr className="border-b">
+                          <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                            雇用保険料
+                          </th>
+                          <td className="py-2 text-right">−¥{netSalary.employmentInsurance.toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
+                            所得税
+                          </th>
+                          <td className="py-2 text-right">−¥{netSalary.incomeTaxMonthly.toLocaleString()}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                      新卒1年目は前年の所得が無いため住民税がかかりません。2年目からは住民税（月約¥
+                      {netSalary.residentTaxMonthly.toLocaleString()}）が加わるため、手取りは1年目より少なくなります。
+                      賞与・残業代・各種手当は含まない月給ベースの概算です。
+                    </p>
+                  </details>
 
                   <div className="mt-3 flex flex-col gap-2">
                     {/* 【内部リンク】額面が近い手取りページへ送る。
@@ -643,90 +666,87 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
-          {/* --- 貯蓄の目安 ---
-              【根拠のある数字にする】「年間◯万円貯められます」と根拠なく書かない。
-              公的統計から「手取りに対して手元に残る割合」を取り、この企業の手取りに掛ける。
-              1つの数字ではなく幅で出すのは、統計上の黒字率（借金返済等を含む）と
-              先取り貯蓄の一般的な目安に開きがあり、実際はその間に収まるため。
-              詳しい考え方は lib/savings.ts のコメントに書いている。 */}
-          {savings && (
-            <section className="space-y-3">
-              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                {company.company}なら年間いくら貯められる？
-              </h2>
+          {/*【配置】事業内容を手取りの直後に置く。
+              手取り（額面からいくら手元に残るか）を見たあと、
+              読み手の関心は「そもそも何をして稼いでいる会社なのか」に移る。
+              給与の数字と、その原資である事業の話を隣り合わせにする。
+              以前は有価証券報告書の業績データより後ろにあり、
+              事業内容にたどり着く前に数表が続いていた。 */}
+          {/* --- 企業概要（事業内容・強み・将来性・給与の補足） --- */}
+          <section className="space-y-7">
+            {company.long_description && <div className="space-y-3">
+              {/* 「企業名 企業研究」を拾うため、見出しにもキーワードを含める */}
+              {/* 【Safariでの折り返し対策】
+                  以前は「企業研究：{社名}の事業内容」を1つのテキストにしていたため、
+                  Safariで「霞ヶ関キ／ャピタルの事業内容」のように社名の途中で
+                  改行されていた。Chromeは word-break: auto-phrase を解釈するが
+                  Safariは非対応で、日本語をどこでも改行してしまうため。
 
-              <Card className="py-0 gap-0">
-                <CardContent className="p-4 md:p-5 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl border bg-card p-3 md:p-4">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        手取りの{SAVINGS_BENCHMARK.ruleOfThumbMax}%を貯蓄した場合
-                      </p>
-                      {/* 見出しに「年間いくら貯められる？」とあるので
-                          数字の頭に「年」を付けると重複して読みにくい */}
-                      <p className="text-xl md:text-2xl font-bold text-primary tabular">
-                        {Math.round(savings.conservativeAnnual / 10_000).toLocaleString()}
-                        <span className="text-sm font-normal text-muted-foreground">万円</span>
-                      </p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        月{savings.conservativeMonthly.toLocaleString()}円
-                      </p>
-                    </div>
-                    <div className="rounded-xl border bg-card p-3 md:p-4">
-                      {/* 【黒字率をやめた】45.3%は20%と幅が開きすぎて
-                          結局いくら目指せばいいのか分からなかった。
-                          「手取り − 平均支出」なら引き算の意味が明快で、
-                          目標との差も「あと月いくら削るか」として読める。 */}
-                      <p className="text-xs text-muted-foreground mb-1">
-                        平均的な支出だと実際に残るのは
-                      </p>
-                      <p className="text-xl md:text-2xl font-bold text-foreground tabular">
-                        {savings.realisticMonthly > 0
-                          ? Math.round(savings.realisticAnnual / 10_000).toLocaleString()
-                          : "0"}
-                        <span className="text-sm font-normal text-muted-foreground">万円</span>
-                      </p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        {savings.realisticMonthly > 0
-                          ? `月${savings.realisticMonthly.toLocaleString()}円`
-                          : "統計上の平均支出では赤字"}
-                      </p>
-                    </div>
-                  </div>
+                  対策は2つ。
+                  ① 「企業研究」を上の行に分離し、社名から始まる行に幅を与える
+                  ② 社名を .jp-nobreak で囲み、その中では改行させない
+                  ②だけだと極端に長い社名がはみ出すので、
+                  overflow-wrap: anywhere を併用して必要なときだけ折り返す。 */}
+              <h3 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                <span className="flex items-center gap-2 text-sm md:text-base font-semibold text-muted-foreground mb-1">
+                  <Info className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                  企業研究
+                </span>
+                <span className="block">
+                  <span className="jp-nobreak">{company.company}</span>の事業内容
+                </span>
+              </h3>
+              <div
+                /* 幅は制限しない。下の「強み」「将来性」カードと左右の位置を揃えるため、
+                   親要素の幅いっぱいに広げる（max-w-[42em]を入れると幅が揃わず不自然になる）。 */
+                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
+              />
+            </div>}
 
-                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                    {buildSavingsSummary(company.company, savings)}
-                  </p>
+            {/* 強み・将来性は短文のため2カラムのカード形式で表示（レイアウトの均等化） */}
+            {(company.strength || company.future_potential) && (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {company.strength && (
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
+                        <TrendingUp className="w-5 h-5" />強み
+                      </h3>
+                      <div
+                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                {company.future_potential && (
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5">
+                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
+                        <Sparkles className="w-5 h-5" />将来性
+                      </h3>
+                      <div
+                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
 
-                  {/* 【回遊】貯蓄ページへ送る。手取り別の詳細な目安と
-                      到達期間はあちらに集約している */}
-                  {savingsPageLink !== null && (
-                    <div className="pt-4 border-t">
-                      <Link
-                        href={`/savings/${savingsPageLink}`}
-                        className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
-                      >
-                        <span className="flex items-center gap-2">
-                          <PiggyBankIcon className="h-5 w-5 shrink-0 text-primary" />
-                          手取り{Math.round(savingsPageLink / 10_000)}万円の貯金プランを詳しく見る
-                        </span>
-                        <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                      </Link>
-                    </div>
-                  )}
+            {company.salary_details && <div className="space-y-3">
+              <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                <DollarSign className="w-5 h-5" />給与に関する補足
+              </h3>
+              <div
+                className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none md:max-w-[42em] leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
+              />
+            </div>}
+          </section>
 
-                  <p className="pt-3 border-t text-xs text-muted-foreground leading-relaxed">
-                    ※ 月給ベースの試算で、賞与は含めていません（新卒1年目は支給が寸志のみ、
-                    あるいは支給なしの企業もあるため）。賞与があればこれに上乗せされます。
-                    家賃・奨学金の返済額によって実際に貯められる金額は大きく変わります。
-                    30歳時点の目標額はアンケートの平均値であり、全員が目指すべき金額ではありません。
-                    出典: {SAVINGS_BENCHMARK.expenseSurvey}、{SAVINGS_BENCHMARK.assetSurvey}、
-                    {SAVINGS_BENCHMARK.livingCostSurvey}、{SAVINGS_BENCHMARK.firstYearSurvey}。
-                  </p>
-                </CardContent>
-              </Card>
-            </section>
-          )}
 
           {/* --- 有価証券報告書ベースの給与・業績データ ---
               【配置】給与情報の直後、企業概要より前に置く。ページで最も価値のあるデータのため。
@@ -962,173 +982,188 @@ export default async function CompanyPage({ params }: Props) {
             </section>
           )}
 
-          {/* --- 企業概要（スマホでは手取りセクションの直後に繰り上げる） --- */}
-          <section className="space-y-7">
-            {company.long_description && <div className="space-y-3">
-              {/* 「企業名 企業研究」を拾うため、見出しにもキーワードを含める */}
-              {/* 【Safariでの折り返し対策】
-                  以前は「企業研究：{社名}の事業内容」を1つのテキストにしていたため、
-                  Safariで「霞ヶ関キ／ャピタルの事業内容」のように社名の途中で
-                  改行されていた。Chromeは word-break: auto-phrase を解釈するが
-                  Safariは非対応で、日本語をどこでも改行してしまうため。
-
-                  対策は2つ。
-                  ① 「企業研究」を上の行に分離し、社名から始まる行に幅を与える
-                  ② 社名を .jp-nobreak で囲み、その中では改行させない
-                  ②だけだと極端に長い社名がはみ出すので、
-                  overflow-wrap: anywhere を併用して必要なときだけ折り返す。 */}
-              <h3 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                <span className="flex items-center gap-2 text-sm md:text-base font-semibold text-muted-foreground mb-1">
-                  <Info className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
-                  企業研究
-                </span>
-                <span className="block">
-                  <span className="jp-nobreak">{company.company}</span>の事業内容
-                </span>
-              </h3>
-              <div
-                /* 幅は制限しない。下の「強み」「将来性」カードと左右の位置を揃えるため、
-                   親要素の幅いっぱいに広げる（max-w-[42em]を入れると幅が揃わず不自然になる）。 */
-                className="prose prose-p:text-[17px] md:prose-p:text-lg dark:prose-invert max-w-none leading-relaxed text-foreground"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.long_description) }}
-              />
-            </div>}
-
-            {/* 強み・将来性は短文のため2カラムのカード形式で表示（レイアウトの均等化） */}
-            {(company.strength || company.future_potential) && (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {company.strength && (
-                  <Card className="py-0 gap-0">
-                    <CardContent className="p-4 md:p-5">
-                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
-                        <TrendingUp className="w-5 h-5" />強み
-                      </h3>
-                      <div
-                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.strength) }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-                {company.future_potential && (
-                  <Card className="py-0 gap-0">
-                    <CardContent className="p-4 md:p-5">
-                      <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-primary mb-2">
-                        <Sparkles className="w-5 h-5" />将来性
-                      </h3>
-                      <div
-                        className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-relaxed text-foreground"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(company.future_potential) }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
-
-            {company.salary_details && <div className="space-y-3">
-              <h3 className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                <DollarSign className="w-5 h-5" />給与に関する補足
-              </h3>
-              <div
-                className="prose prose-p:text-[17px] md:prose-p:text-base dark:prose-invert max-w-none md:max-w-[42em] leading-relaxed text-foreground"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(company.salary_details) }}
-              />
-            </div>}
-          </section>
 
           {/* 広告1/2: 給与・業界内比較を見た直後の自然な区切り（ページ上部で唯一の広告） */}
           <div>
             <DynamicAdBanner />
           </div>
 
-          {/* --- 貯蓄の応用（住まい方・30歳の目標）---
-              【配置】冒頭の「年間いくら貯められる？」だけを給与の近くに残し、
-              住まい方以降は企業概要より後ろへ回す。
-              企業ページを開いた読者がまず知りたいのは給与と事業内容で、
-              貯蓄の応用はそれを読み終えたあとに効く話のため。 */}
-          {savings && livingScenarios && goalAt30 && (
-            <section className="space-y-4">
+          {/*【配置】貯蓄は平均年収の後ろに置く。
+              いくら貯められるかは、初任給だけでなく入社後にいくらになるかで決まる。
+              有価証券報告書の平均年収を見たあとに読むほうが、金額の意味が掴める。 */}
+          {/* --- 貯蓄（いくら貯まるか → どうすれば貯まるか）---
+              【根拠のある数字にする】「年間◯万円貯められます」と根拠なく書かない。
+              公的統計から「手取りに対して手元に残る割合」を取り、この企業の手取りに掛ける。
+              1つの数字ではなく幅で出すのは、統計上の黒字率（借金返済等を含む）と
+              先取り貯蓄の一般的な目安に開きがあり、実際はその間に収まるため。
+              詳しい考え方は lib/savings.ts のコメントに書いている。 */}
+          {savings && (
+            <section className="space-y-3">
               <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
-                貯めるために知っておきたいこと
+                {company.company}なら年間いくら貯められる？
               </h2>
+
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5 space-y-4">
-                  {/* 【当サイト独自の切り口】
-                      銀行のコラムは「手取りの1〜2割を貯めましょう」で終わる。
-                      実際に効くのは住まいの選択で、統計上は年110万円以上の差がつく。
-                      初任給が月5万円高い企業を選んでも年60万円の差にしかならないので、
-                      就活生にとってはこちらのほうがインパクトが大きい。
-                      企業ごとの手取りを持っている当サイトだから具体的に出せる。 */}
-                  {livingScenarios && (
-                    <div className="pt-4 border-t space-y-3">
-                      <h3 className="jp-heading text-base md:text-lg font-bold text-foreground">
-                        住まい方でどれくらい変わる？
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {livingScenarios.map((s) => (
-                          <div
-                            key={s.key}
-                            className={`rounded-xl border p-3 md:p-4 ${
-                              s.beatsAverage ? "border-primary/40 bg-primary/5" : "bg-card"
-                            }`}
-                          >
-                            <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                            <p
-                              className={`text-xl md:text-2xl font-bold tabular ${
-                                s.annualSurplus > 0 ? "text-primary" : "text-muted-foreground"
-                              }`}
-                            >
-                              {s.annualSurplus > 0
-                                ? Math.round(s.annualSurplus / 10_000).toLocaleString()
-                                : "0"}
-                              <span className="text-sm font-normal text-muted-foreground">万円</span>
-                            </p>
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              年間支出 約{Math.round(s.annualCost / 10_000).toLocaleString()}万円
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                        {livingComparison}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border bg-card p-3 md:p-4">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        手取りの{SAVINGS_BENCHMARK.ruleOfThumbMax}%を貯蓄した場合
                       </p>
+                      {/* 見出しに「年間いくら貯められる？」とあるので
+                          数字の頭に「年」を付けると重複して読みにくい */}
+                      <p className="text-xl md:text-2xl font-bold text-primary tabular">
+                        {Math.round(savings.conservativeAnnual / 10_000).toLocaleString()}
+                        <span className="text-sm font-normal text-muted-foreground">万円</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        月{savings.conservativeMonthly.toLocaleString()}円
+                      </p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-3 md:p-4">
+                      {/* 【黒字率をやめた】45.3%は20%と幅が開きすぎて
+                          結局いくら目指せばいいのか分からなかった。
+                          「手取り − 平均支出」なら引き算の意味が明快で、
+                          目標との差も「あと月いくら削るか」として読める。 */}
+                      <p className="text-xs text-muted-foreground mb-1">
+                        平均的な支出だと実際に残るのは
+                      </p>
+                      <p className="text-xl md:text-2xl font-bold text-foreground tabular">
+                        {savings.realisticMonthly > 0
+                          ? Math.round(savings.realisticAnnual / 10_000).toLocaleString()
+                          : "0"}
+                        <span className="text-sm font-normal text-muted-foreground">万円</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {savings.realisticMonthly > 0
+                          ? `月${savings.realisticMonthly.toLocaleString()}円`
+                          : "統計上の平均支出では赤字"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    {buildSavingsSummary(company.company, savings)}
+                  </p>
+
+                  {/* 【回遊】貯蓄ページへ送る。手取り別の詳細な目安と
+                      到達期間はあちらに集約している */}
+                  {savingsPageLink !== null && (
+                    <div className="pt-4 border-t">
+                      <Link
+                        href={`/savings/${savingsPageLink}`}
+                        className="group flex h-14 items-center justify-between gap-2 rounded-xl border-2 bg-card px-4 text-[15px] font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
+                      >
+                        <span className="flex items-center gap-2">
+                          <PiggyBankIcon className="h-5 w-5 shrink-0 text-primary" />
+                          手取り{Math.round(savingsPageLink / 10_000)}万円の貯金プランを詳しく見る
+                        </span>
+                        <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                      </Link>
                     </div>
                   )}
 
-                  {/* 30歳時点の目標額に間に合うかの逆算 */}
-                  {goalAt30 && (
-                    <div className="pt-4 border-t space-y-2">
-                      <h3 className="jp-heading text-base md:text-lg font-bold text-foreground">
-                        30歳までに1,000万円は貯まる？
-                      </h3>
-                      <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                        {SAVINGS_BENCHMARK.firstYearSurvey}によると、社会人2年目が考える30歳時点の
-                        目標貯蓄額は平均
-                        <strong className="text-foreground">
-                          {Math.round(goalAt30.goal / 10_000).toLocaleString()}万円
-                        </strong>
-                        です。新卒入社から{SAVINGS_BENCHMARK.yearsTo30}年で割ると、
-                        年<strong className="text-foreground">
-                          {Math.round(goalAt30.requiredAnnual / 10_000).toLocaleString()}万円
-                        </strong>
-                        のペースが必要になります。
-                        {company.company}の手取りで{SAVINGS_BENCHMARK.ruleOfThumbMax}%を貯めると年
-                        {Math.round(goalAt30.actualAnnual / 10_000).toLocaleString()}万円なので、
-                        {goalAt30.achievable
-                          ? "初任給のままでも計算上は届く水準です。"
-                          : `そのままでは年${Math.round(goalAt30.shortfallAnnual / 10_000).toLocaleString()}万円足りません。ただし給与は年次とともに上がるため、昇給と賞与でこの差は縮まります。`}
-                        {salaryGrowth
-                          ? `${company.company}の平均年収は初任給ベースの${Math.round(salaryGrowth.ratio * 10) / 10}倍なので、昇給後はより余裕が出ます。`
-                          : ""}
-                      </p>
-                    </div>
-                  )}
-
+                  <p className="pt-3 border-t text-xs text-muted-foreground leading-relaxed">
+                    ※ 月給ベースの試算で、賞与は含めていません（新卒1年目は支給が寸志のみ、
+                    あるいは支給なしの企業もあるため）。賞与があればこれに上乗せされます。
+                    家賃・奨学金の返済額によって実際に貯められる金額は大きく変わります。
+                    30歳時点の目標額はアンケートの平均値であり、全員が目指すべき金額ではありません。
+                    出典: {SAVINGS_BENCHMARK.expenseSurvey}、{SAVINGS_BENCHMARK.assetSurvey}、
+                    {SAVINGS_BENCHMARK.livingCostSurvey}、{SAVINGS_BENCHMARK.firstYearSurvey}。
+                  </p>
                 </CardContent>
               </Card>
+
+              {/*【統合】以前は「貯めるために知っておきたいこと」を別セクションに分け、
+                  企業概要より後ろへ離して置いていた。だが貯蓄の話が2か所に分かれると、
+                  片方だけ読んで終わる形になりやすい。ひとつのセクションにまとめ、
+                  「いくら貯まるか」→「どうすれば貯まるか」を続けて読めるようにする。
+                  見出しは h3 に下げ、その中の小見出しを h4 にして階層を保つ。 */}
+              {livingScenarios && goalAt30 && (
+                <>
+                  <h3 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+                    貯めるために知っておきたいこと
+                  </h3>
+                  <Card className="py-0 gap-0">
+                    <CardContent className="p-4 md:p-5 space-y-4">
+                      {/* 【当サイト独自の切り口】
+                          銀行のコラムは「手取りの1〜2割を貯めましょう」で終わる。
+                          実際に効くのは住まいの選択で、統計上は年110万円以上の差がつく。
+                          初任給が月5万円高い企業を選んでも年60万円の差にしかならないので、
+                          就活生にとってはこちらのほうがインパクトが大きい。
+                          企業ごとの手取りを持っている当サイトだから具体的に出せる。 */}
+                      {livingScenarios && (
+                        <div className="pt-4 border-t space-y-3">
+                          <h4 className="jp-heading text-base md:text-lg font-bold text-foreground">
+                            住まい方でどれくらい変わる？
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            {livingScenarios.map((s) => (
+                              <div
+                                key={s.key}
+                                className={`rounded-xl border p-3 md:p-4 ${
+                                  s.beatsAverage ? "border-primary/40 bg-primary/5" : "bg-card"
+                                }`}
+                              >
+                                <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
+                                <p
+                                  className={`text-xl md:text-2xl font-bold tabular ${
+                                    s.annualSurplus > 0 ? "text-primary" : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {s.annualSurplus > 0
+                                    ? Math.round(s.annualSurplus / 10_000).toLocaleString()
+                                    : "0"}
+                                  <span className="text-sm font-normal text-muted-foreground">万円</span>
+                                </p>
+                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                  年間支出 約{Math.round(s.annualCost / 10_000).toLocaleString()}万円
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                            {livingComparison}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* 30歳時点の目標額に間に合うかの逆算 */}
+                      {goalAt30 && (
+                        <div className="pt-4 border-t space-y-2">
+                          <h4 className="jp-heading text-base md:text-lg font-bold text-foreground">
+                            30歳までに1,000万円は貯まる？
+                          </h4>
+                          <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                            {SAVINGS_BENCHMARK.firstYearSurvey}によると、社会人2年目が考える30歳時点の
+                            目標貯蓄額は平均
+                            <strong className="text-foreground">
+                              {Math.round(goalAt30.goal / 10_000).toLocaleString()}万円
+                            </strong>
+                            です。新卒入社から{SAVINGS_BENCHMARK.yearsTo30}年で割ると、
+                            年<strong className="text-foreground">
+                              {Math.round(goalAt30.requiredAnnual / 10_000).toLocaleString()}万円
+                            </strong>
+                            のペースが必要になります。
+                            {company.company}の手取りで{SAVINGS_BENCHMARK.ruleOfThumbMax}%を貯めると年
+                            {Math.round(goalAt30.actualAnnual / 10_000).toLocaleString()}万円なので、
+                            {goalAt30.achievable
+                              ? "初任給のままでも計算上は届く水準です。"
+                              : `そのままでは年${Math.round(goalAt30.shortfallAnnual / 10_000).toLocaleString()}万円足りません。ただし給与は年次とともに上がるため、昇給と賞与でこの差は縮まります。`}
+                            {salaryGrowth
+                              ? `${company.company}の平均年収は初任給ベースの${Math.round(salaryGrowth.ratio * 10) / 10}倍なので、昇給後はより余裕が出ます。`
+                              : ""}
+                          </p>
+                        </div>
+                      )}
+
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </section>
           )}
+
 
           {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
           {faq.length > 0 && (
