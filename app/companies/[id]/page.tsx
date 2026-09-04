@@ -22,6 +22,7 @@ import {
 import { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
+import { FavoriteCompanyButton } from "@/components/favorite-company-button"
 import { CommentSection } from "@/components/comment-section"
 import { RecentlyViewed } from "@/components/recently-viewed"
 import { CompanyLogo } from "@/components/company-logo"
@@ -421,7 +422,7 @@ export default async function CompanyPage({ params }: Props) {
               {/* 🌟 最小幅（min-w-[200px]）を指定することで、自動折り返しの判定を最適化 */}
               <div className="flex-grow flex-shrink-0 min-w-[200px]">
                 <h1 className="text-xl md:text-4xl font-bold">{company.company}</h1>
-                <div className="flex flex-wrap gap-2 mt-2 sm:mt-3">
+                <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-3">
                   {company.industry.split("/").map((industry, i) => (
                     <Badge key={i} variant="secondary">{industry}</Badge>
                   ))}
@@ -431,6 +432,14 @@ export default async function CompanyPage({ params }: Props) {
                       <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                     </a>
                   )}
+                </div>
+                {/* 【保存】以前はランキングカードの中だけに置いていたが、
+                    一覧は見比べる場所であって各社を吟味する場所ではなく、
+                    企業名と金額の領域を圧迫していた。
+                    保存したくなるのはこのページを読んだあとなので、
+                    操作を判断の直後に置く。保存した企業は /saved で一覧できる。 */}
+                <div className="mt-3">
+                  <FavoriteCompanyButton companyId={company.id} companyName={company.company} />
                 </div>
               </div>
             </div>

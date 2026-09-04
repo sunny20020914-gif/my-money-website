@@ -9,12 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, ChevronRight, Star, TrendingUpIcon } from "lucide-react"
+import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, ChevronRight, TrendingUpIcon } from "lucide-react"
 import { AdBanner } from "@/components/ad-banner"
 import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
-import { useFavorites } from "@/hooks/use-favorites"
-import { showToast } from "@/components/toaster"
 import { CompanyLogo } from "@/components/company-logo"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { buildCardFinancialMetrics, LISTED_COMPANY_NOTE } from "@/lib/financials"
@@ -137,23 +135,10 @@ const CompanyCard = ({
   index,
   selectedRanking,
 }: CompanyCardProps) => {
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const isFav = company.id ? isFavorite(company.id, "company") : false;
 
   // 財務指標。カードには onCard: true の3項目（売上高・営業利益率・一人当たり営業利益）だけを出す。
   // スプシに列が無い企業では空配列になり、下段の財務エリアごと非表示になる。
   const financials = buildCardFinancialMetrics(company);
-
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!company.id) return;
-    const added = toggleFavorite(company.id, "company");
-    if (added) {
-      showToast("お気に入りに保存しました", "success");
-    } else {
-      showToast("お気に入りから削除しました", "info");
-    }
-  };
 
   const descriptionPosition = calculateDescriptionPosition(index, 0)
   const salaryValue =
@@ -259,9 +244,12 @@ const CompanyCard = ({
                 <p className="text-base font-semibold text-foreground">{formatWithUnit(company.employees, "人")}</p>
                 <p className="text-sm text-muted-foreground">設立: {formatYear(company.founded)}</p>
               </div>
-              {/* 詳細ページへの導線: 塗りつぶしボタンを幅いっぱいに置き、★は下段に分離。
-                  横並びで圧縮されていた従来より遷移が促進される。 */}
-              <div className="w-32 flex flex-col gap-1.5">
+              {/* 詳細ページへの導線。
+                  【保存ボタンを外した理由】一覧は「どの企業が高いか」を
+                  見比べる場所であって、各社を吟味する場所ではない。
+                  保存したくなるのは詳細ページを読んだあとなので、
+                  操作はそちらに移した（components/favorite-company-button.tsx）。 */}
+              <div className="w-32">
                 {company.id && (
                   <Button asChild size="default" className="w-full font-semibold">
                     <Link href={`/companies/${company.id}`}>
@@ -270,19 +258,6 @@ const CompanyCard = ({
                     </Link>
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleFavoriteClick}
-                  className={`bg-transparent w-full transition-colors ${
-                    isFav
-                      ? "text-primary border-primary dark:text-green-500 dark:border-green-500"
-                      : "text-muted-foreground hover:text-primary hover:border-primary dark:hover:text-green-500 dark:hover:border-green-500"
-                  }`}
-                >
-                  <Star className="h-3.5 w-3.5 mr-1" fill={isFav ? "currentColor" : "none"} />
-                  <span className="text-xs">{isFav ? "保存済み" : "保存"}</span>
-                </Button>
               </div>
             </div>
           </div>
@@ -363,30 +338,14 @@ const CompanyCard = ({
               最終行に1〜2文字だけ残る不格好な折り返しを防ぐ。 */}
           {/* 【スマホは3情報に絞る】業界バッジは出さない（詳細ページで確認できる）。
               一覧はアイコン・企業名・初任給に絞り、1画面に入る社数を増やす */}
+          {/* 【保存ボタンを外した】右端に☆を置いていたが、40pxを占めるぶん
+              企業名の幅が削られ、長い社名が2行に折り返しやすくなっていた。
+              一覧は見比べる場所なので、保存は詳細ページに任せる
+              （components/favorite-company-button.tsx）。
+              これで企業名は179px→219pxまで広がる。 */}
           <div className="min-w-0 flex-1 text-left">
             <h3 className="text-base font-bold text-foreground leading-snug text-balance">{company.company}</h3>
           </div>
-
-          {/* 【保存】以前は全幅のアウトラインボタンだったが、
-              一覧の主役ではない操作に1行まるごと使うのは重すぎた。
-              右上のアイコンだけにする。枠を消しても40pxの
-              タップ領域は確保しているので押しにくくはならない。
-              z-[2] でリンク面より上に置き、押しても詳細ページへ飛ばない。 */}
-          {company.id && (
-            <button
-              type="button"
-              onClick={handleFavoriteClick}
-              aria-label={isFav ? `${company.company}の保存を解除` : `${company.company}を保存`}
-              aria-pressed={isFav}
-              className={`relative z-[2] -mr-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
-                isFav
-                  ? "text-primary dark:text-green-500"
-                  : "text-muted-foreground/50 hover:text-primary dark:hover:text-green-500"
-              }`}
-            >
-              <Star className="h-5 w-5" fill={isFav ? "currentColor" : "none"} />
-            </button>
-          )}
         </div>
 
         {/* 下段：金額と、詳細への矢印。
