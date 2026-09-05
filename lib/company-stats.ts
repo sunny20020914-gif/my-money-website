@@ -122,18 +122,86 @@ export function buildLeadSummary(
     parts.push(`${company.company}の想定年収は${yen(annual)}です（${fiscalYear}年度）。`)
   }
 
+  /**
+   * 【順位を文章で並べない】
+   * 以前はここで
+   *   「初任給は不動産・デベロッパー業界7社中2位、アセットマネジメント業界5社中2位、
+   *     上場業界84社中2位、掲載企業全体では159社中2位の水準です。」
+   * のように、業界の数だけ「◯社中◯位」を連ねていた。
+   * 業界を複数持つ企業ほど同じ言い回しが増え、
+   * 変数を機械的に埋めた文章そのものに見えてしまう。
+   *
+   * 順位は数値の並びなので、文章より一覧（バッジ）のほうが読み取りやすい。
+   * 具体的な順位は buildRankBadges() が返すチップで見せ、
+   * ここでは「どのくらいの位置か」を1文で言うだけにする。
+   */
   const ranked = rankedIndustries(stats)
-  if (ranked.length > 0) {
-    const industryTexts = ranked.map(
-      (s) => `${s.industry}業界${s.totalInIndustry}社中${s.rankInIndustry}位`,
-    )
-    if (stats.overallRankMonthly !== null && stats.totalWithMonthly > 1) {
-      industryTexts.push(`掲載企業全体では${stats.totalWithMonthly}社中${stats.overallRankMonthly}位`)
-    }
-    parts.push(`初任給は${industryTexts.join("、")}の水準です。`)
+  // 【代表に選ばない区分】スプシの業界欄には「上場」「プライム」のような
+  // 市場区分のタグも混ざっている。これらを文章に入れると
+  // 「上場業界でもトップクラスです」という日本語にならない文になる。
+  // バッジには出す（順位の情報としては有効）が、文章の主語にはしない。
+  const NOT_AN_INDUSTRY = /^(上場|非上場|プライム|スタンダード|グロース|東証\w*)$/
+  const namable = ranked.filter((s) => !NOT_AN_INDUSTRY.test(s.industry.trim()))
+  const forSentence = namable.length > 0 ? namable : []
+
+  if (forSentence.length > 0) {
+    // 最も順位が高い（＝分母に対する位置が良い）業界を1つだけ代表に選ぶ
+    const best = [...forSentence].sort(
+      (a, b) =>
+        (a.rankInIndustry as number) / a.totalInIndustry -
+        (b.rankInIndustry as number) / b.totalInIndustry,
+    )[0]
+    const r = best.rankInIndustry as number
+    const ratio = r / best.totalInIndustry
+
+    const level =
+      r === 1
+        ? `${best.industry}業界で最も高い水準です。`
+        : ratio <= 0.1
+          ? `${best.industry}業界でもトップクラスの水準です。`
+          : ratio <= 0.3
+            ? `${best.industry}業界では高いほうの水準です。`
+            : ratio <= 0.7
+              ? `${best.industry}業界では平均的な水準です。`
+              : `${best.industry}業界では控えめな水準です。`
+    parts.push(`初任給は${level}`)
   }
 
   return parts.join("")
+}
+
+/** 順位バッジ1つ分。ラベルと「◯位 / ◯社」を分けて持つ */
+export interface RankBadge {
+  label: string
+  rank: number
+  total: number
+}
+
+/**
+ * 順位をバッジ（チップ）として並べるためのデータを返す。
+ *
+ * 文章で「◯業界◯社中◯位」を繰り返すと機械的に見えるため、
+ * 表示側では
+ *   [不動産・デベロッパー 2位/7社] [アセットマネジメント 2位/5社] [掲載全体 2位/159社]
+ * のように横並びのチップにする。同じ言い回しの繰り返しが無くなり、
+ * 数字の比較もしやすい。
+ */
+export function buildRankBadges(stats: CompanyStats): RankBadge[] {
+  const badges: RankBadge[] = rankedIndustries(stats).map((s) => ({
+    label: s.industry,
+    rank: s.rankInIndustry as number,
+    total: s.totalInIndustry,
+  }))
+
+  if (stats.overallRankMonthly !== null && stats.totalWithMonthly > 1) {
+    badges.push({
+      label: "掲載全体",
+      rank: stats.overallRankMonthly,
+      total: stats.totalWithMonthly,
+    })
+  }
+
+  return badges
 }
 
 export interface FaqItem {

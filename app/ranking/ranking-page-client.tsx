@@ -384,6 +384,22 @@ const CompanyCard = ({
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
           )}
         </div>
+
+        {/*【説明文】スプレッドシートのH列（description）に文章があるときだけ表示する。
+            空欄の企業ではこのブロックごと出ないので、
+            見出しだけ残って中身が空になることはない。
+
+            2行で打ち切っている（line-clamp-2）。企業によって文章の長さがまちまちで、
+            長い1社のためにカードが伸びると一覧の行の高さが不揃いになり、
+            順位を見比べるという本来の目的を損なうため。
+            全文は詳細ページで読める。
+
+            左端は金額行と同じ pl-12（ロゴの左端）に揃える。 */}
+        {company.description && (
+          <p className="mt-2 pl-12 text-[13px] leading-relaxed text-muted-foreground line-clamp-2">
+            {company.description}
+          </p>
+        )}
       </div>
     </Card>
   );
@@ -557,14 +573,19 @@ export function RankingPageClient({
             以前は白地に文字が並ぶだけで、上位サイトと比べて視覚的な起点が無かった。
             全幅の淡いグラデーション＋下端の罫線で「ここまでが導入」と伝わるようにする。 */}
         <div className="bg-gradient-to-b from-primary/[0.07] via-primary/[0.03] to-transparent border-b border-border/60">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
             <div className="max-w-5xl mx-auto text-center">
-              {/* データの鮮度と対象学年を最初に示すバッジ。
-                  業界別ページと同じ意匠に揃え、サイト全体で一貫させる */}
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
-                <TrendingUpIcon className="w-4 h-4 mr-2" />
-                {FISCAL_YEAR}年最新データ・{TARGET_GRAD_LABEL}向け
-              </div>
+              {/*【バッジを外した理由】
+                  「2026年最新データ・27卒・28卒向け」と書いていたが、
+                  2026はすぐ下のH1に、卒業年度はH1の副題にそのまま出てくる。
+                  つまりこのバッジ独自の情報は無く、装飾のためだけに
+                  1行と余白を消費していた。
+
+                  冒頭では同じ事実を1回だけ書く方針に揃える:
+                    年号     … H1
+                    卒業年度 … H1の副題
+                    掲載社数 … H1の副題
+                    更新日・出典 … 下の帯 */}
 
               {/* 【SEO】検索クエリは「初任給ランキング 2026」。
                   従来のH1は「初任給・年収ランキング」で年号が無く、
@@ -574,48 +595,46 @@ export function RankingPageClient({
                   当サイトは高待遇企業に特化したデータセットなので、
                   一般的な「初任給ランキング」より競合が薄く、意図も一致する。 */}
               {selectedRanking === "annual" ? (
-                <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4 leading-tight text-primary">
+                <h1 className="text-2xl md:text-5xl font-bold text-balance mb-3 leading-tight text-primary">
                   新卒の想定年収が高い企業ランキング {FISCAL_YEAR}
-                  <span className="block text-xl md:text-3xl mt-2 text-foreground">
+                  <span className="block text-base md:text-2xl mt-1.5 font-bold text-foreground">
                     賞与を含めた1年目の年収で{summary?.withMonthly ?? ""}社を比較
                   </span>
                 </h1>
               ) : (
-                <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4 leading-tight text-primary">
+                <h1 className="text-2xl md:text-5xl font-bold text-balance mb-3 leading-tight text-primary">
                   初任給ランキング {FISCAL_YEAR}
                   {/* 【年号】実測で年号付きクエリは10位前後、年号なしは45位。
                       就活生は自分の卒業年度で検索するため、西暦も併記して
                       「初任給ランキング 2027」のようなクエリを直接狙う。 */}
-                  <span className="block text-xl md:text-3xl mt-2 text-foreground">
-                    {TARGET_GRAD_YEAR_SHORT}向け・月30万円超の高待遇企業を
-                    {summary?.withMonthly ?? ""}社掲載
+                  <span className="block text-base md:text-2xl mt-1.5 font-bold text-foreground">
+                    {TARGET_GRAD_YEAR_SHORT}向け・月30万円超の{summary?.withMonthly ?? ""}社
                   </span>
                 </h1>
               )}
-              {/* 【行数】以前は無条件の <br /> で2文を分けたうえに
-                  text-wrap: balance が両方の塊を均等割りしていたため、
-                  スマホで4行になり折り返しが多すぎた。
-                  <br /> をPC専用にし、スマホでは端まで詰めて3行に収める。
-                  文言も「手取り額」→「手取り」等でわずかに短縮している。 */}
-              <p className="jp-lead text-[17px] md:text-xl text-muted-foreground leading-[1.85] max-w-3xl mx-auto">
-                {TARGET_GRAD_LABEL}向けに、初任給の高い企業を厳選して掲載。
-                <br className="hidden md:inline" />
-                手取りや入社後の年収の伸びまで確認できます。
+              {/*【短縮】以前は
+                   「27卒・28卒向けに、初任給の高い企業を厳選して掲載。
+                     手取りや入社後の年収の伸びまで確認できます。」
+                 と2文あったが、前半はバッジとH1副題で計3回書いていた内容だった。
+                 このページにしか書けない後半（額面の先まで載せている点）だけ残す。 */}
+              <p className="jp-lead text-[15px] md:text-lg text-muted-foreground leading-[1.8] max-w-3xl mx-auto">
+                額面だけでなく、手取りと入社後の年収の伸びまで確認できます。
               </p>
 
               {/* 【E-E-A-T】更新日・出典・掲載社数を横並びで明示する。
                   上位サイト（GBase等）はいずれもタイトル直下にこの帯を置いており、
                   「誰がいつ何を根拠に作ったか」が一目で伝わる。
                   YMYL領域では信頼性の提示が検索評価にも直結する。 */}
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs md:text-sm text-muted-foreground">
+              {/*【掲載社数を外した】この帯にも「掲載◯社」を出していたが、
+                  H1の副題と、下の集計カードにも同じ数字が出ており計3回だった。
+                  ここは更新日と出典（＝他で書いていない情報）に絞る。 */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5" />
                   最終更新: {updatedLabel}
                 </span>
                 <span className="hidden sm:inline text-border">|</span>
                 <span>出典: 各社採用情報・有価証券報告書</span>
-                <span className="hidden sm:inline text-border">|</span>
-                <span>掲載 {summary?.withMonthly ?? "—"} 社</span>
               </div>
             </div>
           </div>
@@ -662,6 +681,23 @@ export function RankingPageClient({
                 （details内のコンテンツも初期HTMLに含まれクローラーに読まれる） */}
             {summary && summary.avgMonthly !== null && (
               <div className="mb-6 rounded-xl border bg-card p-4 md:p-5">
+                {/*【何のデータかを直前に書く】
+                    すぐ上のリード文が「大卒の平均初任給は262,300円（厚労省）」という
+                    公的統計の話なので、続けて371,217円という数字が出ると、
+                    同じ統計の続きだと誤解される。実際は母集団がまったく違う。
+
+                    カードの直前に出典と母集団を置いて、read順に沿って誤解を断つ。
+                    「全国平均ではない」と明示しないと、当サイトの平均が
+                    日本の相場だと受け取られかねない（YMYL領域では致命的）。 */}
+                <div className="mb-3 pb-3 border-b">
+                  <p className="text-sm font-bold text-foreground">
+                    当サイト掲載{summary.withMonthly}社の集計
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+                    上の全国平均とは別のデータです。初任給の高い企業を中心に収録しているため、
+                    世間の相場より高くなります。
+                  </p>
+                </div>
                 {/* 主要指標をカード化して一目で掴めるようにする。
                     文章だけだと数字が埋もれ、データサイトとしての説得力が出ない。 */}
                 {/* 【スマホでの見え方】数字が18pxだとカードの余白ばかり目立っていた。

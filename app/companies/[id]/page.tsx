@@ -28,7 +28,7 @@ import { RecentlyViewed } from "@/components/recently-viewed"
 import { CompanyLogo } from "@/components/company-logo"
 import { ShareButtons } from "@/components/share-buttons"
 import Link from "next/link"
-import { computeCompanyStats, buildLeadSummary, buildFaq, rankedIndustries, getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
+import { computeCompanyStats, buildLeadSummary, buildRankBadges, buildFaq, rankedIndustries, getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
 import { pairSlug } from "@/lib/compare"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
@@ -150,6 +150,8 @@ export default async function CompanyPage({ params }: Props) {
   const stats = computeCompanyStats(allCompanies, company)
   const industryComparisons = rankedIndustries(stats)
   const leadSummary = buildLeadSummary(company, stats, FISCAL_YEAR)
+  // 順位は文章で連ねずバッジで見せる（同じ言い回しの繰り返しを避けるため）
+  const rankBadges = buildRankBadges(stats)
   const baseFaq = buildFaq(company, stats, FISCAL_YEAR)
   const netSalary = estimateNetSalary(company.baseMonthly)
   // この企業が属する業界のクロス条件一覧ページ（内部リンク用）
@@ -461,6 +463,32 @@ export default async function CompanyPage({ params }: Props) {
                 {leadSummary}
               </p>
             )}
+
+            {/*【順位はバッジで見せる】
+                以前はこの導入文の中で
+                  「初任給は不動産・デベロッパー業界7社中2位、
+                    アセットマネジメント業界5社中2位、上場業界84社中2位、
+                    掲載企業全体では159社中2位の水準です。」
+                と、業界の数だけ「◯社中◯位」を書き並べていた。
+                同じ言い回しが4回続き、変数を埋めただけの文章に見えていた。
+
+                順位は数値の並びなので、文章にするより一覧にしたほうが速く読める。
+                文章側は「◯◯業界でトップクラス」と1文だけにし、
+                具体的な数字はここのチップに任せる。 */}
+            {rankBadges.length > 0 && (
+              <ul className="mt-3 flex flex-wrap gap-1.5">
+                {rankBadges.map((b) => (
+                  <li
+                    key={b.label}
+                    className="inline-flex items-baseline gap-1.5 rounded-full border bg-card px-3 py-1"
+                  >
+                    <span className="text-xs text-muted-foreground">{b.label}</span>
+                    <span className="text-sm font-bold text-primary tabular">{b.rank}位</span>
+                    <span className="text-xs text-muted-foreground">/ {b.total}社</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <p className="mt-2 text-xs text-muted-foreground">
               最終更新日: <time dateTime={lastUpdated.iso}>{lastUpdated.label}</time>
             </p>
@@ -484,14 +512,27 @@ export default async function CompanyPage({ params }: Props) {
                     <p className="text-sm text-muted-foreground">初任給（月額）</p>
                     <SalaryDisplay value={company.baseMonthly} url={company.salaryUrl} />
                   </div>
-                  {/* 手取り目安（1年目・概算） */}
+                  {/*【手取りを一元化】手取りの金額はこのカードにだけ置く。
+                      以前は1年目だけをここに出し、下の手取りセクションで
+                      額面・1年目・2年目の3つを表で再掲していたため、
+                      同じ数字がページ内に3回出ていた。
+                      2年目もここに並べ、下のセクションは
+                      「何が引かれてそうなるのか」の説明に徹させる。 */}
                   {netSalary && (
-                    <div className="space-y-1 md:text-center">
-                      <p className="text-sm text-muted-foreground">手取り目安（1年目）</p>
-                      <p className="text-lg md:text-xl font-semibold whitespace-nowrap">
-                        約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}
-                      </p>
-                    </div>
+                    <>
+                      <div className="space-y-1 md:text-center">
+                        <p className="text-sm text-muted-foreground">手取り（1年目）</p>
+                        <p className="text-lg md:text-xl font-semibold whitespace-nowrap">
+                          約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="space-y-1 md:text-center">
+                        <p className="text-sm text-muted-foreground">手取り（2年目〜）</p>
+                        <p className="text-lg md:text-xl font-semibold whitespace-nowrap">
+                          約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}
+                        </p>
+                      </div>
+                    </>
                   )}
                   {/* 設立・従業員数。
                       スプシが空欄のとき設立年は 0、従業員数は "?" になるため、
@@ -507,102 +548,80 @@ export default async function CompanyPage({ params }: Props) {
                   </div>
                 </div>
 
-                {/* 【導線】想定年収を見た直後に、年収基準のランキングへ送る。
-                    独立ページ（/ranking/annual）なので内部リンクとしても評価される。 */}
-                {typeof company.annualSalary === "number" && (
-                  <p className="mt-4 pt-3 border-t">
-                    <Link
-                      href="/ranking/annual"
-                      className="text-sm font-semibold text-primary hover:underline"
-                    >
-                      賞与込みの「想定年収ランキング」で{company.company}の順位を見る →
-                    </Link>
+                {/*【額面の内訳を金額のすぐ下に出す】
+                    就活生が最も知りたいのは「この60万円に何が含まれているか」
+                    （固定残業代◯時間分、家賃補助◯万円など）で、
+                    これが分からないと他社と比較できない。
+
+                    ただしスプレッドシートに基本給・固定残業代・手当の
+                    数値列は無く、内訳は description（H列）や
+                    「給与に関する補足」に文章として書かれている。
+                    数値が無い以上テーブルには組めないので、
+                    書かれている企業についてはその文章を金額の真下に出す。
+
+                    以前は description をこのページで使っておらず、
+                    ランキング一覧にだけ「家賃補助10万/月を含む」と
+                    出ている状態だった（一覧より詳細ページの情報が少ない）。 */}
+                {company.description && (
+                  <p className="mt-4 pt-3 border-t text-[13px] md:text-sm leading-relaxed text-muted-foreground">
+                    <span className="font-semibold text-foreground">額面の内訳・補足：</span>
+                    {company.description}
                   </p>
                 )}
-                {netSalary && (
-                  <>
-                    <p className="mt-4 pt-3 border-t text-xs text-muted-foreground leading-relaxed">
-                      ※手取りは独身・扶養なしを前提に、社会保険料（健康保険・厚生年金・雇用保険）と所得税を差し引いた概算です。新卒1年目は住民税がかからないため、2年目以降は住民税（月約¥{netSalary.residentTaxMonthly.toLocaleString()}）を差し引いた約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}が目安になります。
-                    </p>
-                    <p className="mt-2">
-                      <Link
-                        href={`/simulator?monthly=${netSalary.grossMonthly}&name=${encodeURIComponent(company.company)}`}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {company.company}の初任給で手取りを詳しくシミュレーション →
-                      </Link>
-                    </p>
-                  </>
-                )}
+
+                {/*【リンクと注釈をここから外した】
+                    以前はこのカードの下に
+                      ・「想定年収ランキングで順位を見る →」
+                      ・「初任給で手取りを詳しくシミュレーション →」
+                    という青いリンク2本と、手取りの前提を説明する長い注釈があった。
+
+                    ページ全体で青いリンクが7本あり、どれを押せばよいか
+                    分かりにくくなっていた。とくにシミュレーターへのリンクは
+                    下の手取りセクションにもあり、同じ行き先が2本並んでいた。
+
+                    このカードは「数字を見る場所」に徹し、
+                    次の操作と注釈は手取りセクションにまとめる。 */}
               </CardContent>
             </Card>
           </section>
 
           {/* --- 手取りの内訳（「企業名 初任給 手取り」で流入を取るための中核セクション）---
               大手就活サイトは額面しか載せないため、控除の内訳まで示せるのが差別化点。
-              実測でこの系統のクエリは6.5位・CTR50%を記録しており、伸ばす価値が高い。 */}
+              実測でこの系統のクエリは6.5位・CTR50%を記録しており、伸ばす価値が高い。
+
+              【重複を解消した】以前はこのセクションの冒頭で
+                ・「額面は月額¥600,000で、1年目の手取りは約¥483,000です」という文章
+                ・額面／1年目／2年目を並べた表
+              を出していたが、どちらも上の給与カードとまったく同じ数字だった。
+              同じ金額がページ内に3回登場する状態で、
+              検索キーワードのために見出しと本文を水増ししたように見えていた。
+
+              金額は上のカードに任せ、このセクションは
+              「何が引かれてその金額になるのか」だけを担当する。 */}
           {netSalary && (
             <section className="space-y-3">
               <h2 className="text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
                 {company.company}の初任給の手取りはいくら？
               </h2>
-              <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
-                {company.company}の初任給（額面）は月額
-                <strong className="text-foreground">¥{netSalary.grossMonthly.toLocaleString()}</strong>
-                で、ここから社会保険料と所得税が差し引かれます。
-                新卒1年目の手取りは月額
-                <strong className="text-foreground">約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}</strong>
-                が目安です（独身・扶養なしの概算）。
-              </p>
 
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5">
-                  {/*【表を2つに分けた理由】
-                      以前は額面・控除4項目・手取り2種を1つの表に7行並べていた。
-                      だが多くの人が知りたいのは「結局いくら手元に残るか」であって、
-                      健康保険料や厚生年金の内訳はその根拠にすぎない。
-                      根拠まで7行読ませてから答えに着くのは順序が逆。
+                  {/* 差し引かれる合計。上のカードには無い数字なので重複しない。
+                      「額面と手取りの差はいくらか」は単独で知りたい情報でもある。 */}
+                  <div className="flex items-baseline justify-between gap-3 pb-3 border-b">
+                    <span className="text-sm text-muted-foreground">
+                      額面から差し引かれる合計
+                    </span>
+                    <span className="text-xl font-bold text-foreground tabular whitespace-nowrap">
+                      −¥{(netSalary.grossMonthly - roundNet(netSalary.netMonthlyFirstYear)).toLocaleString()}
+                    </span>
+                  </div>
 
-                      答え（額面→手取り）だけを表に残し、
-                      天引きの内訳は折りたたんで、知りたい人が開く形にする。
-
-                      折りたたんでも中身はHTMLに含まれるため検索エンジンには読まれる
-                      （初期表示で隠れている内容も通常のコンテンツとして扱われる）。 */}
-                  <table className="w-full text-sm md:text-[15px]">
-                    <caption className="sr-only">
-                      {company.company}の初任給の額面と手取り
-                    </caption>
-                    <tbody>
-                      <tr className="border-b">
-                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
-                          額面（月額総支給）
-                        </th>
-                        <td className="py-2 text-right font-semibold">
-                          ¥{netSalary.grossMonthly.toLocaleString()}
-                        </td>
-                      </tr>
-                      <tr className="border-b-2 border-primary/50">
-                        <th scope="row" className="py-2.5 text-left font-bold">
-                          手取り（1年目）
-                        </th>
-                        <td className="py-2.5 text-right text-lg font-bold text-primary">
-                          約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}
-                        </td>
-                      </tr>
-                      <tr>
-                        <th scope="row" className="py-2 text-left font-normal text-muted-foreground">
-                          手取り（2年目以降・住民税込み）
-                        </th>
-                        <td className="py-2 text-right font-semibold">
-                          約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <details className="mt-3 pt-3 border-t">
+                  {/* 内訳は折りたたむ（知りたい人だけ開けばよい）。
+                      折りたたんでも中身はHTMLに含まれるため検索エンジンには読まれる。 */}
+                  <details className="mt-3">
                     <summary className="cursor-pointer text-sm font-semibold text-primary hover:underline">
-                      差し引かれる内訳を見る
+                      内訳を見る
                     </summary>
                     <table className="w-full mt-3 text-sm md:text-[15px]">
                       <caption className="sr-only">
@@ -636,30 +655,50 @@ export default async function CompanyPage({ params }: Props) {
                       </tbody>
                     </table>
                     <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                      新卒1年目は前年の所得が無いため住民税がかかりません。2年目からは住民税（月約¥
+                      独身・扶養なしを前提とした概算です。新卒1年目は前年の所得が無いため
+                      住民税がかかりません。2年目からは住民税（月約¥
                       {netSalary.residentTaxMonthly.toLocaleString()}）が加わるため、手取りは1年目より少なくなります。
-                      賞与・残業代・各種手当は含まない月給ベースの概算です。
+                      賞与・残業代・各種手当は含まない月給ベースの試算です。
                     </p>
                   </details>
 
-                  <div className="mt-3 flex flex-col gap-2">
-                    {/* 【内部リンク】額面が近い手取りページへ送る。
-                        「初任給30万 手取り」系の検索需要を受け止めるページで、
-                        金融ジャンルとして広告単価も高い。 */}
-                    {nearestTakeHome !== null && (
+                  {/*【導線を1つに集約】以前はこの位置に青いテキストリンクが2本、
+                      さらに上の給与カードにも2本あり、同じシミュレーターへの
+                      リンクが2箇所に重複していた。どこを押せばよいか分かりにくく、
+                      回遊リンクを機械的に並べたページに見えていた。
+
+                      主要な操作（自分の条件で計算し直す）はボタン1つに絞り、
+                      関連ページへの案内は控えめな文字で下に添える。 */}
+                  <div className="mt-4">
+                    <Button asChild className="w-full sm:w-auto font-semibold">
                       <Link
-                        href={`/take-home/${nearestTakeHome}`}
-                        className="text-sm font-semibold text-primary hover:underline"
+                        href={`/simulator?monthly=${netSalary.grossMonthly}&name=${encodeURIComponent(company.company)}`}
                       >
-                        額面{manLabel(nearestTakeHome)}の手取りをもっと詳しく見る →
+                        扶養人数を変えて計算する
+                        <ArrowRightIcon className="ml-1 h-4 w-4" />
                       </Link>
+                    </Button>
+                    {nearestTakeHome !== null && (
+                      <p className="mt-2.5 text-xs text-muted-foreground">
+                        <Link
+                          href={`/take-home/${nearestTakeHome}`}
+                          className="underline underline-offset-2 hover:text-foreground"
+                        >
+                          額面{manLabel(nearestTakeHome)}の手取り早見表
+                        </Link>
+                        {typeof company.annualSalary === "number" && (
+                          <>
+                            {" ・ "}
+                            <Link
+                              href="/ranking/annual"
+                              className="underline underline-offset-2 hover:text-foreground"
+                            >
+                              想定年収ランキング
+                            </Link>
+                          </>
+                        )}
+                      </p>
                     )}
-                    <Link
-                      href={`/simulator?monthly=${netSalary.grossMonthly}&name=${encodeURIComponent(company.company)}`}
-                      className="text-sm font-semibold text-primary hover:underline"
-                    >
-                      扶養人数を変えて手取りを詳しく計算する →
-                    </Link>
                   </div>
                 </CardContent>
               </Card>
