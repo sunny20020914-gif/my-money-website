@@ -110,8 +110,22 @@ export default async function IndustriesPage() {
                 <Building2 className="w-4 h-4 mr-2" />
                 {FISCAL_YEAR}年最新データ・自動集計
               </div>
+              {/*【Safariでの折り返し対策】
+                  以前は見出し全体を1つのテキストにしていたため、Safariでは
+                  「業界別 初任給ラン／キング・分析 2026」のように
+                  単語の途中で改行されていた。
+                  Chromeは word-break: auto-phrase を解釈して文節で折るが、
+                  Safariは非対応で日本語をどこでも改行してしまうため。
+
+                  企業詳細ページの社名と同じ対処をとる。
+                  意味のまとまりを .jp-nobreak で囲み、その中では改行させない。
+                  極端に幅が狭いときだけ overflow-wrap: anywhere で折り返す
+                  （.jp-nobreak の定義は app/globals.css）。 */}
               <h1 className="text-2xl md:text-4xl font-bold text-primary mb-3">
-                業界別 初任給ランキング・分析 {FISCAL_YEAR}
+                <span className="jp-nobreak">業界別</span>{" "}
+                <span className="jp-nobreak">初任給ランキング</span>
+                <wbr />
+                <span className="jp-nobreak">・分析 {FISCAL_YEAR}</span>
               </h1>
               {/* 【AI SEO】答えを先に書く自己完結型サマリー */}
               {summary && (

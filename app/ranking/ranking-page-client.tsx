@@ -119,6 +119,33 @@ const LeadBlocks = ({
   </div>
 )
 
+/**
+ * 日本語の見出しを、指定した文節の区切りで折り返す。
+ *
+ * 【なぜ必要か】
+ * word-break: auto-phrase（文節で自動的に折る）はChrome系だけの機能で、
+ * WebKitは非対応。iOSはブラウザの種類を問わず全てWebKitで描画されるため、
+ * iPhoneでは意味の切れ目を無視して「引き上／げ」のように割れてしまう。
+ *
+ * 自動判定に任せず、折ってよい位置を <wbr> で明示する。
+ * <wbr> は全ブラウザが対応しているので、iOSでも意図どおりに折れる。
+ * 併せて見出しに .jp-phrase（keep-all）を付けて、
+ * ここで示した位置以外では折れないようにする。
+ *
+ * 使い方: <JpPhrases parts={["なぜ今、", "初任給の引き上げが", "相次いでいるのか"]} />
+ * 区切りは「読点のあと」「助詞のあと」など、声に出して切れる位置にする。
+ */
+const JpPhrases = ({ parts }: { parts: string[] }) => (
+  <>
+    {parts.map((part, i) => (
+      <React.Fragment key={i}>
+        {i > 0 && <wbr />}
+        {part}
+      </React.Fragment>
+    ))}
+  </>
+)
+
 const calculateDescriptionPosition = (index: number, total: number) => {
   // 常に中央に配置するため、固定値50を返す。0に近いほど右、100に近いほど左に寄る。
   return 12.3;
@@ -1001,13 +1028,20 @@ export function RankingPageClient({
                 判定されるため、検索意図に答える解説を厚く置く。
                 見出し（h2/h3）で構造化し、読者の疑問に順番に答える構成にしている。 */}
             {!loading && companies.length > 0 && (
-              <section className="mt-12 border-t pt-8 text-left space-y-8">
+              /*【余白の設計】文章が続く区間は、塊と塊の間隔を
+                 塊の中の行間よりはっきり広く取る。そうしないと
+                 どこで話題が変わったのか分からず、文字の壁に見える。
+                   見出しと本文  … 12px
+                   段落どうし    … 12px
+                   話題どうし    … 40px（space-y-10）
+                 見出しには左の罫を添えて、話題の始まりを目立たせる。 */
+              <section className="mt-12 border-t pt-8 text-left space-y-10">
 
                 {/* 【冒頭から移動】「どの業界の初任給が高いか」の話。
                     以前はページ冒頭に置いていたが、リード文全体でスマホ約830pxを占め、
                     ランキング本体が2.3画面ぶん下に押し下げられていた。
                     この内容は一覧を見たあとに読むほうが自然なため、ここに移した。
-                    すぐ下の「初任給が高い＝生涯賃金が高い、ではない」への
+                    すぐ下の「<JpPhrases parts={["初任給が高い＝", "生涯賃金が高い、", "ではない"]} />」への
                     導入にもなっている。 */}
                 {leadAfter.length > 0 && <LeadBlocks blocks={leadAfter} variant="section" />}
 
@@ -1015,10 +1049,10 @@ export function RankingPageClient({
                     冒頭のリード文では「全国平均」（＝世間相場）を扱っているため、
                     ここでは重複を避けて「規模による差」という別の切り口に踏み込む。 */}
                 <div className="space-y-3">
-                  <h2 className="text-xl md:text-2xl font-bold text-primary">
-                    同じ大卒でも、企業規模で初任給は3万円変わる
+                  <h2 className="jp-phrase text-lg md:text-xl font-bold text-primary leading-snug border-l-4 border-primary/40 pl-3">
+                    <JpPhrases parts={["同じ大卒でも、", "企業規模で", "初任給は", "3万円変わる"]} />
                   </h2>
-                  <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                  <div className="space-y-3 text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                     <p>
                       初任給は「大卒だからいくら」と一律に決まるものではありません。
                       {MARKET_BENCHMARK.surveyName}を企業規模別に見ると、従業員1,000人以上では
@@ -1051,10 +1085,10 @@ export function RankingPageClient({
 
                 {/* ② 引き上げが続く背景 */}
                 <div className="space-y-3">
-                  <h2 className="text-xl md:text-2xl font-bold text-primary">
-                    なぜ今、初任給の引き上げが相次いでいるのか
+                  <h2 className="jp-phrase text-lg md:text-xl font-bold text-primary leading-snug border-l-4 border-primary/40 pl-3">
+                    <JpPhrases parts={["なぜ今、", "初任給の引き上げが", "相次いでいるのか"]} />
                   </h2>
-                  <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                  <div className="space-y-3 text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                     <p>
                       大学卒の平均初任給は{MARKET_BENCHMARK.yearLabel}に前年比+{MARKET_BENCHMARK.universityGraduateYoY}%と大きく伸び、
                       初めて26万円台に到達しました。背景には主に3つの要因があります。
@@ -1083,10 +1117,10 @@ export function RankingPageClient({
                     {/* 【独自コンテンツ】すぐ上のブロックで「どの業界が高いか」を
                         扱っているため、ここでは「初任給の高さと生涯賃金は一致しない」という、
                         有報データを持つ当サイトだけが書ける踏み込んだ話にする。 */}
-                    <h2 className="text-xl md:text-2xl font-bold text-primary">
+                    <h2 className="jp-phrase text-lg md:text-xl font-bold text-primary leading-snug border-l-4 border-primary/40 pl-3">
                       初任給が高い＝生涯賃金が高い、ではない
                     </h2>
-                    <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    <div className="space-y-3 text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                       <p>
                         当サイトでは有価証券報告書をもとに、掲載企業の
                         <strong className="text-foreground">全社員の平均年収</strong>もあわせて収録しています。
@@ -1114,8 +1148,8 @@ export function RankingPageClient({
 
                 {/* ④ 注意点。ここが最も検索意図に応える部分 */}
                 <div className="space-y-4">
-                  <h2 className="text-xl md:text-2xl font-bold text-primary">
-                    求人票の初任給を正しく読み解く3つのポイント
+                  <h2 className="jp-phrase text-lg md:text-xl font-bold text-primary leading-snug border-l-4 border-primary/40 pl-3">
+                    <JpPhrases parts={["求人票の初任給を", "正しく読み解く", "3つのポイント"]} />
                   </h2>
                   <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                     同じ「月30万円」でも、内訳次第で実際に手元に入る額も働き方も変わります。
@@ -1123,8 +1157,8 @@ export function RankingPageClient({
                   </p>
 
                   <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-foreground">
-                      ① 固定残業代を除いた「基本給」はいくらか
+                    <h3 className="jp-phrase text-base font-bold text-foreground leading-snug">
+                      <JpPhrases parts={["① 固定残業代を除いた", "「基本給」は", "いくらか"]} />
                     </h3>
                     <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                       月給30万円のうち5万円が「40時間分の固定残業代」だとすると、基本給は25万円です。
@@ -1137,8 +1171,8 @@ export function RankingPageClient({
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-foreground">
-                      ② 自分にも支給される手当かどうか
+                    <h3 className="jp-phrase text-base font-bold text-foreground leading-snug">
+                      <JpPhrases parts={["② 自分にも", "支給される手当か", "どうか"]} />
                     </h3>
                     <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                       住宅手当や地域手当を含めた金額を初任給として提示している企業もあります。
@@ -1151,8 +1185,8 @@ export function RankingPageClient({
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-foreground">
-                      ③ 額面ではなく手取りで生活を想像できているか
+                    <h3 className="jp-phrase text-base font-bold text-foreground leading-snug">
+                      <JpPhrases parts={["③ 額面ではなく", "手取りで生活を", "想像できているか"]} />
                     </h3>
                     <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
                       額面から社会保険料と所得税が引かれるため、手取りはおおむね額面の8割前後になります。
@@ -1169,10 +1203,10 @@ export function RankingPageClient({
 
                 {/* ⑤ 実務的な使い方と内部リンク */}
                 <div className="space-y-3">
-                  <h2 className="text-xl md:text-2xl font-bold text-primary">
-                    新卒の企業選びでランキングを活用するには
+                  <h2 className="jp-phrase text-lg md:text-xl font-bold text-primary leading-snug border-l-4 border-primary/40 pl-3">
+                    <JpPhrases parts={["新卒の企業選びで", "ランキングを", "活用するには"]} />
                   </h2>
-                  <div className="space-y-3 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                  <div className="space-y-3 text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                     <p>
                       月額の初任給だけを見ていると、<strong className="text-foreground">賞与の差を見落とします</strong>。
                       同じ初任給30万円でも、年間賞与が4か月分の企業と2か月分の企業では、

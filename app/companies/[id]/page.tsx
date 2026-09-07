@@ -23,6 +23,7 @@ import { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
 import { FavoriteCompanyButton } from "@/components/favorite-company-button"
+import { SectionNav, type SectionNavItem } from "@/components/section-nav"
 import { CommentSection } from "@/components/comment-section"
 import { RecentlyViewed } from "@/components/recently-viewed"
 import { CompanyLogo } from "@/components/company-logo"
@@ -152,6 +153,24 @@ export default async function CompanyPage({ params }: Props) {
   const leadSummary = buildLeadSummary(company, stats, FISCAL_YEAR)
   // 順位は文章で連ねずバッジで見せる（同じ言い回しの繰り返しを避けるため）
   const rankBadges = buildRankBadges(stats)
+
+  /**
+   * ページ内の目次。
+   * 条件付きで描画されるセクションがあるため、
+   * 実際に出るものだけを載せる（押しても飛び先が無い項目を作らない）。
+   * ここの id は各 <section id="..."> と一致させること。
+   */
+  const navItems: SectionNavItem[] = [
+    { id: "salary", label: "給与" },
+    ...(netSalary ? [{ id: "take-home", label: "手取り" }] : []),
+    ...(company.long_description || company.strength || company.future_potential || company.salary_details
+      ? [{ id: "business", label: "事業内容" }]
+      : []),
+    ...(hasFinancialSection ? [{ id: "financials", label: "業績・年収" }] : []),
+    ...(industryComparisons.length > 0 ? [{ id: "industry", label: "業界内の位置" }] : []),
+    ...(savings ? [{ id: "savings", label: "貯蓄" }] : []),
+    ...(faq.length > 0 ? [{ id: "faq", label: "よくある質問" }] : []),
+  ]
   const baseFaq = buildFaq(company, stats, FISCAL_YEAR)
   const netSalary = estimateNetSalary(company.baseMonthly)
   // この企業が属する業界のクロス条件一覧ページ（内部リンク用）
@@ -459,7 +478,7 @@ export default async function CompanyPage({ params }: Props) {
                画面を見れば分かる。読み手に新しい情報を与えない案内文なので削除した。
                「企業研究」の語は下のFAQの設問に残っている。 */}
             {leadSummary && (
-              <p className="mt-4 text-[15px] md:text-base leading-relaxed text-muted-foreground">
+              <p className="mt-4 text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                 {leadSummary}
               </p>
             )}
@@ -497,8 +516,14 @@ export default async function CompanyPage({ params }: Props) {
             </div>
           </section>
 
+          {/*【目次】タブ切り替えの代わりに置いたページ内リンク。
+              後半のセクションほど文章が長く、上から順に読まないと
+              目的の情報に届かない状態だった。
+              URLは1つのままなので、クロールが分散する心配がない。 */}
+          <SectionNav items={navItems} />
+
           {/* --- 給与情報 --- */}
-          <section>
+          <section id="salary" className="scroll-mt-24">
             <Card className="py-0 gap-0">
               <CardContent className="p-4 md:p-6">
                 <div className="grid grid-cols-2 gap-4 md:flex md:flex-wrap md:justify-around md:items-center md:gap-x-8 md:gap-y-6">
@@ -563,7 +588,7 @@ export default async function CompanyPage({ params }: Props) {
                     ランキング一覧にだけ「家賃補助10万/月を含む」と
                     出ている状態だった（一覧より詳細ページの情報が少ない）。 */}
                 {company.description && (
-                  <p className="mt-4 pt-3 border-t text-[13px] md:text-sm leading-relaxed text-muted-foreground">
+                  <p className="mt-4 pt-3 border-t text-[13px] md:text-sm leading-[1.9] text-muted-foreground">
                     <span className="font-semibold text-foreground">額面の内訳・補足：</span>
                     {company.description}
                   </p>
@@ -599,20 +624,45 @@ export default async function CompanyPage({ params }: Props) {
               金額は上のカードに任せ、このセクションは
               「何が引かれてその金額になるのか」だけを担当する。 */}
           {netSalary && (
-            <section className="space-y-3">
-              <h2 className="text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+            <section id="take-home" className="space-y-5 scroll-mt-24">
+              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2 leading-snug">
                 {company.company}の初任給の手取りはいくら？
               </h2>
 
               <Card className="py-0 gap-0">
                 <CardContent className="p-4 md:p-5">
-                  {/* 差し引かれる合計。上のカードには無い数字なので重複しない。
-                      「額面と手取りの差はいくらか」は単独で知りたい情報でもある。 */}
-                  <div className="flex items-baseline justify-between gap-3 pb-3 border-b">
+                  {/*【見出しへの答えを最初に置く】
+                      重複を避けようとして手取り額をこのセクションから
+                      いったん外したが、見出しが「手取りはいくら？」である以上、
+                      答えがこの中に無いのは不親切だった。
+
+                      上のカードにも同じ金額は出るが、あちらは
+                      年収・設立・従業員数と並ぶ一覧の1項目で、
+                      こちらは問いに直接答える場所。役割が違うので残す。
+                      （以前あった額面の再掲と導入文の重複は削除済み） */}
+                  <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 pb-3 border-b">
+                    <div>
+                      <p className="text-xs text-muted-foreground">手取り（1年目）</p>
+                      <p className="text-2xl font-bold text-primary tabular whitespace-nowrap">
+                        約¥{roundNet(netSalary.netMonthlyFirstYear).toLocaleString()}
+                        <span className="ml-1 text-sm font-normal text-muted-foreground">/月</span>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">手取り（2年目〜）</p>
+                      <p className="text-lg font-bold text-foreground tabular whitespace-nowrap">
+                        約¥{roundNet(netSalary.netMonthlySecondYear).toLocaleString()}
+                        <span className="ml-1 text-sm font-normal text-muted-foreground">/月</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 差し引かれる合計。額面と手取りの差を1つの数字で示す */}
+                  <div className="flex items-baseline justify-between gap-3 mt-3">
                     <span className="text-sm text-muted-foreground">
                       額面から差し引かれる合計
                     </span>
-                    <span className="text-xl font-bold text-foreground tabular whitespace-nowrap">
+                    <span className="text-base font-semibold text-foreground tabular whitespace-nowrap">
                       −¥{(netSalary.grossMonthly - roundNet(netSalary.netMonthlyFirstYear)).toLocaleString()}
                     </span>
                   </div>
@@ -712,7 +762,7 @@ export default async function CompanyPage({ params }: Props) {
               以前は有価証券報告書の業績データより後ろにあり、
               事業内容にたどり着く前に数表が続いていた。 */}
           {/* --- 企業概要（事業内容・強み・将来性・給与の補足） --- */}
-          <section className="space-y-7">
+          <section id="business" className="space-y-8 scroll-mt-24">
             {company.long_description && <div className="space-y-3">
               {/* 「企業名 企業研究」を拾うため、見出しにもキーワードを含める */}
               {/* 【Safariでの折り返し対策】
@@ -792,8 +842,8 @@ export default async function CompanyPage({ params }: Props) {
               大手就活サイトは初任給しか持たず、財務メディアは初任給を持たないため、
               「入社後にどれだけ伸びるか」を示せるのは当サイトだけの強み。 */}
           {hasFinancialSection && (
-            <section className="space-y-6">
-              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+            <section id="financials" className="space-y-8 scroll-mt-24">
+              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2 leading-snug">
                 {company.company}の平均年収はいくら？
               </h2>
 
@@ -866,7 +916,7 @@ export default async function CompanyPage({ params }: Props) {
                       </p>
                     </div>
                   </div>
-                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                  <p className="text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                     {emphasizeCompanyName(salaryGrowth.summary, company.company)}
                   </p>
                   {/* 【導線】ここで出している順位は、そのままランキングページの軸になっている。
@@ -1030,6 +1080,69 @@ export default async function CompanyPage({ params }: Props) {
           {/*【配置】貯蓄は平均年収の後ろに置く。
               いくら貯められるかは、初任給だけでなく入社後にいくらになるかで決まる。
               有価証券報告書の平均年収を見たあとに読むほうが、金額の意味が掴める。 */}
+
+          {/*【配置】業界内での位置づけを、貯蓄の話より前に置く。
+              「この初任給は業界の中で高いのか」は給与を見た直後に湧く疑問で、
+              貯蓄（いくら貯まるか）はその判断が済んでから読む話。
+              以前はFAQや関連企業より後ろにあり、給与の文脈から遠く離れていた。 */}
+          {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
+          {industryComparisons.length > 0 && (
+            <section id="industry" className="space-y-6 scroll-mt-24">
+              <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                業界内での初任給の位置づけ
+              </h2>
+              {industryComparisons.map((s) => (
+                <Card key={s.industry} className="py-0 gap-0">
+                  <CardContent className="p-4 md:p-6">
+                    <p className="text-sm font-semibold text-primary mb-3">
+                      <Link href={`/industries/${encodeURIComponent(s.industry)}`} className="hover:underline">
+                        {s.industry}業界
+                      </Link>
+                      <span className="text-muted-foreground font-normal">（掲載{s.totalInIndustry}社）</span>
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="space-y-1 md:text-center">
+                        <p className="text-sm text-muted-foreground">業界内順位</p>
+                        <p className="text-lg md:text-xl font-bold text-primary">
+                          {s.rankInIndustry}位<span className="text-sm font-normal text-muted-foreground"> / {s.totalInIndustry}社中</span>
+                        </p>
+                      </div>
+                      {s.industryAvgMonthly !== null && (
+                        <div className="space-y-1 md:text-center">
+                          <p className="text-sm text-muted-foreground">業界平均（初任給）</p>
+                          <p className="text-lg md:text-xl font-semibold">¥{s.industryAvgMonthly.toLocaleString()}</p>
+                        </div>
+                      )}
+                      {s.diffFromAvgMonthly !== null && (
+                        <div className="space-y-1 md:text-center col-span-2 md:col-span-1">
+                          <p className="text-sm text-muted-foreground">業界平均との差</p>
+                          <p className={`text-lg md:text-xl font-semibold ${s.diffFromAvgMonthly >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
+                            {s.diffFromAvgMonthly >= 0 ? "+" : "-"}¥{Math.abs(s.diffFromAvgMonthly).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {/* 【SEO】業界×給与のクロス条件一覧への内部リンク */}
+              {industryListDefs.length > 0 && (
+                <div className="flex flex-wrap gap-x-5 gap-y-1 pt-1">
+                  {industryListDefs.map((d) => (
+                    <Link
+                      key={d.slug}
+                      href={`/lists/${encodeURIComponent(d.slug)}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {d.shortName}の企業一覧（{d.count}社）→
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           {/* --- 貯蓄（いくら貯まるか → どうすれば貯まるか）---
               【根拠のある数字にする】「年間◯万円貯められます」と根拠なく書かない。
               公的統計から「手取りに対して手元に残る割合」を取り、この企業の手取りに掛ける。
@@ -1037,8 +1150,8 @@ export default async function CompanyPage({ params }: Props) {
               先取り貯蓄の一般的な目安に開きがあり、実際はその間に収まるため。
               詳しい考え方は lib/savings.ts のコメントに書いている。 */}
           {savings && (
-            <section className="space-y-3">
-              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+            <section id="savings" className="space-y-5 scroll-mt-24">
+              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2 leading-snug">
                 {company.company}なら年間いくら貯められる？
               </h2>
 
@@ -1081,7 +1194,7 @@ export default async function CompanyPage({ params }: Props) {
                     </div>
                   </div>
 
-                  <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                  <p className="text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                     {buildSavingsSummary(company.company, savings)}
                   </p>
 
@@ -1161,7 +1274,7 @@ export default async function CompanyPage({ params }: Props) {
                               </div>
                             ))}
                           </div>
-                          <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                          <p className="text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                             {livingComparison}
                           </p>
                         </div>
@@ -1173,7 +1286,7 @@ export default async function CompanyPage({ params }: Props) {
                           <h4 className="jp-heading text-base md:text-lg font-bold text-foreground">
                             30歳までに1,000万円は貯まる？
                           </h4>
-                          <p className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                          <p className="text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                             {SAVINGS_BENCHMARK.firstYearSurvey}によると、社会人2年目が考える30歳時点の
                             目標貯蓄額は平均
                             <strong className="text-foreground">
@@ -1206,8 +1319,8 @@ export default async function CompanyPage({ params }: Props) {
 
           {/* --- よくある質問（FAQPageスキーマと同一内容・データ穴埋めで自動生成） --- */}
           {faq.length > 0 && (
-            <section className="space-y-4">
-              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+            <section id="faq" className="space-y-6 scroll-mt-24">
+              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2 leading-snug">
                 {company.company}に関するよくある質問
               </h2>
               <dl className="space-y-5">
@@ -1217,7 +1330,7 @@ export default async function CompanyPage({ params }: Props) {
                     <dt className="font-bold text-[16px] md:text-lg">
                       Q. {emphasizeCompanyName(item.question, company.company)}
                     </dt>
-                    <dd className="text-[15px] md:text-base leading-relaxed text-muted-foreground">
+                    <dd className="text-[15px] md:text-base leading-[1.9] text-muted-foreground">
                       A. {emphasizeCompanyName(item.answer, company.company)}
                     </dd>
                   </div>
@@ -1305,68 +1418,11 @@ export default async function CompanyPage({ params }: Props) {
             </div>
           )}
 
-          {/* --- 業界内比較（取得済みランキングデータから算出・所属する全業界分を表示） --- */}
-          {industryComparisons.length > 0 && (
-            <section className="space-y-4">
-              <h2 className="text-base md:text-lg font-bold flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                業界内での初任給の位置づけ
-              </h2>
-              {industryComparisons.map((s) => (
-                <Card key={s.industry} className="py-0 gap-0">
-                  <CardContent className="p-4 md:p-6">
-                    <p className="text-sm font-semibold text-primary mb-3">
-                      <Link href={`/industries/${encodeURIComponent(s.industry)}`} className="hover:underline">
-                        {s.industry}業界
-                      </Link>
-                      <span className="text-muted-foreground font-normal">（掲載{s.totalInIndustry}社）</span>
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="space-y-1 md:text-center">
-                        <p className="text-sm text-muted-foreground">業界内順位</p>
-                        <p className="text-lg md:text-xl font-bold text-primary">
-                          {s.rankInIndustry}位<span className="text-sm font-normal text-muted-foreground"> / {s.totalInIndustry}社中</span>
-                        </p>
-                      </div>
-                      {s.industryAvgMonthly !== null && (
-                        <div className="space-y-1 md:text-center">
-                          <p className="text-sm text-muted-foreground">業界平均（初任給）</p>
-                          <p className="text-lg md:text-xl font-semibold">¥{s.industryAvgMonthly.toLocaleString()}</p>
-                        </div>
-                      )}
-                      {s.diffFromAvgMonthly !== null && (
-                        <div className="space-y-1 md:text-center col-span-2 md:col-span-1">
-                          <p className="text-sm text-muted-foreground">業界平均との差</p>
-                          <p className={`text-lg md:text-xl font-semibold ${s.diffFromAvgMonthly >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
-                            {s.diffFromAvgMonthly >= 0 ? "+" : "-"}¥{Math.abs(s.diffFromAvgMonthly).toLocaleString()}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {/* 【SEO】業界×給与のクロス条件一覧への内部リンク */}
-              {industryListDefs.length > 0 && (
-                <div className="flex flex-wrap gap-x-5 gap-y-1 pt-1">
-                  {industryListDefs.map((d) => (
-                    <Link
-                      key={d.slug}
-                      href={`/lists/${encodeURIComponent(d.slug)}`}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      {d.shortName}の企業一覧（{d.count}社）→
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
 
           {/* --- 同業界の関連企業（全所属業界から統合・内部リンク強化） --- */}
           {stats.relatedCompanies.length > 0 && (
-            <section className="space-y-4">
-              <h2 className="text-xl md:text-2xl font-bold text-primary border-b-2 border-primary/50 pb-2">
+            <section className="space-y-6">
+              <h2 className="jp-heading text-lg md:text-xl font-bold text-primary border-b-2 border-primary/50 pb-2 leading-snug">
                 同じ業界の他の企業
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
