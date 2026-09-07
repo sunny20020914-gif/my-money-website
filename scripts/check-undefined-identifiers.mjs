@@ -273,7 +273,168 @@ for (const f of files) {
   }
 }
 
+// 【宣言より前での使用】
+//
+// ■ なぜ必要か
+// const / let には一時的死角（TDZ）があり、宣言より前に参照すると
+//   ReferenceError: Cannot access 'netSalary' before initialization
+// で落ちる。これは「識別子がどこにも無い」わけではないので、
+// 上の未定義チェックでは検出できない。
+//
+// 実際にこれでデプロイが落ちた。目次（navItems）を、それが参照する
+// netSalary・savings・faq の宣言より前に置いてしまい、
+// 159社ぶんのページ生成すべてが同じ例外で失敗した。
+// （エラーが159回出力されてビルドログが4MB上限を超えた）
+//
+// ■ 判定方法
+// 同じブロック直下に並ぶ文だけを順に見て、
+// 「後で宣言される const/let を、それより前の文が即座に参照している」
+// 場合を報告する。
+// 関数の中や JSX のコールバックからの参照は、実行されるのが後なので
+// 問題にならない。よって入れ子の関数には立ち入らない（過検出を防ぐ）。
+let tdz = 0
+const checkBlockTdz = (statements, sf, file) => {
+  // このブロック直下で宣言される const/let と、その順番
+  const declIndex = new Map()
+  statements.forEach((st, i) => {
+    if (!ts.isVariableStatement(st)) return
+    const flags = st.declarationList.flags
+    const isBlockScoped = (flags & ts.NodeFlags.Const) || (flags & ts.NodeFlags.Let)
+    if (!isBlockScoped) return
+    for (const d of st.declarationList.declarations) {
+      if (ts.isIdentifier(d.name) && !declIndex.has(d.name.text)) {
+        declIndex.set(d.name.text, i)
+      }
+    }
+  })
+  if (declIndex.size === 0) return
+
+  // その節点より内側で同じ名前が宣言し直されていないかを調べる。
+  // 内側で宣言されていれば、そこでの参照は外側の変数とは別物なので
+  //   for (const r of rows) { ... r ... }   ← 外の const r とは無関係
+  //   const parts = [...]（内側のブロック）  ← 外の parts とは無関係
+  // 見に行かない。これを無視すると正常なコードを誤って報告する。
+  const declaredIn = (node) => {
+    const names = new Set()
+    const collect = (n) => {
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name)) names.add(n.name.text)
+      if (ts.isParameter(n) && ts.isIdentifier(n.name)) names.add(n.name.text)
+      if (ts.isBindingElement(n) && ts.isIdentifier(n.name)) names.add(n.name.text)
+      ts.forEachChild(n, collect)
+    }
+    collect(node)
+    return names
+  }
+
+  statements.forEach((st, i) => {
+    // 関数・クラスの宣言そのものは中身が後で実行されるので、丸ごと飛ばす。
+    // （これを漏らしていたため、モジュール末尾で定義したヘルパーを
+    //   関数の中から呼んでいるだけの正常なコードを誤検出していた）
+    if (
+      ts.isFunctionDeclaration(st) ||
+      ts.isClassDeclaration(st) ||
+      ts.isInterfaceDeclaration(st) ||
+      ts.isTypeAliasDeclaration(st) ||
+      ts.isImportDeclaration(st) ||
+      ts.isExportDeclaration(st)
+    ) return
+
+    // 「その文の中で、すぐに評価される部分」だけを見る。
+    // 関数・アロー関数・クラスの中身は実行が後になるので入らない。
+    const visit = (node) => {
+      if (
+        ts.isFunctionDeclaration(node) ||
+        ts.isFunctionExpression(node) ||
+        ts.isArrowFunction(node) ||
+        ts.isClassDeclaration(node) ||
+        ts.isClassExpression(node) ||
+        ts.isMethodDeclaration(node)
+      ) return
+
+      // 内側のスコープで同名が宣言されていたら、その中は見ない
+      if (
+        ts.isBlock(node) ||
+        ts.isForOfStatement(node) ||
+        ts.isForInStatement(node) ||
+        ts.isForStatement(node) ||
+        ts.isCatchClause(node)
+      ) {
+        const shadowed = declaredIn(node)
+        let hit = false
+        for (const name of declIndex.keys()) if (shadowed.has(name)) hit = true
+        if (hit) return
+      }
+
+      // 型注釈は実行されないので見ない（const x: Foo の Foo など）
+      if (ts.isTypeNode(node) || ts.isTypeReferenceNode?.(node)) return
+
+      if (ts.isIdentifier(node)) {
+        // 【重要】識別子が全て「変数の参照」とは限らない。
+        // 名前として書かれているだけのものを除外しないと、
+        //   { label: "健康保険料" }   ← オブジェクトのキー
+        //   est.label                 ← プロパティ名
+        //   <Foo label="..." />       ← JSXの属性名
+        // が変数 label の参照だと誤判定される。
+        // 実際これを除外せずに走らせたところ、正常なコードで29件の誤検出が出た。
+        const p = node.parent
+        const isName =
+          (ts.isPropertyAssignment(p) && p.name === node) ||
+          (ts.isPropertyAccessExpression(p) && p.name === node) ||
+          (ts.isJsxAttribute(p) && p.name === node) ||
+          (ts.isBindingElement(p) && (p.name === node || p.propertyName === node)) ||
+          (ts.isParameter(p) && p.name === node) ||
+          (ts.isMethodDeclaration(p) && p.name === node) ||
+          (ts.isPropertySignature(p) && p.name === node) ||
+          (ts.isPropertyDeclaration(p) && p.name === node) ||
+          (ts.isEnumMember(p) && p.name === node) ||
+          (ts.isQualifiedName(p) && p.right === node) ||
+          ts.isImportSpecifier(p) ||
+          ts.isExportSpecifier(p) ||
+          ts.isTypeReferenceNode(p) ||
+          ts.isTypeQueryNode(p)
+        if (isName) return
+
+        const at = declIndex.get(node.text)
+        // 自分自身の宣言文は除く（const a = ... の a）
+        if (at !== undefined && at > i) {
+          const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
+          const declLine =
+            sf.getLineAndCharacterOfPosition(statements[at].getStart(sf)).line + 1
+          console.log(
+            `  NG ${file}:${line}  "${node.text}" を宣言（${declLine}行）より前で使っています`,
+          )
+          tdz++
+        }
+        return
+      }
+      ts.forEachChild(node, visit)
+    }
+    // 宣言文なら、初期化式だけを見る（宣言している名前そのものは参照ではない）
+    if (ts.isVariableStatement(st)) {
+      for (const d of st.declarationList.declarations) {
+        if (d.initializer) visit(d.initializer)
+      }
+    } else {
+      // 【注意】ここで forEachChild を使うと、文そのものが visit を通らず
+      // 冒頭のスコープ判定が働かない。for 文の変数が外側と同名の場合に
+      // 誤検出していたのはこれが原因だった。文そのものから見ること。
+      visit(st)
+    }
+  })
+}
+
+for (const f of files) {
+  const sf = ts.createSourceFile(f, fs.readFileSync(f, "utf8"), ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const walk = (node) => {
+    if (ts.isBlock(node) || ts.isSourceFile(node)) {
+      checkBlockTdz(node.statements, sf, f)
+    }
+    ts.forEachChild(node, walk)
+  }
+  walk(sf)
+}
+
 console.log(
-  `\n検査 ${files.length} ファイル / 未定義の識別子 ${problems} 件 / 重複宣言 ${duplicates} 件 / import名の不一致 ${missing} 件`,
+  `\n検査 ${files.length} ファイル / 未定義の識別子 ${problems} 件 / 重複宣言 ${duplicates} 件 / import名の不一致 ${missing} 件 / 宣言前の使用 ${tdz} 件`,
 )
-process.exit(problems + duplicates + missing > 0 ? 1 : 0)
+process.exit(problems + duplicates + missing + tdz > 0 ? 1 : 0)

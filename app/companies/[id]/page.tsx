@@ -154,23 +154,6 @@ export default async function CompanyPage({ params }: Props) {
   // 順位は文章で連ねずバッジで見せる（同じ言い回しの繰り返しを避けるため）
   const rankBadges = buildRankBadges(stats)
 
-  /**
-   * ページ内の目次。
-   * 条件付きで描画されるセクションがあるため、
-   * 実際に出るものだけを載せる（押しても飛び先が無い項目を作らない）。
-   * ここの id は各 <section id="..."> と一致させること。
-   */
-  const navItems: SectionNavItem[] = [
-    { id: "salary", label: "給与" },
-    ...(netSalary ? [{ id: "take-home", label: "手取り" }] : []),
-    ...(company.long_description || company.strength || company.future_potential || company.salary_details
-      ? [{ id: "business", label: "事業内容" }]
-      : []),
-    ...(hasFinancialSection ? [{ id: "financials", label: "業績・年収" }] : []),
-    ...(industryComparisons.length > 0 ? [{ id: "industry", label: "業界内の位置" }] : []),
-    ...(savings ? [{ id: "savings", label: "貯蓄" }] : []),
-    ...(faq.length > 0 ? [{ id: "faq", label: "よくある質問" }] : []),
-  ]
   const baseFaq = buildFaq(company, stats, FISCAL_YEAR)
   const netSalary = estimateNetSalary(company.baseMonthly)
   // この企業が属する業界のクロス条件一覧ページ（内部リンク用）
@@ -273,6 +256,29 @@ export default async function CompanyPage({ params }: Props) {
             : `平均的な伸び方です。`),
     })
   }
+
+  /**
+   * ページ内の目次。
+   * 条件付きで描画されるセクションがあるため、
+   * 実際に出るものだけを載せる（押しても飛び先が無い項目を作らない）。
+   * ここの id は各 <section id="..."> と一致させること。
+   *
+   * 【置き場所の注意】netSalary・savings・hasFinancialSection・faq を
+   * 参照しているので、それらの const 宣言より後ろに置くこと。
+   * 前に置くと一時的death zoneに触れて
+   * 「Cannot access 'netSalary' before initialization」でビルドが落ちる。
+   */
+  const navItems: SectionNavItem[] = [
+    { id: "salary", label: "給与" },
+    ...(netSalary ? [{ id: "take-home", label: "手取り" }] : []),
+    ...(company.long_description || company.strength || company.future_potential || company.salary_details
+      ? [{ id: "business", label: "事業内容" }]
+      : []),
+    ...(hasFinancialSection ? [{ id: "financials", label: "業績・年収" }] : []),
+    ...(industryComparisons.length > 0 ? [{ id: "industry", label: "業界内の位置" }] : []),
+    ...(savings ? [{ id: "savings", label: "貯蓄" }] : []),
+    ...(faq.length > 0 ? [{ id: "faq", label: "よくある質問" }] : []),
+  ]
 
   const SalaryDisplay = (props: { value: number | string | null | undefined, url?: string, isPrimary?: boolean }) => {
     const { value, url, isPrimary = false } = props;
