@@ -629,7 +629,14 @@ export function RankingPageClient({
                   </span>
                 </h1>
               ) : (
-                <h1 className="text-2xl md:text-5xl font-bold text-balance mb-3 leading-tight text-primary">
+                /*【文字サイズ】「初任給ランキング 2026」は全角8文字＋半角4文字。
+                   24pxでは小さく見えるが、大きくしすぎると折り返す。
+                   画面幅から逆算すると
+                     375px端末（内容幅343px）… 28pxで約294px。収まる
+                     320px端末（内容幅288px）… 28pxでは溢れるため26px
+                   なので 375px を境に切り替える。
+                   text-balance は付けない（2行に割る前提の指定のため）。 */
+                <h1 className="text-[26px] min-[375px]:text-[28px] md:text-5xl font-bold mb-3 leading-tight text-primary">
                   初任給ランキング {FISCAL_YEAR}
                   {/* 【年号】実測で年号付きクエリは10位前後、年号なしは45位。
                       就活生は自分の卒業年度で検索するため、西暦も併記して

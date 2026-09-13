@@ -90,8 +90,15 @@ export default function TakeHomeIndexPage() {
 
             <section className="mt-8">
               <h2 className="jp-heading text-xl md:text-2xl font-bold mb-4">額面別の手取り一覧</h2>
-              <div className="overflow-hidden rounded-2xl border bg-card">
-                <table className="w-full text-sm">
+              {/*【列の間隔】スマホでは4列のうち2列を隠しているため、
+                  残った2列が w-full で左右の端に引き離され、
+                  額面と手取りの間に大きな空白ができていた。
+
+                  表の幅を内容に合わせて縮め（w-fit）、中央に置く。
+                  狭すぎると窮屈なので min-w で下限だけ決めておく。
+                  4列そろうPC（sm以上）では従来どおり全幅に戻す。 */}
+              <div className="mx-auto w-fit min-w-[17rem] overflow-hidden rounded-2xl border bg-card sm:mx-0 sm:w-full sm:min-w-0">
+                <table className="w-auto text-sm sm:w-full">
                   <thead>
                     <tr className="border-b bg-muted/50 text-xs text-muted-foreground">
                       <th scope="col" className="p-3 text-left font-medium">額面（月）</th>
