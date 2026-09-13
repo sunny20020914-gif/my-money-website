@@ -93,20 +93,24 @@ export default function AnnualTakeHomeIndexPage() {
 
             <section className="mt-8">
               <h2 className="jp-heading text-xl md:text-2xl font-bold mb-4">年収別の手取り一覧</h2>
-              {/*【列の間隔】スマホでは4列のうち2列を隠しているため、
-                  残った2列が w-full で左右の端に引き離され、
+              {/*【列の間隔】スマホでは4列のうち2列を隠していたため、
+                  残った2列が全幅の中で左右の端まで引き離され、
                   額面と手取りの間に大きな空白ができていた。
 
-                  表の幅を内容に合わせて縮め（w-fit）、中央に置く。
-                  狭すぎると窮屈なので min-w で下限だけ決めておく。
-                  4列そろうPC（sm以上）では従来どおり全幅に戻す。 */}
-              <div className="mx-auto w-fit min-w-[17rem] overflow-hidden rounded-2xl border bg-card sm:mx-0 sm:w-full sm:min-w-0">
-                <table className="w-auto text-sm sm:w-full">
+                  一度は表の幅を縮めて中央に寄せたが、それだと
+                  ページの左右に余白ができるうえ、カードの中にも
+                  使われない空白が残ってしまい筋が悪かった。
+
+                  正しくは、空いている幅を隠していた列で埋めること。
+                  「月あたり」をスマホでも表示して3列にする。
+                  表は全幅のまま、間隔だけが詰まる。 */}
+              <div className="overflow-hidden rounded-2xl border bg-card">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50 text-xs text-muted-foreground">
                       <th scope="col" className="p-3 text-left font-medium">年収（額面）</th>
                       <th scope="col" className="p-3 text-right font-medium">年間の手取り</th>
-                      <th scope="col" className="p-3 text-right font-medium hidden sm:table-cell">月あたり</th>
+                      <th scope="col" className="p-3 text-right font-medium">月あたり</th>
                       <th scope="col" className="p-3 text-right font-medium hidden sm:table-cell">割合</th>
                     </tr>
                   </thead>
@@ -124,7 +128,7 @@ export default function AnnualTakeHomeIndexPage() {
                         <td className="p-3 text-right font-semibold tabular text-foreground">
                           {manYen(r.est.netAnnual)}
                         </td>
-                        <td className="p-3 text-right tabular text-muted-foreground hidden sm:table-cell">
+                        <td className="p-3 text-right tabular text-muted-foreground">
                           {r.est.netMonthlyAverage.toLocaleString()}円
                         </td>
                         <td className="p-3 text-right tabular text-muted-foreground hidden sm:table-cell">
