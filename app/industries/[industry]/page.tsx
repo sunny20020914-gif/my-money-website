@@ -1,5 +1,6 @@
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import type { CompanyData } from "@/lib/sheets"
+import { resolveIndustryAlias } from "@/lib/industry-aliases"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import {
   buildIndustryAnalyses,
@@ -11,7 +12,7 @@ import {
 import { FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { CompanyLogo } from "@/components/company-logo"
 import React from "react"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
@@ -111,7 +112,25 @@ export default async function IndustryPage({ params }: Props) {
   const allCompanies = await fetchAllUniqueCompanies()
   const companies = companiesInIndustry(allCompanies, industry)
 
+  // 【旧業界名の救済】
+  // URLはスプシC列の業界名そのままなので、名前を整理した時点で
+  // 旧名のURLが全て404になった。Search Consoleの実測では、
+  // 死んだ旧URL25本が17クリック（サイト全体の17%）を稼いでいた。
+  //
+  // 該当企業が0件でも、旧名として登録があれば現行ページへ恒久転送する。
+  // 転送は notFound() より前に判定すること（404を返してからでは遅い）。
+  if (companies.length === 0) {
+    const current = Array.from(
+      new Set(allCompanies.flatMap((c) => splitIndustries(c.industry))),
+    )
+    const alias = resolveIndustryAlias(industry, current)
+    if (alias) permanentRedirect(`/industries/${encodeURIComponent(alias)}`)
+  }
+
   // 本当に1社も存在しない業界名（打ち間違い等）のみ404にする
+  // ※「メーカー」「金融」のように複数業界へ分割された旧名は、
+  //   寄せ先が定まらないため意図的に404のままにしている。
+  //   関係の薄いページへ転送するとソフト404として扱われ、かえって悪い。
   if (companies.length === 0) notFound()
 
   // この業界のクロス条件一覧ページ（業界×給与閾値）

@@ -1,9 +1,10 @@
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
+import { resolveIndustryAlias } from "@/lib/industry-aliases"
 import { buildAllListDefinitions, getListBySlug, buildList, buildListLeadSummary } from "@/lib/list-definitions"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { updatedAt } from "@/lib/updated-at"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
@@ -52,7 +53,34 @@ export default async function ListPage({ params }: Props) {
   const slug = decodeURIComponent(params.slug)
   const all = await fetchAllUniqueCompanies()
   const allDefs = buildAllListDefinitions(all)
-  const def = allDefs.find((d) => d.slug === slug)
+  let def = allDefs.find((d) => d.slug === slug)
+
+  // 【旧スラッグの救済】
+  // スラッグは「業界名--over-◯man」で、業界名はスプシC列そのまま。
+  // 業界名を整理したときに旧名のURLが404になった。
+  //
+  // 閾値（◯man）の部分は掲載企業の該当率から自動で決まるため、
+  // 転送先を固定値で書くことができない。旧業界名を現行名に読み替えたうえで、
+  // 「今その業界に存在する定義」を探して、そこへ転送する。
+  //
+  // 例: /lists/医療--over-35man
+  //       → 業界名を「医療・ヘルスケア」に読み替え
+  //       → 現時点の閾値が40万なら /lists/医療・ヘルスケア--over-40man へ
+  if (!def) {
+    const [segment, ...rest] = slug.split("--")
+    const suffix = rest.join("--")
+    const current = Array.from(new Set(all.flatMap((c) => c.industry.split("/").map((x) => x.trim()))))
+    const alias = resolveIndustryAlias(segment, current)
+    if (alias) {
+      // まず同じ軸（over- / avg-over-）で探し、無ければその業界の定義を1つ使う。
+      // 軸が一致しなくても、業界の一覧ページに着地できれば404よりはるかによい。
+      const sameAxis = allDefs.find((d) => d.slug === `${alias}--${suffix}`)
+      const anyForIndustry = allDefs.find((d) => d.industry === alias)
+      const target = sameAxis ?? anyForIndustry
+      if (target) permanentRedirect(`/lists/${encodeURIComponent(target.slug)}`)
+    }
+  }
+
   if (!def) notFound()
 
   const companies = buildList(def, all)
