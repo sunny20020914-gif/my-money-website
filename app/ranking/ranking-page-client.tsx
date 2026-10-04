@@ -655,11 +655,12 @@ export function RankingPageClient({
                   「額面だけでなく、〜できます。」を体言止めに詰めて1行に収める。
                   PCは横幅に余裕があるので、読み心地のよい元の文のまま。
                   どちらもHTMLには入るが、表示されるのは常に片方だけ。 */}
-              <p className="jp-lead text-[15px] md:text-lg text-muted-foreground leading-[1.8] max-w-3xl mx-auto">
-                <span className="md:hidden">額面、手取り、入社後の年収の伸びまで確認。</span>
-                <span className="hidden md:inline">
-                  額面だけでなく、手取りと入社後の年収の伸びまで確認できます。
-                </span>
+              {/*【スマホでは出さない】H1の副題で「月30万円超の159社」と伝えており、
+                  何のランキングかは既に分かる。狭い画面では、この一文を読ませるより
+                  ランキング本体を早く見せるほうが役に立つ。
+                  PCは縦に余裕があるので従来どおり表示する。 */}
+              <p className="hidden md:block jp-lead text-[15px] md:text-lg text-muted-foreground leading-[1.8] max-w-3xl mx-auto">
+                額面だけでなく、手取りと入社後の年収の伸びまで確認できます。
               </p>
 
               {/* 【E-E-A-T】更新日・出典・掲載社数を横並びで明示する。
@@ -669,12 +670,16 @@ export function RankingPageClient({
               {/*【掲載社数を外した】この帯にも「掲載◯社」を出していたが、
                   H1の副題と、下の集計カードにも同じ数字が出ており計3回だった。
                   ここは更新日と出典（＝他で書いていない情報）に絞る。 */}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+              {/*【スマホでは出さない】更新日と出典はE-E-A-Tの観点で価値があるが、
+                  ランキングを見に来た人が最初に読む情報ではない。
+                  スマホでは本体を優先し、PCでは従来どおり示す。
+                  出典はページ下部の解説セクションと集計カードにも書いてある。 */}
+              <div className="mt-4 hidden md:flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5" />
                   最終更新: {updatedLabel}
                 </span>
-                <span className="hidden sm:inline text-border">|</span>
+                <span className="text-border">|</span>
                 <span>出典: 各社採用情報・有価証券報告書</span>
               </div>
             </div>
@@ -836,7 +841,9 @@ export function RankingPageClient({
                   <div>
                     <p className="text-sm font-semibold text-foreground mb-2">
                       ランキングの種類を切り替え
-                      <span className="ml-2 font-normal text-muted-foreground">
+                      {/* 補足はスマホでは出さない。トグル自体を見れば
+                          切り替えられることは分かるため。 */}
+                      <span className="ml-2 hidden md:inline font-normal text-muted-foreground">
                         （2種類を比べると企業選びの精度が上がります）
                       </span>
                     </p>
@@ -870,7 +877,10 @@ export function RankingPageClient({
                         })}
                     </div>
                   </div>
-                  <p className="text-[15px] leading-relaxed text-muted-foreground">
+                  {/* 種別の説明はスマホでは出さない。3〜4行を占めるわりに、
+                      選んだタブのラベル（初任給／想定年収）で用は足りている。
+                      固定残業代や手当の扱いは、下の解説セクションで詳しく書いている。 */}
+                  <p className="hidden md:block text-[15px] leading-relaxed text-muted-foreground">
                     {rankingTypes.find((type) => type.id === selectedRanking)?.description}
                   </p>
 
@@ -899,7 +909,10 @@ export function RankingPageClient({
                     <p className="text-[15px] font-semibold text-foreground mb-1">
                       金額以外の切り口で並べる
                     </p>
-                    <p className="text-sm text-muted-foreground mb-3">
+                    {/* 補足はスマホでは出さない。見出し「金額以外の切り口で並べる」と
+                        ボタンのラベルで意図は伝わる。
+                        この主張は下の解説セクションで根拠つきで扱っている。 */}
+                    <p className="hidden md:block text-sm text-muted-foreground mb-3">
                       初任給の順位と、入社後の年収の順位はほとんど一致しません。
                     </p>
                     {/* 【小さくした理由】高さ56px・太枠・15px太字では、
