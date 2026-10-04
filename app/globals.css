@@ -254,6 +254,37 @@
     text-wrap: initial;
   }
 
+  /* 【広告枠】広告が実際に入ったときだけ、ラベルと余白を出す。
+     ------------------------------------------------------------------
+     以前は「広告が無いと分かったら隠す」という向きで書いていたが、
+     それだと AdSense が data-ad-status="unfilled" を付けてくれた場合しか
+     効かない。広告ブロッカーや通信エラーでスクリプトが動かなかったときは
+     属性が付かないため、「スポンサーリンク」の文字と確保した高さだけが
+     残り、本文の途中に意味のない空白ができていた。
+
+     判定を逆にして、filled のときだけ出す形にする。
+     広告が出ない理由が何であれ（未配信・ブロック・エラー）、
+     filled が付かない限り何も表示されないので、空白が残らない。
+
+     <ins> 自体は隠さずに残すこと。display:none の中にあると
+     AdSense が枠の横幅を測れず、広告の要求そのものが失敗する。
+     中身が無ければ <ins> の高さは自然に0になるので、見た目には出ない。
+
+     :has() は Chrome / Safari / Firefox の現行版すべてが対応済み。 */
+  .ad-slot {
+    margin: 0;
+  }
+  .ad-slot > .ad-slot__label {
+    display: none;
+  }
+  .ad-slot:has(ins[data-ad-status="filled"]) {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .ad-slot:has(ins[data-ad-status="filled"]) > .ad-slot__label {
+    display: block;
+  }
+
   /* 【方針】本文の折り返しにはCSSで手を加えない。
      以前 p に text-wrap:pretty、.prose p に word-break:auto-phrase を入れていたが、
      日本語の長い文節が丸ごと次行に送られて右側が大きく空き、かえって読みにくかった。
