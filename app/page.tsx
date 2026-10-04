@@ -8,7 +8,6 @@ import { Footer } from "@/components/footer"
 import { StructuredData } from "@/components/structured-data"
 import dynamic from "next/dynamic"
 import { Metadata } from "next"
-import { fetchAllUniqueCompanies } from "@/lib/sheets"
 
 // AdBannerをクライアントサイドでのみ動的に読み込む
 const DynamicAdBanner = dynamic(() => import("@/components/ad-banner").then((mod) => mod.AdBanner), {
@@ -40,16 +39,20 @@ export const revalidate = REVALIDATE_FRESH
  *   検索結果に表示されるサイト名はトップページの WebSite 構造化データから
  *   のみ判定され、サイトリンクやブランド検索の受け皿も失うため。
  */
-export async function generateMetadata(): Promise<Metadata> {
-  let listedCount = 0
-  try {
-    listedCount = (await fetchAllUniqueCompanies()).length
-  } catch {
-    // データ取得に失敗しても件数抜きの説明文でメタデータは返す
-  }
-
-  const countText = listedCount > 0 ? `${listedCount}社` : "上場企業"
-
+/**
+ * 【掲載社数を説明文から外した】
+ * 以前は「185社の初任給を…」と全企業数を書いていたが、
+ * ランキングや業界ページは「初任給データがある企業数」（159社）を使っており、
+ * 同じサイトで2つの数字が出ていた。
+ *
+ * 数え方が違うだけで誤りではないものの、検索結果の説明文に出る数字が
+ * 実際のページの表記と食い違うのは、読み手の信頼を損なう。
+ * また185社という規模は訴求にならないため、件数を出さない形にした。
+ *
+ * これによりデータ取得（fetchAllUniqueCompanies）も不要になり、
+ * メタデータ生成がスプレッドシートの状態に依存しなくなる。
+ */
+export function generateMetadata(): Metadata {
   return {
     title: {
       // 【重要】absolute にしないと layout の template（"%s | My Money Web"）が
@@ -57,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
       absolute: `${SITE_NAME}｜企業の初任給・平均年収がわかるデータサイト`,
     },
     description:
-      `${countText}の初任給を、手取り額・入社後の平均年収・業績データとあわせて調べられるサイトです。` +
+      `企業の初任給を、手取り額・入社後の平均年収・業績データとあわせて調べられるサイトです。` +
       `採用ページと有価証券報告書をもとに${FISCAL_YEAR}年度のデータを収録。` +
       `業界別・条件別・企業名からも検索できます。`,
     alternates: {

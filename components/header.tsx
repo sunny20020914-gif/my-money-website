@@ -33,7 +33,14 @@ export function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          {/*【/companies を追加した理由】
+              238社への唯一の一覧ハブだが、リンクがフッターにしか無かった。
+              Search Consoleで企業詳細ページ116本が「一度もクロールされていない」
+              状態だったのは、ここへの導線が弱いことが効いている可能性が高い。
+              全ページのヘッダーに置けば、Googlebotがどのページから来ても
+              1クリックで全社一覧に届く。
+              項目が6→7に増えるため、間隔を space-x-8 から space-x-6 に詰める。 */}
+          <nav className="hidden md:flex items-center space-x-6">
             <Link
               href="/"
               className={cn(
@@ -51,6 +58,15 @@ export function Header() {
               )}
             >
               ランキング
+            </Link>
+            <Link
+              href="/companies"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-foreground",
+                isActive("/companies") ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              企業一覧
             </Link>
             <Link
               href="/industries"
@@ -157,6 +173,16 @@ export function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 ランキング
+              </Link>
+              <Link
+                href="/companies"
+                className={cn(
+                  "block py-2 text-sm font-medium transition-colors hover:text-foreground",
+                  isActive("/companies") ? "text-foreground" : "text-muted-foreground",
+                )}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                企業一覧
               </Link>
               <Link
                 href="/industries"

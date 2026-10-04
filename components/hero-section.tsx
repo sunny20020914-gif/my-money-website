@@ -35,16 +35,25 @@ export async function HeroSection() {
     .map((c) => c.baseMonthly)
     .filter((v): v is number => typeof v === "number" && v > 0)
 
-  const listedCount = all.length
   const avgMonthly =
     monthlyValues.length > 0
       ? Math.round(monthlyValues.reduce((a, b) => a + b, 0) / monthlyValues.length)
       : null
   const maxMonthly = monthlyValues.length > 0 ? Math.max(...monthlyValues) : null
 
-  // サイトの規模をひと目で示す指標。/ranking には無いトップ固有の情報にする
+  // トップ固有の指標。/ranking には無い切り口にする。
+  //
+  // 【掲載企業数を外した理由】
+  // ここだけ全企業数（185社）を出しており、ランキングや業界ページが使う
+  // 「初任給データがある企業数」（159社）と食い違っていた。
+  // 数え方が違うだけで誤りではないが、同じサイトで違う数字が出るのは
+  // 読み手にもGoogleにも不親切。
+  //
+  // そもそも185社は規模として誇れる数ではなく、出す意味が薄い。
+  // 外した結果、残る3つはすべて「円」の金額になり、
+  // 「掲載平均 → 最高額 → 全国平均」と横に読める組み合わせになった。
+  // 掲載社数が十分に増えたら戻すことを検討する。
   const stats = [
-    { label: "掲載企業数", value: listedCount > 0 ? `${listedCount}社` : "—" },
     {
       label: "掲載平均の初任給",
       value: avgMonthly ? `${avgMonthly.toLocaleString()}円` : "—",
