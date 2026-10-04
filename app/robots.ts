@@ -18,17 +18,33 @@ export default function robots(): MetadataRoute.Robots {
     'meta-externalagent', // Meta AI
   ]
 
+  // 【クロールバジェット】/compare を取得させない。
+  //
+  // 比較ページは全ペアが noindex だが、noindex は「取得して初めて分かる」指示なので、
+  // Googlebot は毎回ページを取りに来ていた。しかも
+  //   ・generateStaticParams が空のためオンデマンドSSR（Sheets API を伴う）
+  //   ・比較ページ自身がさらに最大6本の比較ページへリンク
+  //   ・企業詳細ページからも1社につき3本
+  // という構造で、到達可能なURLは数百本規模（理論上は185×184/2＝17,020本）。
+  //
+  // 一方で企業詳細115本は Search Console 上で「一度もクロールされていない」。
+  // 限られたクロール枠が、インデックスされないページに流れていた。
+  //
+  // robots.txt で止めれば取得自体が発生しない。
+  // 既に全ページ noindex 済みなので「noindex を読めなくなる」副作用も実質無い。
+  const DISALLOW = ['/admin', '/api/', '/saved', '/compare/']
+
   return {
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/api/', '/saved'],
+        disallow: DISALLOW,
       },
       ...aiBots.map((bot) => ({
         userAgent: bot,
         allow: '/',
-        disallow: ['/admin', '/api/', '/saved'],
+        disallow: DISALLOW,
       })),
     ],
     // 【sitemap分割後】generateSitemaps により /sitemap/0.xml 〜 /sitemap/3.xml が生成される。

@@ -1,6 +1,6 @@
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import { buildComparePairs, parsePairSlug, pairSlug } from "@/lib/compare"
-import { getRankNeighbors, getCompareCandidates } from "@/lib/company-stats"
+import { getRankNeighbors } from "@/lib/company-stats"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import { updatedAt } from "@/lib/updated-at"
@@ -137,23 +137,17 @@ export default async function ComparePage({ params }: Props) {
     higher: 0,
   })
 
-  // 関連する比較ページ（両社それぞれの比較候補・現ペアを除く）
-  const relatedPairs = Array.from(
-    new Set(
-      [...getCompareCandidates(all, a, 3).map((c) => pairSlug(a.id, c.id)),
-       ...getCompareCandidates(all, b, 3).map((c) => pairSlug(b.id, c.id))],
-    ),
-  )
-    .filter((p) => p !== canonical)
-    .slice(0, 6)
-  const pairLabel = (p: string) => {
-    const pIds = parsePairSlug(p)
-    if (!pIds) return p
-    const c1 = all.find((c) => c.id === pIds[0])
-    const c2 = all.find((c) => c.id === pIds[1])
-    return c1 && c2 ? `${c1.company} vs ${c2.company}` : p
-  }
-
+  // 【削除】以前はここで「関連する比較」として最大6本の /compare リンクを作っていた。
+  //
+  // 比較ページから比較ページへリンクが伸びると、そこからまた6本…と
+  // グラフが閉じずに広がり、到達可能なURLが数百本に膨らんでいた。
+  // 全ページ noindex なのでインデックスはされないが、
+  // Googlebot は noindex を知るために毎回取得する必要があり、
+  // 企業詳細115本（一度もクロールされていない）とクロール枠を奪い合っていた。
+  //
+  // robots.txt で /compare/ を Disallow にしたうえで、
+  // 自己増殖するリンク構造そのものを断つ。
+  // 読者の次の行き先は、比較した2社それぞれの詳細ページに任せる。
   const faq =
     aMonthly !== null && bMonthly !== null
       ? [
@@ -281,21 +275,23 @@ export default async function ComparePage({ params }: Props) {
             </section>
 
             {/* --- 関連する比較 --- */}
-            {relatedPairs.length > 0 && (
-              <section className="space-y-3 border-t pt-8">
-                <h2 className="text-base md:text-lg font-bold">関連する比較</h2>
-                <div className="flex flex-wrap gap-2">
-                  {relatedPairs.map((p) => (
-                    <Button key={p} asChild variant="outline" size="sm" className="bg-transparent">
-                      <Link href={`/compare/${p}`}>{pairLabel(p)}</Link>
-                    </Button>
-                  ))}
-                </div>
-                <p className="text-sm">
-                  <Link href="/ranking" className="text-primary hover:underline">全企業の初任給ランキングを見る →</Link>
-                </p>
-              </section>
-            )}
+            {/* 比較ページ同士のリンクはやめ、各社の詳細ページとランキングへ送る。
+                比較の次に見たいのは「その会社のことをもっと知る」であって、
+                別の組み合わせの比較ではない。 */}
+            <section className="space-y-3 border-t pt-8">
+              <h2 className="text-base md:text-lg font-bold">それぞれの詳細を見る</h2>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm" className="bg-transparent">
+                  <Link href={`/companies/${a.id}`}>{a.company}</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="bg-transparent">
+                  <Link href={`/companies/${b.id}`}>{b.company}</Link>
+                </Button>
+              </div>
+              <p className="text-sm">
+                <Link href="/ranking" className="text-primary hover:underline">全企業の初任給ランキングを見る →</Link>
+              </p>
+            </section>
           </div>
         </main>
         <Footer />

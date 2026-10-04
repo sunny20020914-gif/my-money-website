@@ -23,6 +23,7 @@ import { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { Remarkable } from "remarkable"
 import { FavoriteCompanyButton } from "@/components/favorite-company-button"
+import { buildPageMeta } from "@/lib/metadata"
 import { SectionNav, type SectionNavItem } from "@/components/section-nav"
 import { CommentSection } from "@/components/comment-section"
 import { RecentlyViewed } from "@/components/recently-viewed"
@@ -112,17 +113,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ? `${company.company}の初任給と手取り｜企業研究【${FISCAL_YEAR}年最新】`
         : `${company.company}の初任給・年収｜企業研究【${FISCAL_YEAR}年最新】`,
     description,
-    alternates: {
-      canonical: `https://www.mymoneyweb.com/companies/${params.id}`,
-    },
-    openGraph: {
+    // 【OGP】canonical・openGraph・twitter をまとめて組み立てる。
+    //
+    // 以前はここで openGraph だけを定義していたため、
+    // og:url / og:site_name / og:locale / og:type が欠落し、
+    // twitter は layout の汎用文言（「初任給ランキング 2026」）のまま残っていた。
+    // 企業ページをXで共有しても見出しが企業名にならない状態だった。
+    //
+    // 【og:image について】以前は company.logo をそのまま指定していたが、
+    // その実体は128pxのファビコンで、summary_large_image が想定する
+    // 1200×630 に遠く及ばずカードが崩れる。
+    // 指定せず app/opengraph-image.tsx の自動生成画像に任せる。
+    ...buildPageMeta({
       title: `${company.company}の初任給・年収・採用情報`,
       description,
-      // ロゴが無い場合は images を指定しない。
-      // 以前は存在しない /og-image.jpg にフォールバックして404になっていた。
-      // 未指定なら app/opengraph-image.tsx の自動生成画像が使われる。
-      ...(company.logo ? { images: [company.logo] } : {}),
-    },
+      path: `/companies/${params.id}`,
+    }),
   }
 }
 
@@ -1399,10 +1405,15 @@ export default async function CompanyPage({ params }: Props) {
                       <p className="text-xs text-muted-foreground mb-2">
                         {primaryIndustry ? `${primaryIndustry}業界の企業と比較する` : "同業界の企業と比較する"}
                       </p>
+                      {/* 【rel="nofollow"】比較ページは robots.txt で Disallow にしたが、
+                          リンクが残っているとGooglebotはURLを「発見」し、
+                          Search Console の「検出 - インデックス未登録」に積み上がる。
+                          nofollow を付けて、そもそも辿る対象から外す。
+                          読者にとっては有用な機能なので、リンク自体は残す。 */}
                       <div className="flex flex-wrap gap-2">
                         {compareCandidates.map((c) => (
                           <Button key={c.id} asChild variant="outline" size="sm" className="bg-transparent">
-                            <Link href={`/compare/${pairSlug(company.id, c.id)}`}>
+                            <Link href={`/compare/${pairSlug(company.id, c.id)}`} rel="nofollow">
                               vs {c.company}
                             </Link>
                           </Button>

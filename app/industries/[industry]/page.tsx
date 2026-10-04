@@ -1,6 +1,7 @@
 import { fetchAllUniqueCompanies } from "@/lib/sheets"
 import type { CompanyData } from "@/lib/sheets"
 import { resolveIndustryAlias } from "@/lib/industry-aliases"
+import { buildPageMeta } from "@/lib/metadata"
 import { buildAllListDefinitions } from "@/lib/list-definitions"
 import {
   buildIndustryAnalyses,
@@ -97,13 +98,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${industry}業界 初任給ランキング ${FISCAL_YEAR}【${companies.length}社】`,
     description,
-    alternates: {
-      canonical: `https://www.mymoneyweb.com/industries/${encodeURIComponent(industry)}`,
-    },
-    openGraph: {
+    ...buildPageMeta({
       title: `${industry}業界 初任給ランキング ${FISCAL_YEAR}`,
       description,
-    },
+      path: `/industries/${encodeURIComponent(industry)}`,
+    }),
   }
 }
 

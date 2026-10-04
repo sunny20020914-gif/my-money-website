@@ -99,9 +99,13 @@ export default async function sitemap({
   // ---- 2: 記事ページ＋額面別の手取りページ ----
   if (id === 2) {
     const articles = await fetchArticleDataServer()
+    // 【lastmod】日付が取れない記事には lastModified を付けない。
+    // 以前は publishedAt にレンダー時刻が入っていたため、
+    // 生成のたびに lastmod が変わり「常に更新されている」という
+    // 嘘のシグナルになっていた。省略はsitemapの仕様上許容されている。
     const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
       url: `${baseUrl}/articles/${article.id}`,
-      lastModified: new Date(article.publishedAt),
+      ...(article.publishedAt ? { lastModified: new Date(article.publishedAt) } : {}),
       changeFrequency: 'weekly' as const,
       priority: 1.0,
     }))

@@ -24,6 +24,22 @@ const nextConfig = {
         destination: "/industries",
         permanent: true,
       },
+      // 旧: /articles/[id]?page=N → /articles/[id]/N へ。
+      //
+      // 記事のページ分割をクエリからパスに移したため、
+      // 以前のURLが検索結果や外部リンクに残っていても着地できるようにする。
+      //
+      // ?page=1 は転送しない。Next.js は転送先で使わなかったクエリを
+      // そのまま引き継ぐため、/articles/x?page=1 → /articles/x?page=1 と
+      // 自分自身に戻り続けるループになる。
+      // searchParams を読まなくなったので ?page=1 は単に無視され、
+      // 1ページ目が描画される。canonical も正しく出るため実害は無い。
+      {
+        source: "/articles/:id",
+        has: [{ type: "query", key: "page", value: "(?<page>\\d+)" }],
+        destination: "/articles/:id/:page",
+        permanent: true,
+      },
       // 旧: /ranking?type=annual → 独立ページ /ranking/annual へ集約。
       // クエリ付きURLが検索結果や外部リンクに残っていても正しく着地させる。
       {

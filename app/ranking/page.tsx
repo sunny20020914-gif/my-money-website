@@ -1,4 +1,5 @@
 import { renderRankingPage } from "./render-ranking"
+import { buildPageMeta } from "@/lib/metadata"
 import {
   SITE_URL,
   FISCAL_YEAR,
@@ -23,9 +24,13 @@ export const metadata: Metadata = {
     `${TARGET_GRAD_YEARS.map((y) => `${y}年卒`).join("・")}（${TARGET_GRAD_LABEL}）向け・初任給が高い企業のランキング。` +
     `大学卒の全国平均${MARKET_BENCHMARK.universityGraduate.toLocaleString()}円を大きく上回る高待遇企業を厳選して掲載。` +
     `手取り額の目安、入社後の平均年収までの伸び、業界別の傾向まで解説しています。`,
-  alternates: {
-    canonical: `${SITE_URL}/ranking`,
-  },
+  ...buildPageMeta({
+    title: `初任給ランキング${TARGET_GRAD_YEARS.join("・")}｜初任給が高い企業を月30万円超で比較`,
+    description:
+      `${TARGET_GRAD_YEARS.map((y) => `${y}年卒`).join("・")}（${TARGET_GRAD_LABEL}）向け・初任給が高い企業のランキング。` +
+      `手取り額の目安、入社後の平均年収までの伸び、業界別の傾向まで解説しています。`,
+    path: "/ranking",
+  }),
 }
 
 export default async function RankingPage() {

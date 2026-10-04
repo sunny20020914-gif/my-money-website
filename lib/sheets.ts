@@ -72,7 +72,8 @@ export interface ArticleData {
   excerpt: string
   content: string
   category: string
-  publishedAt: string
+  /** 公開日。スプシF列が空・不正なら null（sitemapのlastmodを汚さないため） */
+  publishedAt: string | null
   author: string
   readTime: number
   image?: string
@@ -476,7 +477,21 @@ export async function fetchArticleDataServer(): Promise<ArticleData[]> {
     }
 
     return data.values.map((row: any[], index: number) => {
-      let publishedAt = new Date().toISOString()
+      // 【重要・sitemapが嘘をつかないように】
+      // 以前はここで `let publishedAt = new Date().toISOString()` とし、
+      // F列が空の記事に「今この瞬間」を入れていた。
+      //
+      // app/sitemap.ts はこの値を lastModified に使うため、
+      // 日付の無い記事はsitemapを生成するたびに lastmod が変わり、
+      // 「常に更新されているページ」という誤ったシグナルをGoogleに送っていた。
+      // 実測で4本の lastmod がミリ秒まで同一＝レンダー時刻になっていた。
+      //
+      // lastmod の信頼性はsitemapファイル単位で評価されるため、
+      // 4本の嘘が同じファイルに入っている112本全体の評価を巻き添えにする。
+      //
+      // 日付が取れない場合は null を返し、sitemap 側で lastModified を
+      // 付けない（省略は仕様上許容されている）。
+      let publishedAt: string | null = null
       if (row[5]) {
         const d = new Date(row[5])
         if (!isNaN(d.getTime())) {

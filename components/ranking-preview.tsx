@@ -73,7 +73,21 @@ export async function RankingPreview() {
                           <div className="w-16 h-16 rounded-lg bg-muted/50" />
                         )}
                         <div>
-                          <h3 className="font-semibold text-foreground text-xl mb-2">{company.company}</h3>
+                          {/* 【クロール導線】社名を企業詳細ページへのリンクにする。
+                              トップページはGooglebotが最も頻繁に訪れるページだが、
+                              以前はここから企業詳細へのリンクが1本も無かった。
+                              企業詳細238本のうち115本が「一度もクロールされていない」
+                              状態だったことへの、最も低コストな対策。
+                              idが無い企業（スプシのL列が空）ではリンクにしない。 */}
+                          <h3 className="font-semibold text-foreground text-xl mb-2">
+                            {company.id ? (
+                              <Link href={`/companies/${company.id}`} className="hover:text-primary hover:underline transition-colors">
+                                {company.company}
+                              </Link>
+                            ) : (
+                              company.company
+                            )}
+                          </h3>
                           <div className="flex flex-wrap gap-1">
                             {company.industry.split('/').map((industry: string, i: number) => (
                               <Badge key={i} variant="outline" className="text-sm">{industry}</Badge>
@@ -117,7 +131,15 @@ export async function RankingPreview() {
                             <div className="w-10 h-10 rounded-lg bg-muted/50" />
                           )}
                           <div className="ml-1">
-                            <h3 className="text-base font-bold text-foreground leading-tight">{company.company}</h3>
+                            <h3 className="text-base font-bold text-foreground leading-tight">
+                              {company.id ? (
+                                <Link href={`/companies/${company.id}`} className="hover:text-primary hover:underline transition-colors">
+                                  {company.company}
+                                </Link>
+                              ) : (
+                                company.company
+                              )}
+                            </h3>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {company.industry.split('/').map((industry: string, i: number) => (
                                 <Badge key={i} variant="secondary" className="text-[11px] px-1.5">{industry}</Badge>

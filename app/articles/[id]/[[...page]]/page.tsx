@@ -10,20 +10,46 @@ import Image from "next/image"
 import { AdBanner } from "@/components/ad-banner"
 import { Remarkable } from "remarkable"
 import { splitIntoBlocks, withScrollableTables } from "@/lib/markdown"
+import { buildPageMeta } from "@/lib/metadata"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FavoriteArticleButton } from "@/components/favorite-article-button"
 import { SITE_URL, REVALIDATE_STABLE } from "@/lib/config"
 
+/**
+ * 【重要・記事が静的生成されていなかった原因】
+ *
+ * 以前はページ分割を `?page=2` というクエリで受け取っており、
+ * Props に searchParams を宣言して本文で読んでいた。
+ *
+ * Next.js App Router では、サーバーコンポーネントのページが
+ * searchParams を読んだ時点でそのルートは「動的レンダリング」に切り替わる。
+ * generateStaticParams も revalidate も効かなくなり、
+ * ビルド時のHTMLが1本も生成されていなかった。
+ *
+ * 結果、Googlebot が記事を取得するたびに
+ * スプレッドシートAPIを伴うサーバー描画が走り、応答が遅くなる。
+ * sitemap で priority 1.0（サイト最高値）を与えている記事22本が
+ * 「検出されたがクロールされていない」状態だったのは、これが効いている。
+ *
+ * そこでページ番号をURLのパスに移す。
+ *   /articles/2-1    … 1ページ目（page は undefined）
+ *   /articles/2-1/2  … 2ページ目
+ * [[...page]] は省略可能なキャッチオールで、どちらのURLもこの1ファイルが扱う。
+ * searchParams を読まなくなるため、全ページが静的生成の対象に戻る。
+ */
 type Props = {
-  params: { id: string }
-  searchParams: { [key: string]: string | string[] | undefined }
+  params: { id: string; page?: string[] }
 }
+
+/** スプレッドシート内でこの文字列が書かれた位置でページを分割する */
+const SPLIT_MARKER = "[[NEXT_PAGE]]"
 
 export const revalidate = REVALIDATE_STABLE
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await fetchArticleById(params.id)
+  const pageNum = params.page?.[0] ? parseInt(params.page[0], 10) : 1
 
   if (!article) {
     // 【ソフト404対策】記事が存在しない場合は canonical を出さず noindex を明示する。
@@ -36,47 +62,62 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: article.title,
+    // 分割ページはタイトルを変える。全ページが同じタイトルだと
+    // 検索結果で区別がつかず、重複と判定されやすい。
+    title: pageNum > 1 ? `${article.title}（${pageNum}ページ目）` : article.title,
     description: article.excerpt,
-    alternates: {
-      canonical: `${SITE_URL}/articles/${params.id}`,
-    },
-    openGraph: {
+    // 分割ページは自分自身を正規URLにする。
+    // 2ページ目を1ページ目の重複として扱うと、
+    // 2ページ目だけに書かれた内容が検索対象から外れてしまう。
+    ...buildPageMeta({
       title: article.title,
       description: article.excerpt,
-      // 記事画像が無い場合は未指定にして、app/opengraph-image.tsx の
-      // 自動生成画像にフォールバックさせる（/og-image.jpg は存在せず404だった）
-      ...(article.image ? { images: [article.image] } : {}),
+      path: pageNum > 1 ? `/articles/${params.id}/${pageNum}` : `/articles/${params.id}`,
       type: "article",
-      publishedTime: article.publishedAt,
+      ...(article.publishedAt ? { publishedTime: article.publishedAt } : {}),
       authors: [article.author],
-    },
+    }),
   }
 }
 
-// ビルド時に全記事ページを静的に生成
+/**
+ * ビルド時に全記事ページを静的に生成する。
+ *
+ * 分割されている記事は2ページ目以降も列挙する。
+ * [[...page]] は省略可能なキャッチオールなので、
+ * 1ページ目は page を undefined にすると /articles/2-1 が生成される。
+ */
 export async function generateStaticParams() {
   const articles = await fetchArticleDataServer()
-  return articles.map((article) => ({
-    id: article.id,
-  }))
+  const params: { id: string; page?: string[] }[] = []
+
+  for (const article of articles) {
+    // 1ページ目（/articles/[id]）
+    params.push({ id: article.id })
+
+    // 2ページ目以降（/articles/[id]/2, /3 …）
+    const total = article.content.split(SPLIT_MARKER).length
+    for (let n = 2; n <= total; n++) {
+      params.push({ id: article.id, page: [String(n)] })
+    }
+  }
+
+  return params
 }
 
-export default async function ArticlePage({ params, searchParams }: Props) {
+export default async function ArticlePage({ params }: Props) {
   const article = await fetchArticleById(params.id)
 
   if (!article) {
     notFound()
   }
 
-  // ページ分割処理
-  // スプレッドシート内で [[NEXT_PAGE]] と書かれた場所でページを分割します
-  const SPLIT_MARKER = "[[NEXT_PAGE]]"
+  // ページ分割処理（区切り文字の定義はファイル冒頭 SPLIT_MARKER）
   const contentPages = article.content.split(SPLIT_MARKER)
 
-  // 現在のページ番号を取得（デフォルトは1ページ目）
-  const pageParam = searchParams.page
-  const currentPage = typeof pageParam === 'string' ? parseInt(pageParam, 10) : 1
+  // 現在のページ番号をURLのパスから取得する（/articles/2-1/2 の "2"）。
+  // パスが無ければ1ページ目。
+  const currentPage = params.page?.[0] ? parseInt(params.page[0], 10) : 1
 
   // 有効なページ番号であることを確認
   const safePage = Math.max(1, Math.min(currentPage, contentPages.length))
@@ -134,7 +175,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
           title: article.title,
           description: article.excerpt,
           image: article.image,
-          publishedAt: article.publishedAt,
+          publishedAt: article.publishedAt ?? undefined,
           author: article.author,
           url: `${SITE_URL}/articles/${article.id}`,
         }}
@@ -151,7 +192,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
               <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mb-6">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  <span>{new Date(article.publishedAt).toLocaleDateString("ja-JP")}</span>
+                  <span>{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("ja-JP") : "—"}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
@@ -202,7 +243,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
               <div className="flex justify-center items-center gap-4 my-12">
                 <Button variant="outline" disabled={safePage <= 1} asChild={safePage > 1}>
                   {safePage > 1 ? (
-                    <Link href={`/articles/${article.id}?page=${safePage - 1}`}>
+                    <Link href={safePage === 2 ? `/articles/${article.id}` : `/articles/${article.id}/${safePage - 1}`}>
                       <ChevronLeft className="mr-2 h-4 w-4" /> 前のページ
                     </Link>
                   ) : (
@@ -216,7 +257,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
 
                 <Button variant="default" disabled={safePage >= totalPages} asChild={safePage < totalPages}>
                   {safePage < totalPages ? (
-                    <Link href={`/articles/${article.id}?page=${safePage + 1}`}>
+                    <Link href={`/articles/${article.id}/${safePage + 1}`}>
                       次のページ <ChevronRight className="ml-2 h-4 w-4" />
                     </Link>
                   ) : (

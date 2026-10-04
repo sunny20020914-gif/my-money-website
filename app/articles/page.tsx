@@ -97,7 +97,7 @@ export default async function ArticlesPage() {
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                      <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {new Date(article.publishedAt).toLocaleDateString("ja-JP")}
+                      {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("ja-JP") : "—"}
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />

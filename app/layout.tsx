@@ -48,7 +48,17 @@ export const metadata: Metadata = {
   openGraph: {
     title: `初任給ランキング ${FISCAL_YEAR} | ${SITE_NAME}`,
     description: "大手企業の初任給を徹底比較。業界別・職種別の給与データと就活に役立つ情報を提供します。",
-    url: SITE_URL,
+    // 【重要】ここに url を書いてはいけない。
+    //
+    // Next.js の metadata は openGraph を深くマージしない。
+    // ページ側が openGraph を定義しなければ、この layout の値が
+    // そのまま使われる。以前はここに url: SITE_URL と書いていたため、
+    // 自前の openGraph を持たない全ページ（/ranking・/companies・/lists・
+    // /take-home・/savings など）が og:url でホームを名乗っていた。
+    //
+    // canonical は各ページが正しく出しているので矛盾する状態になる。
+    // ページ固有のURLは lib/metadata.ts の buildPageMeta() で埋めること。
+    // ここで省略すれば、未設定のページは og:url を出さないだけで済む。
     // 【重要】siteName は「サイトの名称」。ここにページタイトル（初任給ランキング）を
     // 入れていたため、WebSite構造化データやtitleテンプレートと食い違い、
     // Googleがサイト名を確定できずドメイン名を表示していた。
