@@ -736,12 +736,16 @@ export function RankingPageClient({
                     「全国平均ではない」と明示しないと、当サイトの平均が
                     日本の相場だと受け取られかねない（YMYL領域では致命的）。 */}
                 <div className="mb-3 pb-3 border-b">
+                  {/*【補足文を削除】以前はこの下に
+                       「上の全国平均とは別のデータです。初任給の高い企業を中心に
+                         収録しているため、世間の相場より高くなります。」
+                     という2行があった。
+
+                     見出しを「掲載」から「厳選」に変えたことで、
+                     母集団が選別されたものだという性格は見出し自体が伝える。
+                     2行を読ませなくても誤読は避けられる。 */}
                   <p className="text-sm font-bold text-foreground">
-                    当サイト掲載{summary.withMonthly}社の集計
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-                    上の全国平均とは別のデータです。初任給の高い企業を中心に収録しているため、
-                    世間の相場より高くなります。
+                    当サイト厳選{summary.withMonthly}社の集計
                   </p>
                 </div>
                 {/* 主要指標をカード化して一目で掴めるようにする。
@@ -901,39 +905,6 @@ export function RankingPageClient({
                     </Link>
                   )}
 
-                  {/* 【導線】給与額以外の切り口で並べたランキングへ。
-                      初任給と平均年収の順位はほとんど連動しないため、
-                      「額面の順位」だけ見て離脱する読者をここで拾いたい。
-                      小さなピルだと押せると気づかれにくいので高さ56pxのボタンにする。 */}
-                  <div className="border-t pt-4">
-                    <p className="text-[15px] font-semibold text-foreground mb-1">
-                      金額以外の切り口で並べる
-                    </p>
-                    {/* 補足はスマホでは出さない。見出し「金額以外の切り口で並べる」と
-                        ボタンのラベルで意図は伝わる。
-                        この主張は下の解説セクションで根拠つきで扱っている。 */}
-                    <p className="hidden md:block text-sm text-muted-foreground mb-3">
-                      初任給の順位と、入社後の年収の順位はほとんど一致しません。
-                    </p>
-                    {/* 【小さくした理由】高さ56px・太枠・15px太字では、
-                        本体のランキングと同じ強さで主張してしまい、
-                        画面の上部を切り口ボタンが占める形になっていた。
-                        ここは「他の見方もある」と伝える補助の導線なので、
-                        高さ40px・細枠・13pxまで落として一覧を早く見せる。 */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
-                      {METRIC_RANKING_LINKS.map((link) => (
-                        <Link
-                          key={link.slug}
-                          href={link.path}
-                          className="group flex h-10 items-center justify-between gap-1 rounded-lg border bg-card px-3 text-[13px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
-                        >
-                          {link.shortLabel}
-                          <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -970,6 +941,42 @@ export function RankingPageClient({
                       )}
                     </div>
                   )}
+
+                  {/* 【導線】給与額以外の切り口で並べたランキングへ。
+                      初任給と平均年収の順位はほとんど連動しないため、
+                      「額面の順位」だけ見て離脱する読者をここで拾いたい。
+
+                      【位置と折りたたみ】以前は検索バーより上に置いていたが、
+                      4つのボタンが常に開いた状態でランキング本体を押し下げていた。
+                      ここは「他の見方もある」と伝える補助の導線であって、
+                      このページを開いた人が最初に用があるものではない。
+
+                      業界で絞り込むの下に移し、既定では閉じておく。
+                      <details> なので中身はHTMLに含まれ、検索エンジンからは
+                      従来どおりリンクとして読まれる（クロール導線は維持される）。 */}
+                  <details className="border-t pt-4">
+                    <summary className="cursor-pointer list-none">
+                      <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-foreground">
+                        金額以外の切り口で並べる
+                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [details[open]_&]:rotate-180" />
+                      </span>
+                    </summary>
+                    <p className="hidden md:block mt-1 text-sm text-muted-foreground">
+                      初任給の順位と、入社後の年収の順位はほとんど一致しません。
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-1.5">
+                      {METRIC_RANKING_LINKS.map((link) => (
+                        <Link
+                          key={link.slug}
+                          href={link.path}
+                          className="group flex h-10 items-center justify-between gap-1 rounded-lg border bg-card px-3 text-[13px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                        >
+                          {link.shortLabel}
+                          <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                        </Link>
+                      ))}
+                    </div>
+                  </details>
                 </div>
               </CardContent>
             </Card>
