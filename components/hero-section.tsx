@@ -1,9 +1,7 @@
 import { ArrowRightIcon, DatabaseIcon } from "lucide-react"
 import Link from "next/link"
 import { FISCAL_YEAR } from "@/lib/config"
-import { MARKET_BENCHMARK } from "@/lib/market-benchmark"
 import { Button } from "@/components/ui/button"
-import { fetchAllUniqueCompanies } from "@/lib/sheets"
 
 /**
  * 【重要・カニバリゼーション対策】
@@ -28,45 +26,35 @@ import { fetchAllUniqueCompanies } from "@/lib/sheets"
  *   検索結果に出るサイト名（My Money Web）はトップページの
  *   WebSite構造化データからしか読まれず、サイトリンクやブランド検索も失うため。
  */
-export async function HeroSection() {
-  const all = await fetchAllUniqueCompanies().catch(() => [])
-
-  const monthlyValues = all
-    .map((c) => c.baseMonthly)
-    .filter((v): v is number => typeof v === "number" && v > 0)
-
-  const avgMonthly =
-    monthlyValues.length > 0
-      ? Math.round(monthlyValues.reduce((a, b) => a + b, 0) / monthlyValues.length)
-      : null
-  const maxMonthly = monthlyValues.length > 0 ? Math.max(...monthlyValues) : null
-
-  // トップ固有の指標。/ranking には無い切り口にする。
-  //
-  // 【掲載企業数を外した理由】
-  // ここだけ全企業数（185社）を出しており、ランキングや業界ページが使う
-  // 「初任給データがある企業数」（159社）と食い違っていた。
-  // 数え方が違うだけで誤りではないが、同じサイトで違う数字が出るのは
-  // 読み手にもGoogleにも不親切。
-  //
-  // そもそも185社は規模として誇れる数ではなく、出す意味が薄い。
-  // 外した結果、残る3つはすべて「円」の金額になり、
-  // 「掲載平均 → 最高額 → 全国平均」と横に読める組み合わせになった。
-  // 掲載社数が十分に増えたら戻すことを検討する。
-  const stats = [
-    {
-      label: "掲載平均の初任給",
-      value: avgMonthly ? `${avgMonthly.toLocaleString()}円` : "—",
-    },
-    {
-      label: "最高額",
-      value: maxMonthly ? `${maxMonthly.toLocaleString()}円` : "—",
-    },
-    {
-      label: "全国平均（大学卒）",
-      value: `${MARKET_BENCHMARK.universityGraduate.toLocaleString()}円`,
-    },
-  ]
+/**
+ * 【データ取得をやめた】
+ * 統計ブロックのために掲載企業を全件取得して平均・最高額を計算していたが、
+ * ブロックごと削除したため不要になった。
+ *
+ * これでヒーローはスプレッドシートに依存しない純粋な静的コンポーネントになり、
+ *   ・ホームページの生成がSheets APIの状態に左右されない
+ *   ・APIの呼び出しが1つ減る
+ * という副次的な利点もある。
+ */
+export function HeroSection() {
+  /**
+   * 【統計ブロックを削除した経緯】
+   *
+   * もともと「掲載企業数・掲載平均の初任給・最高額・全国平均」の4枚を
+   * grid-cols-2 md:grid-cols-4 で並べていた。
+   * のちに掲載企業数（全企業数185社とランキング側159社が食い違うため）を
+   * 外したが、グリッドの列数を直さなかったので3枚が2+1で折り返し、
+   * 見た目が崩れていた。
+   *
+   * そこで列数を直すのではなく、ブロックごと削除する判断をした。
+   * 残り3枚の数字はいずれも他の場所に出ているため。
+   *   掲載平均の初任給 … /ranking の集計カード
+   *   最高額 ………………… すぐ下のTOP5の1位（企業名つきで出る）
+   *   全国平均 ……………… /ranking のリード文、下部の「データについて」
+   *
+   * 重複を消したうえ、ランキングへのボタンが1画面目に上がる。
+   * 数字を再掲するより、実際の順位を早く見せるほうが用に適う。
+   */
 
   return (
     <section className="relative pt-16 lg:pt-24 pb-4 overflow-hidden">
@@ -76,7 +64,7 @@ export async function HeroSection() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             <DatabaseIcon className="w-4 h-4 mr-2" />
-            {FISCAL_YEAR}年度データ／有価証券報告書・公的統計に基づく
+            {FISCAL_YEAR}年度データ／有価証券報告書・公的統計準拠
           </div>
 
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-5 leading-[1.3]">
@@ -90,24 +78,8 @@ export async function HeroSection() {
           <p className="jp-lead text-[17px] md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-[1.85]">
             初任給の額面だけでなく、手取り・入社後の平均年収・業績まで
             <br className="hidden md:block" />
-            一社ずつ確認できる就活生向けのデータサイトです。
+            確認できるデータサイトです。
           </p>
-
-          {/* 【トップ固有コンテンツ】サイト全体の規模と出典を先に示す。
-              /ranking のリード文とは重複しない切り口（データベースとしての説明）にする */}
-          <dl className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 max-w-3xl mx-auto">
-            {stats.map((s) => (
-              <div
-                key={s.label}
-                className="rounded-xl border bg-card/70 px-3 py-4 backdrop-blur-sm"
-              >
-                <dt className="text-xs md:text-sm text-muted-foreground mb-1">{s.label}</dt>
-                <dd className="text-lg md:text-2xl font-bold text-foreground tabular">
-                  {s.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
             <Button asChild size="lg" className="text-base px-8 py-6 bg-primary">
