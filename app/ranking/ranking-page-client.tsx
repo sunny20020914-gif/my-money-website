@@ -854,19 +854,31 @@ export function RankingPageClient({
                     {/* 【SEO】状態切り替えではなく実際のページ遷移にする。
                         別URLの独立ページなので、検索エンジンにそれぞれ別テーマとして
                         認識され、内部リンクとしても機能する。 */}
+                    {/* 【独立したボタンにした理由】
+                        以前は外側の枠の中に2つを並べたセグメント型トグルで、
+                        未選択側は枠も背景も持たない「ただのテキスト」だった。
+                        そのため右の「想定年収」が押せる要素だと気づかれず、
+                        もう一方のランキングへ移動してもらえていなかった。
+
+                        外枠をやめ、2つとも自前の枠と背景を持つボタンにする。
+                        選択で色が反転する（塗り ⇄ 薄い色）ので、
+                        「2つあって、今はこちらが選ばれている」が一目で分かる。 */}
                     <div
                       aria-label="ランキングの種類"
-                      className="inline-flex w-full sm:w-auto rounded-xl border-2 border-primary/25 bg-muted/50 p-1.5 gap-1.5"
+                      className="grid grid-cols-2 gap-2.5 sm:inline-flex sm:gap-3"
                     >
                       {rankingTypes
                         .filter((type) => type.id !== "base")
                         .map((type) => {
                           const isSelected = selectedRanking === type.id
                           const href = type.id === "annual" ? "/ranking/annual" : "/ranking"
-                          const cls = `flex-1 sm:flex-none sm:px-12 px-4 py-3 rounded-lg text-base md:text-lg font-bold transition-all text-center ${
+                          const cls = `sm:px-12 px-4 py-3 rounded-xl border-2 text-base md:text-lg font-bold transition-all text-center ${
                             isSelected
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-muted-foreground hover:text-primary hover:bg-background"
+                              // 選択中: 塗りつぶし。今どちらを見ているかを明示する
+                              ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                              // 未選択: 薄く色を敷き、枠と文字も主色にする。
+                              // これで「押せるボタン」に見え、押すと上の塗りと入れ替わる
+                              : "bg-primary/5 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary"
                           }`
                           // 選択中の項目はリンクにしない（自ページへの無意味なリンクを作らない）
                           return isSelected ? (
