@@ -9,7 +9,11 @@ import Link from "next/link"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
 import { nearestTakeHomeAmount, manLabel } from "@/lib/take-home"
 
-const PRESETS = [220_000, 250_000, 280_000, 320_000, 400_000]
+// 【初期値の30万円を含めている理由】
+// プリセットに初期値が無いと、ページを開いた瞬間どのボタンも
+// 選択状態にならず「何も選ばれていない」ように見える。
+// flex-wrap なのでボタンが6つになっても折り返して収まる。
+const PRESETS = [220_000, 250_000, 280_000, 300_000, 320_000, 400_000]
 
 const yen = (n: number) => `¥${n.toLocaleString()}`
 
@@ -34,8 +38,14 @@ function SimulatorForm({ companies }: { companies: SimulatorCompany[] }) {
   const presetMonthly = Number(params.get("monthly"))
   const presetName = params.get("name") || ""
 
+  // 【初期値】30万円。
+  // 当サイトの掲載企業は初任給の高い企業が中心で、中央値は36.3万円。
+  // 25万円だと掲載企業の大半が範囲外になり、
+  // 下に出す「近い額面の企業」が1社も出ない状態で画面が始まっていた。
+  // 30万円なら該当企業が必ず複数出る。
+  // ※企業ページから ?monthly= 付きで来た場合はその値を優先する。
   const [monthly, setMonthly] = useState<number>(
-    Number.isFinite(presetMonthly) && presetMonthly > 0 ? presetMonthly : 250_000,
+    Number.isFinite(presetMonthly) && presetMonthly > 0 ? presetMonthly : 300_000,
   )
   const [bonus, setBonus] = useState<number>(0)
   const [dependents, setDependents] = useState<number>(0)
@@ -196,62 +206,70 @@ function SimulatorForm({ companies }: { companies: SimulatorCompany[] }) {
               ※健康保険料率10%（労使折半）・厚生年金18.3%（労使折半）・雇用保険0.55%・所得税（復興特別所得税込み）で計算した概算です。
               賞与分は月給と同率で控除される前提の簡易計算です。実際の手取りは勤務地の保険料率や手当・控除により変わります。
             </p>
-
-            {/* 【回遊】内訳の直下に、その額面に近い実在の企業を置く。
-                手取りを調べたあとの「で、その額面をくれる会社は？」に答える。 */}
-            {nearby.length > 0 && (
-              <div className="pt-4 border-t">
-                <h2 className="text-sm font-bold mb-1">
-                  初任給が{yen(monthly)}前後の企業
-                </h2>
-                <p className="text-xs text-muted-foreground mb-3">
-                  当サイト掲載企業のうち、入力した額面に近い初任給の会社です。
-                </p>
-                <ul className="space-y-1.5">
-                  {nearby.map((c) => (
-                    <li key={c.id}>
-                      <Link
-                        href={`/companies/${c.id}`}
-                        className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3.5 py-3 transition-colors hover:bg-accent"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-bold text-foreground">
-                            {c.name}
-                          </span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {c.industry.split("/")[0]}
-                          </span>
-                        </span>
-                        <span className="shrink-0 text-sm font-bold text-primary tabular">
-                          {yen(c.monthly)}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button asChild size="sm" variant="outline" className="bg-transparent">
-                    <Link href="/ranking">初任給ランキングを見る</Link>
-                  </Button>
-                  {/* 額面別ページは1万円刻みでしか存在しない（20万〜60万）。
-                      丸めた値で機械的にリンクを作ると、範囲外や半端な額で
-                      404になる。nearestTakeHomeAmount は±5,000円以内に
-                      該当ページがあるときだけ値を返すので、
-                      存在が保証されたときだけボタンを出す。 */}
-                  {nearestPage !== null && (
-                    <Button asChild size="sm" variant="outline" className="bg-transparent">
-                      <Link href={`/take-home/${nearestPage}`}>
-                        額面{manLabel(nearestPage)}の手取り詳細
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       ) : (
         <p className="text-sm text-muted-foreground">月額を入力すると手取りが表示されます。</p>
+      )}
+
+      {/* 【独立したカードにした理由】
+          以前は計算結果カードの中に入れていたが、
+          「自分の手取りを計算する」話と「その額面の会社を探す」話は
+          目的が別で、同じ枠に入れると計算結果の付録のように見えていた。
+
+          カードを分ければ、計算を終えた人の目に次の行動として入る。
+          枠線は既定のまま（計算結果カードは border-primary/40）にして、
+          どちらが主役かを取り違えないようにしている。 */}
+      {nearby.length > 0 && (
+        <Card className="py-0 gap-0">
+          <CardContent className="p-4 md:p-6">
+              <h2 className="text-base md:text-lg font-bold mb-1">
+                初任給が{yen(monthly)}前後の企業
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                当サイト掲載企業のうち、入力した額面に近い初任給の会社です。
+              </p>
+              <ul className="space-y-1.5">
+                {nearby.map((c) => (
+                  <li key={c.id}>
+                    <Link
+                      href={`/companies/${c.id}`}
+                      className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3.5 py-3 transition-colors hover:bg-accent"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-bold text-foreground">
+                          {c.name}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {c.industry.split("/")[0]}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-sm font-bold text-primary tabular">
+                        {yen(c.monthly)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="outline" className="bg-transparent">
+                  <Link href="/ranking">初任給ランキングを見る</Link>
+                </Button>
+                {/* 額面別ページは1万円刻みでしか存在しない（20万〜60万）。
+                    丸めた値で機械的にリンクを作ると、範囲外や半端な額で
+                    404になる。nearestTakeHomeAmount は±5,000円以内に
+                    該当ページがあるときだけ値を返すので、
+                    存在が保証されたときだけボタンを出す。 */}
+                {nearestPage !== null && (
+                  <Button asChild size="sm" variant="outline" className="bg-transparent">
+                    <Link href={`/take-home/${nearestPage}`}>
+                      額面{manLabel(nearestPage)}の手取り詳細
+                    </Link>
+                  </Button>
+                )}
+              </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
