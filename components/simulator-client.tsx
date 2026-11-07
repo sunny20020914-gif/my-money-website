@@ -5,13 +5,31 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Link from "next/link"
 import { estimateNetSalary, roundNet } from "@/lib/net-salary"
+import { nearestTakeHomeAmount, manLabel } from "@/lib/take-home"
 
 const PRESETS = [220_000, 250_000, 280_000, 320_000, 400_000]
 
 const yen = (n: number) => `¥${n.toLocaleString()}`
 
-function SimulatorForm() {
+/**
+ * 近い額面の企業を出すための最小限のデータ。
+ *
+ * 【なぜ軽量な型にするか】
+ * ここはクライアントコンポーネントなので、渡したデータは全部
+ * HTMLに埋め込まれてブラウザに送られる。CompanyData をそのまま渡すと
+ * 財務指標・ロゴURL・説明文まで164社分が転送され、
+ * 使わないデータでページが重くなる。表示に要る4つだけに絞る。
+ */
+export interface SimulatorCompany {
+  id: string
+  name: string
+  monthly: number
+  industry: string
+}
+
+function SimulatorForm({ companies }: { companies: SimulatorCompany[] }) {
   const params = useSearchParams()
   const presetMonthly = Number(params.get("monthly"))
   const presetName = params.get("name") || ""
@@ -23,6 +41,28 @@ function SimulatorForm() {
   const [dependents, setDependents] = useState<number>(0)
 
   const est = useMemo(() => estimateNetSalary(monthly, { dependents }), [monthly, dependents])
+
+  /**
+   * 入力された額面に近い初任給の企業を5社。
+   *
+   * 【なぜ出すか】手取りを調べた人の次の関心は
+   * 「その額面をくれる会社はどこか」に移る。
+   * 計算結果だけ見て離脱していたところに、実在する企業への導線を置く。
+   * 1人あたり1.24ページという回遊の薄さに対する施策でもある。
+   *
+   * 範囲は±2万円。これより広げると「近い」と言えない額が混ざり、
+   * 狭めると該当0社になる額面帯が増える（/take-home/[amount] と同じ基準）。
+   */
+  const nearby = useMemo(() => {
+    if (!Number.isFinite(monthly) || monthly <= 0) return []
+    return companies
+      .filter((c) => Math.abs(c.monthly - monthly) <= 20_000)
+      .sort((a, b) => Math.abs(a.monthly - monthly) - Math.abs(b.monthly - monthly))
+      .slice(0, 5)
+  }, [companies, monthly])
+
+  // 入力額に対応する額面別ページがあるか（±5,000円以内のときだけ存在する）
+  const nearestPage = useMemo(() => nearestTakeHomeAmount(monthly), [monthly])
 
   // 年収ベースの概算（賞与にも同率の社会保険・税がかかる前提の簡易計算）
   const annual = useMemo(() => {
@@ -156,6 +196,58 @@ function SimulatorForm() {
               ※健康保険料率10%（労使折半）・厚生年金18.3%（労使折半）・雇用保険0.55%・所得税（復興特別所得税込み）で計算した概算です。
               賞与分は月給と同率で控除される前提の簡易計算です。実際の手取りは勤務地の保険料率や手当・控除により変わります。
             </p>
+
+            {/* 【回遊】内訳の直下に、その額面に近い実在の企業を置く。
+                手取りを調べたあとの「で、その額面をくれる会社は？」に答える。 */}
+            {nearby.length > 0 && (
+              <div className="pt-4 border-t">
+                <h2 className="text-sm font-bold mb-1">
+                  初任給が{yen(monthly)}前後の企業
+                </h2>
+                <p className="text-xs text-muted-foreground mb-3">
+                  当サイト掲載企業のうち、入力した額面に近い初任給の会社です。
+                </p>
+                <ul className="space-y-1.5">
+                  {nearby.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/companies/${c.id}`}
+                        className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3.5 py-3 transition-colors hover:bg-accent"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-bold text-foreground">
+                            {c.name}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {c.industry.split("/")[0]}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-sm font-bold text-primary tabular">
+                          {yen(c.monthly)}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button asChild size="sm" variant="outline" className="bg-transparent">
+                    <Link href="/ranking">初任給ランキングを見る</Link>
+                  </Button>
+                  {/* 額面別ページは1万円刻みでしか存在しない（20万〜60万）。
+                      丸めた値で機械的にリンクを作ると、範囲外や半端な額で
+                      404になる。nearestTakeHomeAmount は±5,000円以内に
+                      該当ページがあるときだけ値を返すので、
+                      存在が保証されたときだけボタンを出す。 */}
+                  {nearestPage !== null && (
+                    <Button asChild size="sm" variant="outline" className="bg-transparent">
+                      <Link href={`/take-home/${nearestPage}`}>
+                        額面{manLabel(nearestPage)}の手取り詳細
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -165,10 +257,10 @@ function SimulatorForm() {
   )
 }
 
-export function SimulatorClient() {
+export function SimulatorClient({ companies = [] }: { companies?: SimulatorCompany[] }) {
   return (
     <Suspense fallback={<p className="text-sm text-muted-foreground">読み込み中...</p>}>
-      <SimulatorForm />
+      <SimulatorForm companies={companies} />
     </Suspense>
   )
 }

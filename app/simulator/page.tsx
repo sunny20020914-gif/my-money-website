@@ -1,10 +1,15 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AdBanner } from "@/components/ad-banner"
-import { SimulatorClient } from "@/components/simulator-client"
-import { SITE_URL, FISCAL_YEAR } from "@/lib/config"
+import { SimulatorClient, type SimulatorCompany } from "@/components/simulator-client"
+import { fetchAllUniqueCompanies } from "@/lib/sheets"
+import { SITE_URL, FISCAL_YEAR, REVALIDATE_STABLE } from "@/lib/config"
 import Link from "next/link"
 import { Metadata } from "next"
+
+// 掲載企業を読むようになったのでISRの間隔を明示する。
+// 指定が無いと内部fetchの既定（1時間）に従い、意図が読めなくなる。
+export const revalidate = REVALIDATE_STABLE
 
 export const metadata: Metadata = {
   title: `初任給の手取り計算シミュレーター【${FISCAL_YEAR}年版】額面から自動計算`,
@@ -36,7 +41,28 @@ const faq = [
   },
 ]
 
-export default function SimulatorPage() {
+/**
+ * 【回遊】シミュレーターに掲載企業を渡す。
+ *
+ * 入力された額面に近い初任給の企業を、計算結果の直下に出すため。
+ * 手取りを調べた人の次の関心は「その額面をくれる会社はどこか」に移るので、
+ * そこで実在する企業への導線を置く。
+ *
+ * クライアントに送るデータなので、表示に必要な4項目だけに絞る。
+ * CompanyData をそのまま渡すと財務指標や説明文まで164社分が
+ * HTMLに埋め込まれ、ページが重くなる。
+ */
+export default async function SimulatorPage() {
+  const all = await fetchAllUniqueCompanies().catch(() => [])
+  const companies: SimulatorCompany[] = all
+    .filter((c) => typeof c.baseMonthly === "number" && c.baseMonthly > 0 && c.id)
+    .map((c) => ({
+      id: c.id,
+      name: c.company,
+      monthly: c.baseMonthly as number,
+      industry: c.industry,
+    }))
+
   const faqLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -80,7 +106,7 @@ export default function SimulatorPage() {
               </p>
             </section>
 
-            <SimulatorClient />
+            <SimulatorClient companies={companies} />
 
             <AdBanner />
 

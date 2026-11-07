@@ -48,6 +48,23 @@ const ENTRIES = [
     desc: "賞与を含めた年収ベース。初任給とは順位が大きく入れ替わります。",
   },
   {
+    // 【並び順】GA4の実測で、シミュレーターは滞在93秒（全ページ中で最長クラス）、
+    // 表示回数も前期比+84%と最も伸びている。手取り早見表を含む手取り系全体も+66%。
+    // それまで13枚中12番目・10番目に置いていたが、需要のある入口を
+    // 下に沈めておく理由がないため、主要ランキングの直後に繰り上げた。
+    // 2つは用途が連続する（まず概算を見る→自分の条件で計算する）ので隣に並べる。
+    href: "/simulator",
+    icon: SlidersHorizontalIcon,
+    title: "手取りシミュレーター",
+    desc: "扶養人数など条件を変えて、自分に合わせた手取りを計算。",
+  },
+  {
+    href: "/take-home",
+    icon: CalculatorIcon,
+    title: "手取り早見表",
+    desc: "額面20万〜60万円の手取りを1万円刻みで一覧。内訳も確認できます。",
+  },
+  {
     href: "/industries",
     icon: LayersIcon,
     title: "業界別に見る",
@@ -90,22 +107,10 @@ const ENTRIES = [
     desc: "手取り別に毎月いくら貯めるのが現実的か。20代の実態データつき。",
   },
   {
-    href: "/take-home",
-    icon: CalculatorIcon,
-    title: "手取り早見表",
-    desc: "額面20万〜60万円の手取りを1万円刻みで一覧。内訳も確認できます。",
-  },
-  {
     href: "/take-home/annual",
     icon: CoinsIcon,
     title: "年収別の手取り",
     desc: "年収300万〜1,500万円の手取りを一覧。社会保険料と税金の内訳つき。",
-  },
-  {
-    href: "/simulator",
-    icon: SlidersHorizontalIcon,
-    title: "手取りシミュレーター",
-    desc: "扶養人数など条件を変えて、自分に合わせた手取りを計算。",
   },
   {
     href: "/articles",

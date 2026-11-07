@@ -81,21 +81,42 @@ export function HeroSection() {
             確認できるデータサイトです。
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
-            <Button asChild size="lg" className="text-base px-8 py-6 bg-primary">
+          {/*【手取りシミュレーターを上に出した理由】
+              GA4の実測で、シミュレーターは滞在93秒（全ページ中で最長クラス）、
+              表示回数も前期比+84%と最も伸びている。手取り系全体も+66%。
+              にもかかわらず、トップからの導線は下部の「目的から探す」の
+              カード1枚だけで、1画面目に出ていなかった。
+
+              ランキングを主ボタンとして残しつつ、2行目に並べて
+              最初の画面に入れる。3つを縦に積むとランキング本体が
+              また下がるため、2段構成にしている。 */}
+          <div className="space-y-3 sm:space-y-0 sm:flex sm:flex-row sm:gap-3 sm:justify-center sm:items-center">
+            <Button asChild size="lg" className="w-full sm:w-auto text-base px-8 py-6 bg-primary">
               <Link href="/ranking">
                 初任給ランキングを見る
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="text-base px-8 py-6 bg-transparent border-border"
-            >
-              <Link href="/companies">企業名から探す</Link>
-            </Button>
+            {/* スマホでは2列に並べる。縦に3つ積むとランキング本体が
+                1画面目から押し出されるため。PCでは横一列。 */}
+            <div className="grid grid-cols-2 gap-3 sm:contents">
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="text-base px-4 sm:px-8 py-6 bg-transparent border-border"
+              >
+                <Link href="/simulator">手取りを計算する</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="text-base px-4 sm:px-8 py-6 bg-transparent border-border"
+              >
+                <Link href="/companies">企業名から探す</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>

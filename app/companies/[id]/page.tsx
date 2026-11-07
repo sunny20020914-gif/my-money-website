@@ -300,11 +300,44 @@ export default async function CompanyPage({ params }: Props) {
       </p>
     );
 
-    if (url && !isNumberValue) {
-      return <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">{valueComponent}</a>;
-    }
+    // 【以前のバグ】ここは `if (url && !isNumberValue)` だった。
+    // つまり初任給が 441000 のような「数値」で入っている企業では、
+    // 出典URLを持っていてもリンクが一切描画されていなかった。
+    // 文字列（「非公開」など）の企業だけがリンクになるという、
+    // 意図と逆の挙動になっていた。
+    //
+    // 金額そのものをリンクにするのはやめ、
+    // カード下部の独立した出典ボタン（下の SourceLink）に一本化する。
+    // 数字をリンク色にすると「押せる数字」に見えて紛らわしく、
+    // 出典であることも伝わらないため。
     return valueComponent;
   };
+
+  /**
+   * 出典ボタン。採用ページなど、金額の根拠になるURLへ飛ばす。
+   *
+   * 【なぜ目立たせるか】
+   * 当サイトの初任給は各社の採用ページから人手で集めた値で、
+   * 有価証券報告書には載らない情報。つまり自動収集型の競合が持てない資産だが、
+   * 裏返すと「どこから取ったのか」を示せないと検証しようがない。
+   *
+   * 出典を明示することは、順位を上げる魔法ではなく
+   *   ・読者がその場で原典を確認できる
+   *   ・AI検索（ChatGPT・Perplexity・AI Overviews）に引用されやすくなる
+   *   ・掲載側が数字を更新するときの参照先になる
+   * という実利のためのもの。
+   */
+  const SourceLink = ({ url, label }: { url: string; label: string }) => (
+    <a
+      href={url.startsWith("http") ? url : `https://${url}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/10"
+    >
+      <ExternalLink className="h-4 w-4 shrink-0" />
+      {label}
+    </a>
+  );
 
   /**
    * FAQのテキスト内に現れる企業名を <strong> で強調して返す。
@@ -542,12 +575,12 @@ export default async function CompanyPage({ params }: Props) {
                   {/* 想定年収 */}
                   <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">想定年収</p>
-                    <SalaryDisplay value={company.annualSalary} url={company.salaryUrl} isPrimary />
+                    <SalaryDisplay value={company.annualSalary} isPrimary />
                   </div>
                   {/* 初任給（月額） */}
                   <div className="space-y-1 md:text-center">
                     <p className="text-sm text-muted-foreground">初任給（月額）</p>
-                    <SalaryDisplay value={company.baseMonthly} url={company.salaryUrl} />
+                    <SalaryDisplay value={company.baseMonthly} />
                   </div>
                   {/*【手取りを一元化】手取りの金額はこのカードにだけ置く。
                       以前は1年目だけをここに出し、下の手取りセクションで
@@ -604,6 +637,29 @@ export default async function CompanyPage({ params }: Props) {
                     <span className="font-semibold text-foreground">額面の内訳・補足：</span>
                     {company.description}
                   </p>
+                )}
+
+                {/*【出典】金額の根拠になるページへのリンク。
+                    以前は金額そのものに付いていたが、
+                    「数値のときはリンクにしない」という条件のせいで
+                    ほとんどの企業で描画されていなかった。
+                    独立したボタンにして、常に見える位置に置く。 */}
+                {(company.salaryUrl || financialSource) && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">
+                      この金額の出典
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {company.salaryUrl && (
+                        <SourceLink url={company.salaryUrl} label="採用ページで初任給を確認" />
+                      )}
+                    </div>
+                    <p className="mt-2.5 text-xs text-muted-foreground leading-relaxed">
+                      初任給は各社の採用ページ・募集要項から収集しています。
+                      募集年度や職種によって金額が異なる場合があるため、
+                      応募前に必ず出典元で最新の条件をご確認ください。
+                    </p>
+                  </div>
                 )}
 
                 {/*【リンクと注釈をここから外した】

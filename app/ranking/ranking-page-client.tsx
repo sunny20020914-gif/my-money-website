@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, RefreshCw, ExternalLink, AlertCircle, ArrowRightIcon, ChevronDown, ChevronRight, TrendingUpIcon } from "lucide-react"
+import { Search, RefreshCw, AlertCircle, ArrowRightIcon, ChevronDown, ChevronRight, TrendingUpIcon } from "lucide-react"
 import { AdBanner } from "@/components/ad-banner"
 import { useRankingData } from "@/hooks/use-sheets-data"
 import type { CompanyData } from "@/lib/sheets"
@@ -205,15 +205,21 @@ const CompanyCard = ({
       </span>
     );
 
-    if (company.salaryUrl && !isNumberValue) {
-      return (
-        <a href={company.salaryUrl.startsWith('http') ? company.salaryUrl : `https://www.google.com/search?q=${encodeURIComponent(company.company + " " + "採用情報")}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
-          {valueComponent}
-          <ExternalLink className="inline-block w-3 h-3 ml-1 text-muted-foreground" />
-        </a>
-      );
-    }
-
+    // 【出典リンクを置かない理由】
+    // 以前はここで salaryUrl へのリンクを描画していたが、2つの問題があった。
+    //
+    // ① 条件が `!isNumberValue` だったため、初任給が数値で入っている
+    //    ほとんどの企業では、そもそもリンクが出ていなかった。
+    // ② スマホのカードは全面が詳細ページへのリンク（absolute inset-0）
+    //    になっている。その下にリンクを置いても上の層に覆われて押せない。
+    //    見えるのに押せないリンクは、無いより悪い。
+    //
+    // 一覧は50社を見比べる場所で、1社あたり40pxの出典ボタンを足すと
+    // カード全体で2,000px伸びる。せっかく230px→98pxまで詰めた意味が無くなる。
+    //
+    // 出典は企業詳細ページの「この金額の出典」ボタンに一本化する。
+    // 出典を確認したい人は、その企業を詳しく見ようとしている人なので、
+    // 詳細ページまで来る。
     return valueComponent;
   };
 

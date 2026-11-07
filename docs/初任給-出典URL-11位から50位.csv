@@ -1,0 +1,41 @@
+順位,企業名,掲載額,公式額,判定,出典URL,固定残業,注記・要対応
+11,リブ・コンサルティング,500000,500000,一致,https://www.libcon.co.jp/recruit1/jobdescription/,50時間 141256円,基本給358744円
+12,デロイト トーマツ コンサルティング,483500,483600,軽微な差,https://www.deloitte.com/jp/ja/careers/deloitte-tohmatsu-consulting-students.html,40時間,公式は年額5803200円のみ。学士卒
+13,GMOペパボ,475000,"315000〜475000",レンジ上限,https://recruit.pepabo.com/graduate/business,20時間,単一額でなくレンジの上限。ビジネス職
+14,EY新日本有限責任監査法人,466176,365000,重大な不一致,https://www.shinnihon.or.jp/recruit/recruit/career_guide.html,記載なし,公式は首都圏365000円。差10万円。新卒サイトに給与記載なし
+15,DeNA,465000,465000,一致,https://student.dena.com/recruit/,45時間 139500円,ライフプラン手当55000円含む。AIスペシャリスト職は540000円
+16,Accenture(戦略),459084,459084,金額一致/条件誤り,https://www.accenture.com/jp-ja/careers/life-at-accenture/entry-level,公式に記載なし,公式は「手当等を含まない基準給与」。「賞与含む」は誤り
+17,デロイトトーマツベンチャーサポート,458333,458333,一致,https://www.deloitte.com/jp/ja/careers/deloitte-tohmatsu-venture-support-students.html,33時間,公式は年俸5500000円のみ
+18,デロイトトーマツリスクアドバイザリー,458333,458333,一致,https://www.deloitte.com/jp/ja/careers/deloitte-tohmatsu-risk-advisory-students.html,33時間,学士卒。修士博士は483328円
+19,LBP,446000,応相談,出典なし,https://hrmos.co/pages/longblack/jobs/0000112,45時間,公式は金額非公開
+20,Slalom Japan,445833,記載なし,出典なし,https://www.slalom.com/jp/ja/who-we-are/newsroom/slalom-jp-newsroom-new-graduate-hire,不明,公開情報なし
+21,ライズコンサルティング,441667,441667,一致,https://hrmos.co/pages/rise-cg/jobs/0000100,45時間 114885円,27卒28卒とも同額
+22,アモーヴァ・アセットマネジメント,441667,記載なし,出典なし,https://www.amova-am.com/about/talent/earlycareer,不明,公式に金額なし。旧日興アセット(三井住友トラスト系)
+23,エーザイ,441000,441000,定義ズレ,https://eisai-recruit.jp/fresh/job-info/drug-discovery-researcher-2027,40時間 110400円,公式の「初任給」は350000円(試用3ヶ月)。441000は試用後+住宅手当5万円込み
+24,B&DX,440216,440216,金額一致/条件誤り,https://www.bdx.co.jp/recruitment-graduate/,なし(別途支給),「賞与含む」は誤り。月給(基本給)。職種名はコンサルタント
+25,フューチャーアーキテクト,437500,該当なし,重大な不一致,https://www.future.co.jp/recruit/recruit/rec-fresh/,50時間,公式は375000/406300〜468800/500000の3区分。437500は存在しない
+26,Capgemini,437500,437500,一致(計算値),https://job.mynavi.jp/28/pc/search/corp106901/employment.html,40時間 103511円,東京つくば限定。札幌は371875円。27卒データ
+27,LINEヤフー,434000,434000,一致,https://www.lycorp.co.jp/ja/recruit/newgrads/engineer/jd0001/,35時間 97956円,エンジニア職。上限額なしの下限値
+28,サイボウズ(エンジニア),430000,430000,一致,https://cybozu.co.jp/recruit/entry/newgrad/security-engineer2027.html,40時間 102400円,プロダクトセキュリティエンジニア職。QA職は400000円
+29,エリアリンク,430000,430000,一致,https://www.career-cloud.asia/28/entry/job/offer/arealink/detail/18,30時間 81700円,基本給197300円。住宅手当3万は3年間のみ
+30,シンプレクス,425000,425000,一致,https://recruit.simplex.holdings/newgrad/recruitinginformation/,記載なし,初年度年収600万円〜(賞与込)
+31,ソニー・インタラクティブエンタテインメント,425000,425000,一致,https://careers.playstation.com/ja/locations/tokyo/new-grads/careers,45時間,学部卒。ゲーム制作コースは契約社員
+32,サイバーエージェント,420000,420000,一致,https://www.cyberagent.co.jp/careers/about/,時間外80時間+深夜46時間,固定残業80時間は要注記
+33,北の達人コーポレーション,420000,確認できず,出典なし,https://kitanotatsujin.snar.jp/jobboard/detail.aspx?id=GP9_jvsIjAELa1792H-GSQ,45時間,新卒ページ閉鎖。社名「ホールディングス」は誤り
+34,シスコシステムズ,417500,"501〜599万円",レンジ下限,https://www.cisco.com/c/ja_jp/about/careers/new-graduate/recruit.html,なし,年俸レンジの下限。上限なら約499167円
+35,Sansan,413000,413000,一致,https://jp.corp-sansan.com/recruit/newgrads/jobs/business-2028/,35時間 89000円,ビジネス職
+36,ULSコンサルティング,410760,非公開,出典なし,https://ulsconsulting-recruit.snar.jp/index.aspx,不明,公式に給与記載なし。旧ウルシステムズ
+37,DXCテクノロジー,410000,395000,不一致,https://dxc.com/ja/careers/freshgraduatejp,なし,410000は院卒の額。学部卒は395000円
+38,日本IBM,408500,408500,一致,https://job.rikunabi.com/selection/job_descriptions/ae943e8bbce8da51/,なし,公式サイトは給与非公開。リクナビのみ
+39,NTTデータ経営研究所,408333,425000,不一致,https://www.i-note.jp/keieiken/iomcrecruit2028/iomcrecruitment2028.html,裁量労働制,公式は年俸510万円。408333は能力発揮給490万円のみの値
+40,PwC Japan有限責任監査法人,406480,406480,一致,https://www.pwc.com/jp/ja/careers/assurance/campus/recruiting-info/info2.html,30時間,コンサルタント職。監査職は420300円
+41,五洋建設,405165,405165,枠が限定,https://hrmos.co/pages/penta-ocean/jobs/2182409971063615499,105165円(時間数不明),外国籍新卒枠の額。日本人向け一般枠は未確認
+42,ジャフコ グループ,404000,405000,軽微な差,https://www.jafco.co.jp/recruit/job_description/,35時間 92000円,学部卒。キャリアスタート手当55000円込み
+43,モビルス,402000,該当なし,重大な不一致,https://open.talentio.com/r/1/c/mobilus/pages/127009,35時間 85890円,公式は開発職400000円/ビジネス職300000円。402000は存在しない
+44,エリクソン・ジャパン,401600,401600,一致,https://job.mynavi.jp/27/pc/corpinfo/displayEmployment/index/?corpId=100237&recruitingCourseId=27034779,40.8時間 100400円,横浜オフィス限定。仙台窓口は264000円
+45,華為技術日本,401000,401000,一致,https://hrmos.co/pages/huawei/jobs/Campus_Otemachi_Tech,45時間 103351円,技術職・大卒
+46,Accenture(非戦略),400000,400000,金額一致/条件誤り,https://www.accenture.com/jp-ja/careers/life-at-accenture/entry-level,公式に記載なし,「賞与含む・固定残業30h」は公式記載と矛盾。ビジネス/エンジニア/クリエイティブ職
+47,株式会社ポケモン,400000,400430,軽微な差,https://recruit.pokemon.co.jp/saiyo/recruit/index.html,25時間 65430円,賞与は別途120万円(固定)
+48,フィリップモリス・ジャパン,400000,確認できず,出典なし,https://www.pmi.com/markets/japan/ja/careers,不明,公式に給与記載なし。マイナビ掲載終了
+49,アイ・システム,400000,400000,一致,https://www.i-system.co.jp/recruit/numbers/,記載なし(残業全額支給),スカウト採用枠・大学卒・25卒実績
+50,サイボウズ(ビジネス),400000,400000,一致,https://cybozu.co.jp/recruit/entry/newgrad/business2027.html,40時間 95250円,ビジネス職
