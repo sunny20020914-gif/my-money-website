@@ -104,7 +104,11 @@ export default function TakeHomeIndexPage() {
               <div className="overflow-hidden rounded-2xl border bg-card">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-muted/50 text-xs text-muted-foreground">
+                    {/* 【見出しの文字サイズ】text-xs(12px)では本文14pxに対して
+                          小さすぎ、どの列が何なのか読み取りにくかった。
+                          表の見出しは一度読めば済むものではなく、
+                          41行をスクロールしながら何度も参照する。 */}
+                    <tr className="border-b bg-muted/50 text-sm text-muted-foreground">
                       <th scope="col" className="p-3 text-left font-medium">額面（月）</th>
                       <th scope="col" className="p-3 text-right font-medium">1年目の手取り</th>
                       <th scope="col" className="p-3 text-right font-medium">2年目以降</th>
@@ -117,7 +121,7 @@ export default function TakeHomeIndexPage() {
                         <th scope="row" className="p-0 text-left">
                           <Link
                             href={`/take-home/${r.amount}`}
-                            className="block p-3 font-bold text-primary hover:underline"
+                            className="block p-3 text-base font-bold text-primary hover:underline"
                           >
                             {r.label}
                           </Link>

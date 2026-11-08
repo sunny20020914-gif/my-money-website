@@ -181,8 +181,12 @@ function SimulatorForm({ companies }: { companies: SimulatorCompany[] }) {
             </div>
 
             <div>
-              <h2 className="text-sm font-bold mb-2">控除の内訳（月額）</h2>
-              <dl className="text-sm divide-y">
+              <h2 className="text-sm md:text-base font-bold mb-2">控除の内訳（月額）</h2>
+              {/* 【PCだけ1段大きく】max-w-3xl（768px）の全幅に14pxの行が
+                     左右に張り付くため、項目名と金額の間が空きすぎて
+                     どの行とどの金額が対応するのか追いにくかった。
+                     スマホは幅が狭く今のままで詰まって見えるのでmd以上のみ。 */}
+              <dl className="text-sm md:text-base divide-y">
                 <div className="flex justify-between py-1.5"><dt className="text-muted-foreground">健康保険料</dt><dd>{yen(est.healthInsurance)}</dd></div>
                 <div className="flex justify-between py-1.5"><dt className="text-muted-foreground">厚生年金保険料</dt><dd>{yen(est.pension)}</dd></div>
                 <div className="flex justify-between py-1.5"><dt className="text-muted-foreground">雇用保険料</dt><dd>{yen(est.employmentInsurance)}</dd></div>
@@ -193,8 +197,12 @@ function SimulatorForm({ companies }: { companies: SimulatorCompany[] }) {
 
             {annual && (
               <div>
-                <h2 className="text-sm font-bold mb-2">年収ベースの概算{bonus > 0 && "（賞与込み）"}</h2>
-                <dl className="text-sm divide-y">
+                <h2 className="text-sm md:text-base font-bold mb-2">年収ベースの概算{bonus > 0 && "（賞与込み）"}</h2>
+                {/* 【PCだけ1段大きく】max-w-3xl（768px）の全幅に14pxの行が
+                     左右に張り付くため、項目名と金額の間が空きすぎて
+                     どの行とどの金額が対応するのか追いにくかった。
+                     スマホは幅が狭く今のままで詰まって見えるのでmd以上のみ。 */}
+              <dl className="text-sm md:text-base divide-y">
                   <div className="flex justify-between py-1.5"><dt className="text-muted-foreground">額面年収</dt><dd>{yen(annual.grossAnnual)}</dd></div>
                   <div className="flex justify-between py-1.5"><dt className="text-muted-foreground">手取り年収（1年目）</dt><dd className="font-semibold">約{yen(roundNet(annual.netAnnualFirstYear))}</dd></div>
                   <div className="flex justify-between py-1.5"><dt className="text-muted-foreground">手取り年収（2年目以降）</dt><dd>約{yen(roundNet(annual.netAnnualSecondYear))}</dd></div>
@@ -219,55 +227,80 @@ function SimulatorForm({ companies }: { companies: SimulatorCompany[] }) {
 
           カードを分ければ、計算を終えた人の目に次の行動として入る。
           枠線は既定のまま（計算結果カードは border-primary/40）にして、
-          どちらが主役かを取り違えないようにしている。 */}
-      {nearby.length > 0 && (
+          どちらが主役かを取り違えないようにしている。
+
+          【該当0社でもカードごと出す】
+          以前は nearby.length > 0 でカード全体を隠していたため、
+          該当企業がいない額面（60万円超など）を入れた人には
+          回遊リンクが1本も出ず、計算結果だけ見て行き止まりになっていた。
+          0社のときは一言そう書いて、リンクは常に見せる。 */}
+      {est && (
         <Card className="py-0 gap-0">
           <CardContent className="p-4 md:p-6">
-              <h2 className="text-base md:text-lg font-bold mb-1">
-                初任給が{yen(monthly)}前後の企業
-              </h2>
-              <p className="text-xs text-muted-foreground mb-3">
-                当サイト掲載企業のうち、入力した額面に近い初任給の会社です。
+            <h2 className="text-base md:text-lg font-bold mb-1">
+              初任給が{yen(monthly)}前後の企業
+            </h2>
+            {nearby.length > 0 ? (
+              <>
+                <p className="text-xs md:text-sm text-muted-foreground mb-3">
+                  当サイト掲載企業のうち、入力した額面に近い初任給の会社です。
+                </p>
+                <ul className="space-y-1.5">
+                  {nearby.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/companies/${c.id}`}
+                        className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3.5 py-3 transition-colors hover:bg-accent"
+                      >
+                        <span className="min-w-0 flex-1">
+                          {/* 社名・業界・金額をまとめてPCだけ1段上げる。
+                              控除の内訳と同じ理由で、768pxの行幅に対して
+                              社名14px・金額14pxでは左右が離れすぎていた。 */}
+                          <span className="block truncate text-sm md:text-base font-bold text-foreground">
+                            {c.name}
+                          </span>
+                          <span className="block truncate text-xs md:text-sm text-muted-foreground">
+                            {c.industry.split("/")[0]}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-sm md:text-base font-bold text-primary tabular">
+                          {yen(c.monthly)}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-xs md:text-sm text-muted-foreground">
+                この額面に近い初任給の企業は、現在のところ掲載がありません。
               </p>
-              <ul className="space-y-1.5">
-                {nearby.map((c) => (
-                  <li key={c.id}>
-                    <Link
-                      href={`/companies/${c.id}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3.5 py-3 transition-colors hover:bg-accent"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-foreground">
-                          {c.name}
-                        </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {c.industry.split("/")[0]}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-sm font-bold text-primary tabular">
-                        {yen(c.monthly)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 flex flex-wrap gap-2">
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {/* 【早見表への導線】シミュレーターは1度に1つの額面しか出せない。
+                  「30万ならこうだが、32万ならどうなるのか」を確かめたい人の
+                  行き先が無く、入力し直させるしかなかった。
+                  20万〜60万を一覧できる早見表へ送る。 */}
+              <Button asChild size="sm" variant="outline" className="bg-transparent">
+                <Link href="/take-home">手取り早見表で一覧を見る</Link>
+              </Button>
+              {/* 額面別ページは1万円刻みでしか存在しない（20万〜60万）。
+                  丸めた値で機械的にリンクを作ると、範囲外や半端な額で
+                  404になる。nearestTakeHomeAmount は±5,000円以内に
+                  該当ページがあるときだけ値を返すので、
+                  存在が保証されたときだけボタンを出す。 */}
+              {nearestPage !== null && (
                 <Button asChild size="sm" variant="outline" className="bg-transparent">
-                  <Link href="/ranking">初任給ランキングを見る</Link>
+                  <Link href={`/take-home/${nearestPage}`}>
+                    額面{manLabel(nearestPage)}の手取り詳細
+                  </Link>
                 </Button>
-                {/* 額面別ページは1万円刻みでしか存在しない（20万〜60万）。
-                    丸めた値で機械的にリンクを作ると、範囲外や半端な額で
-                    404になる。nearestTakeHomeAmount は±5,000円以内に
-                    該当ページがあるときだけ値を返すので、
-                    存在が保証されたときだけボタンを出す。 */}
-                {nearestPage !== null && (
-                  <Button asChild size="sm" variant="outline" className="bg-transparent">
-                    <Link href={`/take-home/${nearestPage}`}>
-                      額面{manLabel(nearestPage)}の手取り詳細
-                    </Link>
-                  </Button>
-                )}
-              </div>
+              )}
+              <Button asChild size="sm" variant="outline" className="bg-transparent">
+                <Link href="/ranking">初任給ランキングを見る</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

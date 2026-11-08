@@ -212,6 +212,20 @@ export default async function CompanyPage({ params }: Props) {
   const businessModel = buildBusinessModelInsight(allCompanies, company)
   const perEmployeeNote = buildPerEmployeeNote(company)
   const financialSource = buildSourceLabel(company)
+
+  /**
+   * 初任給の根拠URL。
+   *
+   * 【列の実態】スプレッドシートのI列は見出しこそ「公式サイト」だが、
+   * 実際に入っているのは金額を拾ってきた採用ページ・募集要項のURL、
+   * つまり根拠URLそのもの。コーポレートサイトのトップは管理していない。
+   * M列(salaryUrl)は現状ほぼ空。
+   *
+   * そのためI列を出典として扱う。M列を優先するのは、
+   * 今後より正確なURLをM列に入れたときに自動で切り替わるようにするため
+   * （コード側を触らずにI列から乗り換えられる）。
+   */
+  const sourceUrl = company.salaryUrl || company.url
   const hasFinancialSection =
     financialMetrics.length > 0 ||
     salaryGrowth !== null ||
@@ -496,12 +510,12 @@ export default async function CompanyPage({ params }: Props) {
                   {company.industry.split("/").map((industry, i) => (
                     <Badge key={i} variant="secondary">{industry}</Badge>
                   ))}
-                  {company.url && (
-                    <a href={company.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
-                      公式サイト
-                      <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                    </a>
-                  )}
+                  {/* 【「公式サイト」リンクを外した】
+                      ここが指していたURL（I列）は、実際には初任給を拾った
+                      採用ページ＝根拠URLだった。コーポレートサイトではない。
+                      「公式サイト」という見出しで出すと中身と食い違ううえ、
+                      下の「この金額の出典」ボタンと同じURLへの二重リンクになる。
+                      出典は、その金額を主張している場所のすぐ横に1本だけ置く。 */}
                 </div>
                 {/* 【保存】以前はランキングカードの中だけに置いていたが、
                     一覧は見比べる場所であって各社を吟味する場所ではなく、
@@ -644,18 +658,34 @@ export default async function CompanyPage({ params }: Props) {
                     「数値のときはリンクにしない」という条件のせいで
                     ほとんどの企業で描画されていなかった。
                     独立したボタンにして、常に見える位置に置く。 */}
-                {(company.salaryUrl || financialSource) && (
+                {/* 【条件を sourceUrl だけにした】
+                    以前の条件は (salaryUrl || financialSource) だった。
+                    financialSource は有報データがあれば必ず真になるが、
+                    このブロックの中では一度も使われていない。
+                    その結果、M列が空でも「この金額の出典」という見出しと
+                    注意書きだけが出て、肝心のリンクが無い枠ができていた。
+                    出典が無いのに「出典」と書いてあるのは、
+                    無いより悪い。URLがあるときだけ出す。 */}
+                {sourceUrl && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs font-semibold text-muted-foreground mb-2">
                       この金額の出典
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {company.salaryUrl && (
-                        <SourceLink url={company.salaryUrl} label="採用ページで初任給を確認" />
-                      )}
+                      <SourceLink url={sourceUrl} label="採用ページで初任給を確認" />
                     </div>
-                    <p className="mt-2.5 text-xs text-muted-foreground leading-relaxed">
-                      初任給は各社の採用ページ・募集要項から収集しています。
+                    {/* 【サイズを2段下げた】ここはボタンを押す判断に要る文ではなく、
+                        押したあとに効いてくる但し書き。出典ボタンより目立つと
+                        主従が逆になるため注記として小さくする。
+                        text-xs より下はTailwindに名前が無いので実寸で指定する。
+
+                        スマホだけ1px大きいのは、globals.css がスマホ幅で
+                        .text-xs を13pxに底上げしているのと同じ理由。
+                        日本語は同じpx数でも英字より小さく見えるので、
+                        10pxをそのまま端末に出すと読めなくなる。
+                        （実寸指定なのでその底上げルールは効かない。ここで直接書く） */}
+                    <p className="mt-2.5 text-[11px] md:text-[10px] text-muted-foreground leading-relaxed">
+                      ※初任給は各社の採用ページ・募集要項から収集しています。
                       募集年度や職種によって金額が異なる場合があるため、
                       応募前に必ず出典元で最新の条件をご確認ください。
                     </p>
