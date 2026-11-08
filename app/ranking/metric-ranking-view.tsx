@@ -130,8 +130,21 @@ export function MetricRankingView({
             {/* h1は検索キーワードそのものだけに絞り、補足は下の行に分ける。
                 長い括弧付きの見出しはスマホ幅で単語の途中から折り返され、
                 「平均年収ランキング（全社／員・…」のように読めなくなる。 */}
-            <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2 leading-[1.35]">
-              {def.h1}
+            {/* 【折り返し】h1Parts がある見出しは、指定された切れ目でだけ改行する。
+                各まとまりを .jp-phrase（word-break: keep-all）で囲んで中では割らせず、
+                境目に <wbr> を置いて「ここなら折ってよい」と伝える。
+                <wbr> はWebKitを含め全ブラウザが解釈するので、
+                Chrome専用の word-break: auto-phrase と違いiPhoneでも効く。
+                1行に収まる幅があるときは改行されないので、PCの見た目は変わらない。 */}
+            <h1 className="jp-heading text-2xl md:text-4xl font-bold text-primary mb-2 leading-[1.35]">
+              {def.h1Parts
+                ? def.h1Parts.map((part, i) => (
+                    <React.Fragment key={part}>
+                      {i > 0 && <wbr />}
+                      <span className="jp-phrase">{part}</span>
+                    </React.Fragment>
+                  ))
+                : def.h1}
             </h1>
             <p className="jp-lead text-[15px] md:text-lg text-muted-foreground mb-4 leading-[1.8]">
               {def.subtitle}
@@ -287,8 +300,14 @@ export function MetricRankingView({
                       スコアは誰も検索しないため、大きく出しても流入につながらない。 */}
                   {e.primary && (
                     <span className="mt-3 pt-3 border-t flex flex-wrap items-end gap-x-6 gap-y-3">
+                      {/* 【スマホは右揃えの2列】金額の桁数は企業ごとに違うので、
+                          左揃えだと数字の右端がそろわず、上下の行で比べにくい。
+                          flex-1 で幅を half ずつに分け、中身を右に寄せると
+                          2本の数値列ができ、下に続く補助データ（ml-auto で右寄せ）
+                          とも右端がそろう。
+                          PCは横に並べる余裕があるので従来どおり左揃え。 */}
                       {e.primary.map((p) => (
-                        <span key={p.label} className="block">
+                        <span key={p.label} className="block flex-1 text-right md:flex-none md:text-left">
                           <span className="block text-[11px] md:text-xs text-muted-foreground mb-0.5">
                             {p.label}
                           </span>

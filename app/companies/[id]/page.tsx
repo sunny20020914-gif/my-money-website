@@ -959,6 +959,38 @@ export default async function CompanyPage({ params }: Props) {
                         <span className="text-xs font-normal text-muted-foreground">万円</span>
                       </p>
                     </div>
+                    {/* 【並び順】初任給ベース年収 → 平均年収 → 伸び倍率。
+                        伸び倍率は左の2枚（720万 → 1,521万）から出てくる計算結果なので、
+                        元になる2つの金額の間に挟まっていると
+                        何を何で割った数字なのかが読み取れなかった。
+                        「いくらで入って、いくらになって、つまり何倍か」の順に並べる。
+                        倍率を右端に置くと、この節の結論がそのまま右端に来る。 */}
+                    <div
+                      className={`rounded-xl border p-3 md:p-4 text-center ${
+                        salaryGrowth.isAverageTop ? "border-red-500/40 bg-red-500/5" : "bg-card"
+                      }`}
+                    >
+                      <p className="text-xs text-muted-foreground mb-1">平均年収</p>
+                      <p
+                        className={`text-base md:text-xl font-bold tabular ${
+                          salaryGrowth.isAverageTop
+                            ? "text-red-600 dark:text-red-500"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {Math.round(salaryGrowth.averageAnnual / 10000).toLocaleString()}
+                        <span className="text-xs font-normal text-muted-foreground">万円</span>
+                      </p>
+                      <p
+                        className={`text-[11px] mt-1 font-semibold ${
+                          salaryGrowth.isAverageTop
+                            ? "text-red-600 dark:text-red-500"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {salaryGrowth.averageSampleCount}社中{salaryGrowth.averageRank}位
+                      </p>
+                    </div>
                     {/* 【強調】上位10%以内の数値は赤字にして一目で分かるようにする。
                         色だけに頼らないよう「◯位」の表記も併記している（色覚多様性への配慮）。 */}
                     <div
@@ -985,32 +1017,6 @@ export default async function CompanyPage({ params }: Props) {
                         }`}
                       >
                         {salaryGrowth.sampleCount}社中{salaryGrowth.ratioRank}位
-                      </p>
-                    </div>
-                    <div
-                      className={`rounded-xl border p-3 md:p-4 text-center ${
-                        salaryGrowth.isAverageTop ? "border-red-500/40 bg-red-500/5" : "bg-card"
-                      }`}
-                    >
-                      <p className="text-xs text-muted-foreground mb-1">平均年収</p>
-                      <p
-                        className={`text-base md:text-xl font-bold tabular ${
-                          salaryGrowth.isAverageTop
-                            ? "text-red-600 dark:text-red-500"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {Math.round(salaryGrowth.averageAnnual / 10000).toLocaleString()}
-                        <span className="text-xs font-normal text-muted-foreground">万円</span>
-                      </p>
-                      <p
-                        className={`text-[11px] mt-1 font-semibold ${
-                          salaryGrowth.isAverageTop
-                            ? "text-red-600 dark:text-red-500"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {salaryGrowth.averageSampleCount}社中{salaryGrowth.averageRank}位
                       </p>
                     </div>
                   </div>

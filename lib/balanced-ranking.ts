@@ -67,7 +67,21 @@ const median = (values: number[]): number | null => {
 }
 
 const manYen = (v: number) => `${Math.round(v).toLocaleString()}万円`
-const yen = (v: number) => `${Math.round(v).toLocaleString()}円`
+/**
+ * 万円表記。30.5万円 のように小数第1位まで出す。
+ *
+ * ただし整数部が3桁以上（100万円以上）になったら小数は落とす。
+ * 「100.0万円」は桁が多いわりに .0 が何も語らず、
+ * 隣の平均年収（1,683万円）と並べたときにまた長さが浮くため。
+ * 30万円台では1万円未満の差に意味があるので、そこでは残す。
+ *
+ * 先に小数第1位へ丸めてから判定しているのは、99.95のような値が
+ * 「100.0万円」と表示されるのを防ぐため（丸めると100になる）。
+ */
+const manYen1 = (v: number) => {
+  const rounded = Math.round(v * 10) / 10
+  return rounded >= 100 ? manYen(rounded) : `${rounded.toFixed(1)}万円`
+}
 
 /** 社名で1社に寄せる（同じ企業の職種違いの行をまとめる） */
 function dedupeByCompany(all: CompanyData[]): CompanyData[] {
@@ -124,8 +138,20 @@ export interface BalancedRanking extends MetricRanking {
 export const BALANCED_DEF: MetricRankingDef = {
   slug: "balanced",
   path: "/ranking/balanced",
-  title: "初任給も平均年収も高い企業ランキング｜入社時も入社後も高待遇",
-  h1: "初任給×平均年収ランキング",
+  // 【titleを短くした】以前は末尾に「｜入社時も入社後も高待遇」が付き、
+  // ページ側で頭に【2026年最新】、layoutのtemplateで末尾に「| My Money Web」が
+  // 足されるため、検索結果では38文字を超えて肝心の語が埋もれていた。
+  // 日本語の検索結果に出るのは概ね30文字前後なので、
+  // 狙う語を先頭に置き、年号は切られてもよい末尾に回す（ページ側で付与）。
+  // 「入社時も入社後も高待遇」はページ内の subtitle に同じ趣旨があるため落とす。
+  title: "初任給も平均年収も高い企業ランキング",
+  // h1は「×」の記号表記をやめ、検索語そのものの文に揃えた。
+  // ホーム画面の「目的から探す」カードは短い表記のまま（shortLabel とは別物）。
+  h1: "初任給も平均年収も高い企業ランキング",
+  // スマホでは1行に収まらないので、意味の切れ目でだけ折り返させる。
+  // 「初任給も平均年収も」「高い企業ランキング」各9文字。
+  // text-2xl(24px) なら1行216pxで、375px幅の端末にも収まる。
+  h1Parts: ["初任給も平均年収も", "高い企業ランキング"],
   subtitle: "入社時の初任給と、入社後の平均年収の両方が高い企業",
   shortLabel: "初任給×年収",
   valueLabel: "両立スコア",
@@ -204,7 +230,11 @@ export function buildBalancedRanking(all: CompanyData[]): BalancedRanking | null
     primary: [
       {
         label: "初任給（月額）",
-        value: positive(s.company.baseMonthly) ? yen(s.company.baseMonthly as number) : "-",
+        // 【単位を万円に揃えた】隣の平均年収が「1,683万円」なのに
+        // 初任給だけ「1,000,000円」と全桁だったため、桁数が倍ちがい、
+        // 同じ大きさの文字で並べると初任給のほうが異様に長く見えていた。
+        // 月額は1万円未満の差に意味があるので小数第1位まで残す（30.5万円）。
+        value: positive(s.company.baseMonthly) ? manYen1(s.company.baseMonthly as number / MAN) : "-",
       },
       { label: "平均年収", value: manYen(s.average / MAN) },
     ],

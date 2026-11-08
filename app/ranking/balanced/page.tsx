@@ -33,7 +33,10 @@ async function load() {
 
 export async function generateMetadata(): Promise<Metadata> {
   const base: Metadata = {
-    title: `【${FISCAL_YEAR}年最新】${BALANCED_DEF.title}`,
+    // 【語順】狙う語を先頭に置き、年号は末尾に回す。
+    // layoutのtemplateで「 | My Money Web」が足されるため、
+    // 頭に【2026年最新】を付けると検索結果で肝心の語が後ろにずれて切られる。
+    title: `${BALANCED_DEF.title}【${FISCAL_YEAR}年最新】`,
     alternates: { canonical: `${SITE_URL}${BALANCED_DEF.path}` },
   }
   const r = await load()
@@ -98,7 +101,7 @@ export default async function BalancedRankingPage() {
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: `初任給×平均年収ランキング ${FISCAL_YEAR}`,
+    name: `${BALANCED_DEF.title} ${FISCAL_YEAR}`,
     description: BALANCED_DEF.definition,
     numberOfItems: ranking.count,
     itemListElement: ranking.entries.map((e) => ({
@@ -118,7 +121,8 @@ export default async function BalancedRankingPage() {
       {
         "@type": "ListItem",
         position: 3,
-        name: "初任給×平均年収ランキング",
+        // パンくずは検索結果にも出るので、ページのh1と同じ名前にする
+        name: BALANCED_DEF.title,
         item: `${SITE_URL}${BALANCED_DEF.path}`,
       },
     ],
