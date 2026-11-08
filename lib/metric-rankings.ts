@@ -153,6 +153,8 @@ export interface MetricRankingDef {
    * 指定しなければ従来どおり h1 をそのまま出す。
    */
   h1Parts?: string[]
+  /** subtitle の折り返し位置。指定の仕方と理由は h1Parts と同じ */
+  subtitleParts?: string[]
   /** h1の下に置く補足。長い説明はこちらに書く */
   subtitle: string
   /** 切り替えUIなどで使う短い名前 */

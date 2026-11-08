@@ -49,6 +49,29 @@ function highlightNumbers(text: string): React.ReactNode[] {
   )
 }
 
+/**
+ * 日本語を意味の切れ目だけで折り返す。
+ *
+ * 各まとまりを .jp-phrase（word-break: keep-all）で囲んで中では割らせず、
+ * 境目に <wbr> を置いて「ここなら折ってよい」と伝える。
+ * <wbr> はWebKitを含め全ブラウザが解釈するので、
+ * Chrome専用の word-break: auto-phrase と違いiPhoneでも効く。
+ * 1行に収まる幅があるときは改行されないため、PCの見た目は変わらない。
+ */
+function JpWrap({ parts, fallback }: { parts?: string[]; fallback: string }) {
+  if (!parts || parts.length === 0) return <>{fallback}</>
+  return (
+    <>
+      {parts.map((part, i) => (
+        <React.Fragment key={part}>
+          {i > 0 && <wbr />}
+          <span className="jp-phrase">{part}</span>
+        </React.Fragment>
+      ))}
+    </>
+  )
+}
+
 /** ランキング種別の切り替えナビ。全6本を横並びにする */
 function RankingSwitcher({ current }: { current: string }) {
   // ナビは軽量なリンク定義だけを見る。
@@ -130,24 +153,21 @@ export function MetricRankingView({
             {/* h1は検索キーワードそのものだけに絞り、補足は下の行に分ける。
                 長い括弧付きの見出しはスマホ幅で単語の途中から折り返され、
                 「平均年収ランキング（全社／員・…」のように読めなくなる。 */}
-            {/* 【折り返し】h1Parts がある見出しは、指定された切れ目でだけ改行する。
-                各まとまりを .jp-phrase（word-break: keep-all）で囲んで中では割らせず、
-                境目に <wbr> を置いて「ここなら折ってよい」と伝える。
-                <wbr> はWebKitを含め全ブラウザが解釈するので、
-                Chrome専用の word-break: auto-phrase と違いiPhoneでも効く。
-                1行に収まる幅があるときは改行されないので、PCの見た目は変わらない。 */}
-            <h1 className="jp-heading text-2xl md:text-4xl font-bold text-primary mb-2 leading-[1.35]">
-              {def.h1Parts
-                ? def.h1Parts.map((part, i) => (
-                    <React.Fragment key={part}>
-                      {i > 0 && <wbr />}
-                      <span className="jp-phrase">{part}</span>
-                    </React.Fragment>
-                  ))
-                : def.h1}
+            {/* 【スマホだけ中央寄せ】2行に折り返す見出しは、左揃えだと
+                どちらの行も右側に空白が残り、見出しだけが左に寄って見える。
+                中央に置けば左右の余白が同じになって収まる。
+                条件を h1Parts の有無にしているのは、1行で収まる他ページの
+                見出し（「平均年収ランキング」など）まで中央に動かさないため。
+                PCは1行に収まるので従来どおり左揃え。 */}
+            <h1
+              className={`jp-heading text-2xl md:text-4xl font-bold text-primary mb-2 leading-[1.35] ${
+                def.h1Parts ? "text-center md:text-left" : ""
+              }`}
+            >
+              <JpWrap parts={def.h1Parts} fallback={def.h1} />
             </h1>
             <p className="jp-lead text-[15px] md:text-lg text-muted-foreground mb-4 leading-[1.8]">
-              {def.subtitle}
+              <JpWrap parts={def.subtitleParts} fallback={def.subtitle} />
             </p>
             <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
               <div className="flex gap-1">
@@ -298,27 +318,36 @@ export function MetricRankingView({
                   {/* 【主役の数値】検索需要のある指標（初任給・平均年収）を大きく出し、
                       並べ替えに使った独自指標（両立スコア）は小さく添えるだけにする。
                       スコアは誰も検索しないため、大きく出しても流入につながらない。 */}
+                  {/* 【スマホは右側に寄せた2列】
+                      前回 flex-1 で幅を半分ずつに割ったのが誤りだった。
+                      同じ行に補助データ（ml-auto）も居るため3つで幅を奪い合い、
+                      数値の枠が狭くなって「100／万円」「初任給／（月額）」と
+                      語の途中で折り返し、しかも左側に居座ったままになっていた。
+
+                      正しくは、補助データを w-full で下の行に落としてから
+                      justify-end で数値2つを右端に寄せること。
+                      幅の取り合いが無くなるので折り返しも起きない。
+                      PCは1行に収める余裕があるので従来どおり左揃え。 */}
                   {e.primary && (
-                    <span className="mt-3 pt-3 border-t flex flex-wrap items-end gap-x-6 gap-y-3">
-                      {/* 【スマホは右揃えの2列】金額の桁数は企業ごとに違うので、
-                          左揃えだと数字の右端がそろわず、上下の行で比べにくい。
-                          flex-1 で幅を half ずつに分け、中身を右に寄せると
-                          2本の数値列ができ、下に続く補助データ（ml-auto で右寄せ）
-                          とも右端がそろう。
-                          PCは横に並べる余裕があるので従来どおり左揃え。 */}
+                    <span className="mt-3 pt-3 border-t flex flex-wrap items-end justify-end md:justify-start gap-x-6 gap-y-3">
                       {e.primary.map((p) => (
-                        <span key={p.label} className="block flex-1 text-right md:flex-none md:text-left">
-                          <span className="block text-[11px] md:text-xs text-muted-foreground mb-0.5">
+                        <span key={p.label} className="block text-right md:text-left">
+                          <span className="block whitespace-nowrap text-[11px] md:text-xs text-muted-foreground mb-0.5">
                             {p.label}
                           </span>
+                          {/* 【1段小さくした】text-xl(20px)だと「1,683万円」が
+                              9文字で180px近くなり、2つ並べると幅が足りなかった。
+                              whitespace-nowrap は単位だけが次行に落ちるのを防ぐ保険。 */}
                           <span
-                            className="block text-xl md:text-2xl font-bold text-primary tabular"
+                            className="block whitespace-nowrap text-lg md:text-xl font-bold text-primary tabular"
                           >
                             {p.value}
                           </span>
                         </span>
                       ))}
-                      <span className="ml-auto text-right">
+                      {/* w-full でスマホでは必ず次の行に落とす。
+                          PCでは従来どおり同じ行の右端（ml-auto）に戻す。 */}
+                      <span className="w-full md:w-auto md:ml-auto text-right">
                         {e.extras.map((x) => (
                           <span key={x.label} className="block text-[11px] text-muted-foreground">
                             {x.label} {x.value}

@@ -153,6 +153,10 @@ export const BALANCED_DEF: MetricRankingDef = {
   // text-2xl(24px) なら1行216pxで、375px幅の端末にも収まる。
   h1Parts: ["初任給も平均年収も", "高い企業ランキング"],
   subtitle: "入社時の初任給と、入社後の平均年収の両方が高い企業",
+  // スマホ幅(343px)に25文字×15px=375pxは収まらず必ず2行になる。
+  // 放っておくと「…両方が高い企／業」と語の途中で割れるので、
+  // 意味の切れ目だけで折り返させる。
+  subtitleParts: ["入社時の初任給と、", "入社後の平均年収の", "両方が高い企業"],
   shortLabel: "初任給×年収",
   valueLabel: "両立スコア",
   definition:
